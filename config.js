@@ -11,8 +11,7 @@ export const SITE_CONFIG = {
   // Рабочая скорость из ESP32S3 Flash Download Tool.
   baudRate: 921600,
 
-  // Рабочий update.zip уже хранится в основном репозитории FieryLedLamp.
-  // Сам репозиторий FieryLedLamp при этом НЕ изменяется.
-  // Сайт загружает ZIP автоматически — пользователю ничего скачивать не нужно.
-  firmwareZipUrl: "https://raw.githubusercontent.com/MishanyaTS/FieryLedLamp/main/FieryLedLamp/update.zip"
+  // Пакет прошивки хранится в ЭТОМ отдельном репозитории.
+  // Для обновления прошивки достаточно заменить firmware/update.zip.
+  firmwareZipUrl: "./firmware/update.zip"
 };
