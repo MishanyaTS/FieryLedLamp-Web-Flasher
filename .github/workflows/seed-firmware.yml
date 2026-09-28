@@ -3,8 +3,6 @@ name: Seed firmware package
 on:
   push:
     branches: [main]
-    paths:
-      - ".github/workflows/seed-firmware.yml"
   workflow_dispatch:
 
 permissions:
