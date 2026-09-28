@@ -25,3 +25,4 @@ https://mishanyats.github.io/FieryLedLamp-Web-Flasher/
 - littlefs.bin → 0x00C90000
 
 Сайт загружает `./firmware/update.zip` непосредственно из этого репозитория.
+
