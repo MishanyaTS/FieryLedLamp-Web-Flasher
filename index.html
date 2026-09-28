@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#10131a" />
+  <title>FieryLedLamp — прошивка ESP32-S3</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">🔥</div>
+        <div>
+          <div class="eyebrow">FIERYLEDLAMP</div>
+          <h1>Прошивка ESP32‑S3</h1>
+          <p class="subtitle">Подключите плату по USB, выберите COM‑порт и нажмите одну кнопку.</p>
+        </div>
+      </div>
+
+      <div id="compatBanner" class="banner hidden" role="alert"></div>
+
+      <div class="steps" aria-label="Этапы прошивки">
+        <div class="step active" id="step1"><span>1</span><div><b>Подключите ESP32‑S3</b><small>USB‑кабелем к компьютеру</small></div></div>
+        <div class="step" id="step2"><span>2</span><div><b>Выберите COM‑порт</b><small>Браузер покажет список портов</small></div></div>
+        <div class="step" id="step3"><span>3</span><div><b>Загрузите прошивку</b><small>Остальное выполняется автоматически</small></div></div>
+      </div>
+    </section>
+
+    <section class="card primary-card">
+      <div class="port-row">
+        <div class="port-state">
+          <div class="status-dot" id="portDot"></div>
+          <div>
+            <div class="label">COM‑порт</div>
+            <div class="value" id="portText">Не выбран</div>
+          </div>
+        </div>
+        <button class="btn secondary" id="selectPortBtn" type="button">Выбрать COM‑порт</button>
+      </div>
+
+      <div class="firmware-summary">
+        <div>
+          <div class="label">Прошивка</div>
+          <div class="value" id="firmwareName">Загрузка конфигурации…</div>
+        </div>
+        <div class="firmware-meta" id="firmwareMeta"></div>
+      </div>
+
+      <button class="btn flash" id="flashBtn" type="button" disabled>
+        <span class="flash-icon">⬇</span>
+        <span id="flashBtnText">Загрузить прошивку</span>
+      </button>
+
+      <div class="progress-wrap" id="progressWrap" aria-live="polite">
+        <div class="progress-head">
+          <span id="progressLabel">Готово к работе</span>
+          <span id="progressPercent">0%</span>
+        </div>
+        <div class="progress-track"><div class="progress-bar" id="progressBar"></div></div>
+      </div>
+
+      <div class="result hidden" id="resultBox"></div>
+    </section>
+
+    <details class="card advanced">
+      <summary>Дополнительные параметры</summary>
+      <div class="advanced-body">
+        <label class="check-row">
+          <input type="checkbox" id="eraseAll" />
+          <span><b>Полностью очистить Flash перед прошивкой</b><small>Удалит Wi‑Fi, настройки и остальные сохранённые данные.</small></span>
+        </label>
+        <div class="info-grid">
+          <div><span>Чип</span><b id="cfgChip">—</b></div>
+          <div><span>Flash</span><b id="cfgFlash">—</b></div>
+          <div><span>Режим</span><b id="cfgMode">—</b></div>
+          <div><span>Частота</span><b id="cfgFreq">—</b></div>
+          <div><span>Скорость</span><b id="cfgBaud">—</b></div>
+        </div>
+        <div class="file-list" id="fileList"></div>
+      </div>
+    </details>
+
+    <details class="card log-card">
+      <summary>Журнал прошивки</summary>
+      <div class="log-toolbar"><button class="link-btn" id="clearLogBtn" type="button">Очистить</button></div>
+      <pre id="log"></pre>
+    </details>
+
+    <section class="help">
+      <h2>Если плата не определяется</h2>
+      <p>Зажмите <b>BOOT</b>, кратко нажмите <b>RESET</b>, отпустите <b>BOOT</b> и повторите подключение. Во время прошивки не отключайте USB‑кабель.</p>
+      <p class="muted">Web Serial работает только в поддерживаемом браузере и в безопасном контексте: сайт должен быть открыт по HTTPS либо через localhost.</p>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
