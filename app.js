@@ -70,9 +70,6 @@ async function loadManifest() {
   const response = await fetch("./firmware/manifest.json", { cache: "no-store" });
   if (!response.ok) throw new Error(`Не удалось загрузить firmware/manifest.json (${response.status})`);
   manifest = await response.json(); validateManifest(manifest);
-  document.title = `${SITE_CONFIG.projectName} — ${SITE_CONFIG.pageTitle}`;
-  const title = document.querySelector("h1"); if (title) title.textContent = SITE_CONFIG.pageTitle;
-  const subtitle = document.querySelector(".subtitle"); if (subtitle) subtitle.textContent = SITE_CONFIG.subtitle;
   ui.firmwareName.textContent = `${manifest.name || SITE_CONFIG.projectName}${manifest.version ? ` • ${manifest.version}` : ""}`;
   ui.firmwareMeta.textContent = `${manifest.files.length} файлов • прошивка из GitHub`;
   ui.eraseAll.checked = Boolean(manifest.eraseAll);
