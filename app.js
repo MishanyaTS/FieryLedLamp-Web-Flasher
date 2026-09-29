@@ -1,7 +1,7 @@
 const SITE_CONFIG = {
   projectName: "FieryLedLamp",
   pageTitle: "Прошивка ESP32-S3",
-  subtitle: "Подключите плату по USB, выберите COM-порт и нажмите одну кнопку.",
+  subtitle: "Подключите плату по USB, выберите COM-порт и нажмите загрузить.",
   baudRate: 921600,
   firmwareZipUrl: "./firmware/update.zip"
 };
