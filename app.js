@@ -1,5 +1,5 @@
 import { ESPLoader, Transport } from "https://unpkg.com/esptool-js@0.6.1/bundle.js";
-import { SITE_CONFIG } from "./config.js";
+import { SITE_CONFIG } from "./config.js?v=20260929-1";
 
 const $ = (id) => document.getElementById(id);
 const ui = {
