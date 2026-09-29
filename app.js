@@ -1,5 +1,7 @@
-import { ESPLoader, Transport } from "https://unpkg.com/esptool-js@0.6.1/bundle.js";
-import { SITE_CONFIG } from "./config.js?v=20260929-1";
+import { SITE_CONFIG } from "./config.js?v=20260929-2";
+
+let ESPLoader = null;
+let Transport = null;
 
 const $ = (id) => document.getElementById(id);
 const ui = {
@@ -14,6 +16,89 @@ const ui = {
 
 let manifest = null;
 let selectedPort = null;
+let dependencyLoadPromise = null;
+
+function withTimeout(promise, ms, label){
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(label + " — превышено время ожидания")), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
+async function loadEsptool(){
+  if(ESPLoader && Transport) return;
+  const sources = [
+    "https://unpkg.com/esptool-js@0.6.1/bundle.js",
+    "https://cdn.jsdelivr.net/npm/esptool-js@0.6.1/bundle.js"
+  ];
+  let lastError = null;
+  for(const url of sources){
+    try{
+      const mod = await withTimeout(import(url), 15000, "esptool-js");
+      if(mod?.ESPLoader && mod?.Transport){
+        ESPLoader = mod.ESPLoader;
+        Transport = mod.Transport;
+        log("Модуль esptool-js загружен.");
+        return;
+      }
+      throw new Error("В модуле отсутствуют ESPLoader/Transport");
+    }catch(e){
+      lastError = e;
+      log(`Не удалось загрузить esptool-js с ${url}: ${e?.message || e}`);
+    }
+  }
+  throw new Error(`Не удалось загрузить модуль esptool-js. ${lastError?.message || ""}`);
+}
+
+function loadScript(url, timeoutMs = 15000){
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    const timer = setTimeout(() => {
+      script.remove();
+      reject(new Error("Превышено время ожидания"));
+    }, timeoutMs);
+    script.src = url;
+    script.async = true;
+    script.onload = () => { clearTimeout(timer); resolve(); };
+    script.onerror = () => { clearTimeout(timer); script.remove(); reject(new Error("Ошибка загрузки")); };
+    document.head.appendChild(script);
+  });
+}
+
+async function loadJSZip(){
+  if(globalThis.JSZip) return;
+  const sources = [
+    "https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js",
+    "https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"
+  ];
+  let lastError = null;
+  for(const url of sources){
+    try{
+      await loadScript(url);
+      if(globalThis.JSZip){
+        log("Модуль JSZip загружен.");
+        return;
+      }
+      throw new Error("JSZip не найден после загрузки");
+    }catch(e){
+      lastError = e;
+      log(`Не удалось загрузить JSZip с ${url}: ${e?.message || e}`);
+    }
+  }
+  throw new Error(`Не удалось загрузить JSZip. ${lastError?.message || ""}`);
+}
+
+async function loadDependencies(){
+  if(!dependencyLoadPromise){
+    dependencyLoadPromise = Promise.all([loadEsptool(), loadJSZip()]).catch(err => {
+      dependencyLoadPromise = null;
+      throw err;
+    });
+  }
+  return dependencyLoadPromise;
+}
+
 let isBusy = false;
 
 function stamp() { return new Date().toLocaleTimeString("ru-RU", { hour12: false }); }
@@ -127,6 +212,8 @@ async function flash(){
   if(isBusy)return; clearResult(); setBusy(true); setProgress(0,"Подготовка прошивки…"); let transport=null;
   try{
     if(!selectedPort)await choosePort(); setStep(2);
+    setProgress(2,"Загрузка модулей прошивки…");
+    await loadDependencies();
     const files=await loadFirmwareFiles(); const totalBytes=files.reduce((s,f)=>s+f.data.length,0); const writtenByFile=new Array(files.length).fill(0);
     setProgress(12,"Подключение к ESP32-S3…"); log("Подключение к ESP32-S3…");
     transport=new Transport(selectedPort,true);
