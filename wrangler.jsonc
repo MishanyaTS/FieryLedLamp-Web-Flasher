@@ -1,0 +1,8 @@
+{
+  "name": "fieryledlamp-web-flasher",
+  "compatibility_date": "2026-09-29",
+  "workers_dev": true,
+  "assets": {
+    "directory": "."
+  }
+}
