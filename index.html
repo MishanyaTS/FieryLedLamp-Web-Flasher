@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="theme-color" content="#10131a" />
   <title>FieryLedLamp — прошивка ESP32-S3</title>
-  <link rel="stylesheet" href="./style.css?v=20260929-3" />
+  <link rel="stylesheet" href="./style.css?v=20260929-4" />
 </head>
 <body>
   <main class="page">
@@ -95,6 +95,71 @@
     </section>
   </main>
 
-  <script defer src="./app.js?v=20260929-3"></script>
+  <script>
+  (() => {
+    const btn = document.getElementById("selectPortBtn");
+    const portText = document.getElementById("portText");
+    const portDot = document.getElementById("portDot");
+    const resultBox = document.getElementById("resultBox");
+    const compatBanner = document.getElementById("compatBanner");
+
+    function showInlineError(message) {
+      if (resultBox) {
+        resultBox.className = "result error";
+        resultBox.textContent = message;
+      }
+    }
+
+    function portDescription(port) {
+      try {
+        const info = port && port.getInfo ? port.getInfo() : {};
+        const parts = [];
+        if (info.usbVendorId != null) parts.push("VID " + info.usbVendorId.toString(16).toUpperCase().padStart(4, "0"));
+        if (info.usbProductId != null) parts.push("PID " + info.usbProductId.toString(16).toUpperCase().padStart(4, "0"));
+        return parts.length ? "Выбран (" + parts.join(":") + ")" : "Порт выбран";
+      } catch (_) {
+        return "Порт выбран";
+      }
+    }
+
+    if (!btn) return;
+
+    if (!window.isSecureContext) {
+      btn.disabled = true;
+      if (compatBanner) {
+        compatBanner.textContent = "COM-порт недоступен: откройте сайт по HTTPS.";
+        compatBanner.classList.remove("hidden");
+      }
+      return;
+    }
+
+    if (!("serial" in navigator)) {
+      btn.disabled = true;
+      if (compatBanner) {
+        compatBanner.textContent = "Этот браузер не поддерживает Web Serial. Откройте сайт в Google Chrome или Microsoft Edge на компьютере.";
+        compatBanner.classList.remove("hidden");
+      }
+      return;
+    }
+
+    btn.disabled = false;
+    btn.addEventListener("click", async () => {
+      try {
+        const port = await navigator.serial.requestPort();
+        globalThis.__fierySelectedPort = port;
+        if (portText) portText.textContent = portDescription(port);
+        if (portDot) portDot.classList.add("good");
+        if (resultBox) {
+          resultBox.className = "result hidden";
+          resultBox.textContent = "";
+        }
+      } catch (e) {
+        if (e && e.name === "NotFoundError") return;
+        showInlineError("Не удалось выбрать COM-порт: " + ((e && e.message) || e));
+      }
+    });
+  })();
+  </script>
+  <script defer src="./app.js?v=20260929-4"></script>
 </body>
 </html>
