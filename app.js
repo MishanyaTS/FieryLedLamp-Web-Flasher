@@ -1,33 +1,5 @@
-const SITE_CONFIG = {
-  projectName: "FieryLedLamp",
-  pageTitle: "Прошивка ESP32-S3",
-  subtitle: "Подключите плату по USB, выберите COM-порт и нажмите загрузить.",
-  baudRate: 921600,
-  firmwareZipUrl: "./firmware/update.zip"
-};
-
-const DEFAULT_MANIFEST = {
-  name: "FieryLedLamp",
-  version: "ESP32-S3",
-  chip: "ESP32-S3",
-  baudRate: 921600,
-  eraseAll: false,
-  compress: true,
-  doNotChangeBin: true,
-  toolSpiMode: "QIO",
-  toolSpiSpeed: "80MHz",
-  physicalFlashSize: "16MB",
-  files: [
-    { name: "bootloader.bin", address: "0x00000000" },
-    { name: "partitions.bin", address: "0x00008000" },
-    { name: "boot_app0.bin", address: "0x0000E000" },
-    { name: "firmware.bin", address: "0x00010000" },
-    { name: "littlefs.bin", address: "0x00C90000" }
-  ]
-};
-
-let ESPLoader = null;
-let Transport = null;
+import { ESPLoader, Transport } from "https://unpkg.com/esptool-js@0.6.1/bundle.js";
+import { SITE_CONFIG } from "./config.js";
 
 const $ = (id) => document.getElementById(id);
 const ui = {
@@ -42,89 +14,6 @@ const ui = {
 
 let manifest = null;
 let selectedPort = null;
-let dependencyLoadPromise = null;
-
-function withTimeout(promise, ms, label){
-  let timer;
-  const timeout = new Promise((_, reject) => {
-    timer = setTimeout(() => reject(new Error(label + " — превышено время ожидания")), ms);
-  });
-  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
-}
-
-async function loadEsptool(){
-  if(ESPLoader && Transport) return;
-  const sources = [
-    "https://unpkg.com/esptool-js@0.6.1/bundle.js",
-    "https://cdn.jsdelivr.net/npm/esptool-js@0.6.1/bundle.js"
-  ];
-  let lastError = null;
-  for(const url of sources){
-    try{
-      const mod = await withTimeout(import(url), 15000, "esptool-js");
-      if(mod?.ESPLoader && mod?.Transport){
-        ESPLoader = mod.ESPLoader;
-        Transport = mod.Transport;
-        log("Модуль esptool-js загружен.");
-        return;
-      }
-      throw new Error("В модуле отсутствуют ESPLoader/Transport");
-    }catch(e){
-      lastError = e;
-      log(`Не удалось загрузить esptool-js с ${url}: ${e?.message || e}`);
-    }
-  }
-  throw new Error(`Не удалось загрузить модуль esptool-js. ${lastError?.message || ""}`);
-}
-
-function loadScript(url, timeoutMs = 15000){
-  return new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    const timer = setTimeout(() => {
-      script.remove();
-      reject(new Error("Превышено время ожидания"));
-    }, timeoutMs);
-    script.src = url;
-    script.async = true;
-    script.onload = () => { clearTimeout(timer); resolve(); };
-    script.onerror = () => { clearTimeout(timer); script.remove(); reject(new Error("Ошибка загрузки")); };
-    document.head.appendChild(script);
-  });
-}
-
-async function loadJSZip(){
-  if(globalThis.JSZip) return;
-  const sources = [
-    "https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js",
-    "https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"
-  ];
-  let lastError = null;
-  for(const url of sources){
-    try{
-      await loadScript(url);
-      if(globalThis.JSZip){
-        log("Модуль JSZip загружен.");
-        return;
-      }
-      throw new Error("JSZip не найден после загрузки");
-    }catch(e){
-      lastError = e;
-      log(`Не удалось загрузить JSZip с ${url}: ${e?.message || e}`);
-    }
-  }
-  throw new Error(`Не удалось загрузить JSZip. ${lastError?.message || ""}`);
-}
-
-async function loadDependencies(){
-  if(!dependencyLoadPromise){
-    dependencyLoadPromise = Promise.all([loadEsptool(), loadJSZip()]).catch(err => {
-      dependencyLoadPromise = null;
-      throw err;
-    });
-  }
-  return dependencyLoadPromise;
-}
-
 let isBusy = false;
 
 function stamp() { return new Date().toLocaleTimeString("ru-RU", { hour12: false }); }
@@ -166,17 +55,9 @@ function portDescription(port) {
 }
 async function choosePort() {
   if (!("serial" in navigator)) throw new Error("Этот браузер не поддерживает Web Serial.");
-  if (globalThis.__fierySelectedPort) {
-    selectedPort = globalThis.__fierySelectedPort;
-  } else {
-    selectedPort = await navigator.serial.requestPort();
-    globalThis.__fierySelectedPort = selectedPort;
-  }
-  ui.portText.textContent = portDescription(selectedPort);
-  ui.portDot.classList.add("good");
-  setStep(2);
-  log("COM-порт выбран пользователем.");
-  return selectedPort;
+  selectedPort = await navigator.serial.requestPort();
+  ui.portText.textContent = portDescription(selectedPort); ui.portDot.classList.add("good"); setStep(2);
+  log("COM-порт выбран пользователем."); return selectedPort;
 }
 function validateManifest(m) {
   if (!m || !Array.isArray(m.files) || !m.files.length) throw new Error("В firmware/manifest.json нет списка файлов.");
@@ -185,43 +66,22 @@ function validateManifest(m) {
     if (!Number.isFinite(Number.parseInt(f.address, 0))) throw new Error(`Некорректный адрес ${f.name}`);
   }
 }
-function applyManifest(m) {
-  validateManifest(m);
-  manifest = m;
+async function loadManifest() {
+  const response = await fetch("./firmware/manifest.json", { cache: "no-store" });
+  if (!response.ok) throw new Error(`Не удалось загрузить firmware/manifest.json (${response.status})`);
+  manifest = await response.json(); validateManifest(manifest);
   document.title = `${SITE_CONFIG.projectName} — ${SITE_CONFIG.pageTitle}`;
   const title = document.querySelector("h1"); if (title) title.textContent = SITE_CONFIG.pageTitle;
   const subtitle = document.querySelector(".subtitle"); if (subtitle) subtitle.textContent = SITE_CONFIG.subtitle;
   ui.firmwareName.textContent = `${manifest.name || SITE_CONFIG.projectName}${manifest.version ? ` • ${manifest.version}` : ""}`;
-  ui.firmwareMeta.textContent = `${manifest.files.length} файлов • пакет firmware/update.zip`;
+  ui.firmwareMeta.textContent = `${manifest.files.length} файлов • прошивка из GitHub`;
   ui.eraseAll.checked = Boolean(manifest.eraseAll);
   ui.cfgChip.textContent = manifest.chip || "—";
   ui.cfgFlash.textContent = `${manifest.physicalFlashSize || "16MB"} • KEEP`;
   ui.cfgMode.textContent = `${(manifest.toolSpiMode || "QIO").toUpperCase()} • DoNotChgBin`;
   ui.cfgFreq.textContent = `${manifest.toolSpiSpeed || "80MHz"} • KEEP`;
   ui.cfgBaud.textContent = String(manifest.baudRate || SITE_CONFIG.baudRate || 921600);
-  renderFileList(manifest.files);
-  setBusy(false);
-}
-
-async function loadManifest() {
-  // Сначала мгновенно используем встроенную рабочую конфигурацию.
-  applyManifest(structuredClone(DEFAULT_MANIFEST));
-  log("Рабочая конфигурация загружена локально.");
-
-  // Затем необязательно обновляем её из manifest.json. Это не блокирует COM-порт.
-  try {
-    const response = await withTimeout(
-      fetch("./firmware/manifest.json?t=" + Date.now(), { cache: "no-store" }),
-      5000,
-      "firmware/manifest.json"
-    );
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const remoteManifest = await response.json();
-    applyManifest(remoteManifest);
-    log("manifest.json обновлён.");
-  } catch (e) {
-    log(`manifest.json недоступен, используется встроенная конфигурация: ${e?.message || e}`);
-  }
+  renderFileList(manifest.files); setBusy(false); log("Конфигурация сайта загружена.");
 }
 function renderFileList(files, sizes = new Map()) {
   ui.fileList.innerHTML = "";
@@ -267,8 +127,6 @@ async function flash(){
   if(isBusy)return; clearResult(); setBusy(true); setProgress(0,"Подготовка прошивки…"); let transport=null;
   try{
     if(!selectedPort)await choosePort(); setStep(2);
-    setProgress(2,"Загрузка модулей прошивки…");
-    await loadDependencies();
     const files=await loadFirmwareFiles(); const totalBytes=files.reduce((s,f)=>s+f.data.length,0); const writtenByFile=new Array(files.length).fill(0);
     setProgress(12,"Подключение к ESP32-S3…"); log("Подключение к ESP32-S3…");
     transport=new Transport(selectedPort,true);
@@ -288,6 +146,7 @@ function checkCompatibility(){
   if(!window.isSecureContext){ui.compatBanner.textContent="COM-порт недоступен: откройте сайт по HTTPS или localhost.";ui.compatBanner.classList.remove("hidden");}
   if(!("serial" in navigator)){ui.compatBanner.textContent="Этот браузер не поддерживает Web Serial. Используйте совместимый Chromium-браузер.";ui.compatBanner.classList.remove("hidden");ui.selectPortBtn.disabled=true;ui.flashBtn.disabled=true;return false;}return true;
 }
+ui.selectPortBtn.addEventListener("click",async()=>{if(isBusy)return;clearResult();try{await choosePort();ui.flashBtn.disabled=!manifest;}catch(e){if(e?.name==="NotFoundError"){log("Выбор COM-порта отменён.");return;}showResult("error",e?.message||String(e));log(`Ошибка выбора порта: ${e?.message||e}`);}});
 ui.flashBtn.addEventListener("click",flash);ui.clearLogBtn.addEventListener("click",()=>{ui.log.textContent="";});
 if("serial"in navigator)navigator.serial.addEventListener("disconnect",e=>{if(selectedPort&&e.target===selectedPort&&!isBusy){ui.portDot.classList.remove("good");ui.portText.textContent="Порт отключён";setStep(1);log("COM-порт отключён.");}});
 (async function init(){setStep(0);checkCompatibility();try{await loadManifest();}catch(e){ui.firmwareName.textContent="Ошибка конфигурации";showResult("error",e?.message||String(e));log(`ОШИБКА: ${e?.message||e}`);}})();
