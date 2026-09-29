@@ -166,9 +166,17 @@ function portDescription(port) {
 }
 async function choosePort() {
   if (!("serial" in navigator)) throw new Error("Этот браузер не поддерживает Web Serial.");
-  selectedPort = await navigator.serial.requestPort();
-  ui.portText.textContent = portDescription(selectedPort); ui.portDot.classList.add("good"); setStep(2);
-  log("COM-порт выбран пользователем."); return selectedPort;
+  if (globalThis.__fierySelectedPort) {
+    selectedPort = globalThis.__fierySelectedPort;
+  } else {
+    selectedPort = await navigator.serial.requestPort();
+    globalThis.__fierySelectedPort = selectedPort;
+  }
+  ui.portText.textContent = portDescription(selectedPort);
+  ui.portDot.classList.add("good");
+  setStep(2);
+  log("COM-порт выбран пользователем.");
+  return selectedPort;
 }
 function validateManifest(m) {
   if (!m || !Array.isArray(m.files) || !m.files.length) throw new Error("В firmware/manifest.json нет списка файлов.");
@@ -280,7 +288,6 @@ function checkCompatibility(){
   if(!window.isSecureContext){ui.compatBanner.textContent="COM-порт недоступен: откройте сайт по HTTPS или localhost.";ui.compatBanner.classList.remove("hidden");}
   if(!("serial" in navigator)){ui.compatBanner.textContent="Этот браузер не поддерживает Web Serial. Используйте совместимый Chromium-браузер.";ui.compatBanner.classList.remove("hidden");ui.selectPortBtn.disabled=true;ui.flashBtn.disabled=true;return false;}return true;
 }
-ui.selectPortBtn.addEventListener("click",async()=>{if(isBusy)return;clearResult();try{await choosePort();ui.flashBtn.disabled=!manifest;}catch(e){if(e?.name==="NotFoundError"){log("Выбор COM-порта отменён.");return;}showResult("error",e?.message||String(e));log(`Ошибка выбора порта: ${e?.message||e}`);}});
 ui.flashBtn.addEventListener("click",flash);ui.clearLogBtn.addEventListener("click",()=>{ui.log.textContent="";});
 if("serial"in navigator)navigator.serial.addEventListener("disconnect",e=>{if(selectedPort&&e.target===selectedPort&&!isBusy){ui.portDot.classList.remove("good");ui.portText.textContent="Порт отключён";setStep(1);log("COM-порт отключён.");}});
 (async function init(){setStep(0);checkCompatibility();try{await loadManifest();}catch(e){ui.firmwareName.textContent="Ошибка конфигурации";showResult("error",e?.message||String(e));log(`ОШИБКА: ${e?.message||e}`);}})();
