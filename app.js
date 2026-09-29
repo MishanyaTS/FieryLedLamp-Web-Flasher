@@ -1,4 +1,30 @@
-import { SITE_CONFIG } from "./config.js?v=20260929-2";
+const SITE_CONFIG = {
+  projectName: "FieryLedLamp",
+  pageTitle: "Прошивка ESP32-S3",
+  subtitle: "Подключите плату по USB, выберите COM-порт и нажмите одну кнопку.",
+  baudRate: 921600,
+  firmwareZipUrl: "./firmware/update.zip"
+};
+
+const DEFAULT_MANIFEST = {
+  name: "FieryLedLamp",
+  version: "ESP32-S3",
+  chip: "ESP32-S3",
+  baudRate: 921600,
+  eraseAll: false,
+  compress: true,
+  doNotChangeBin: true,
+  toolSpiMode: "QIO",
+  toolSpiSpeed: "80MHz",
+  physicalFlashSize: "16MB",
+  files: [
+    { name: "bootloader.bin", address: "0x00000000" },
+    { name: "partitions.bin", address: "0x00008000" },
+    { name: "boot_app0.bin", address: "0x0000E000" },
+    { name: "firmware.bin", address: "0x00010000" },
+    { name: "littlefs.bin", address: "0x00C90000" }
+  ]
+};
 
 let ESPLoader = null;
 let Transport = null;
@@ -151,22 +177,43 @@ function validateManifest(m) {
     if (!Number.isFinite(Number.parseInt(f.address, 0))) throw new Error(`Некорректный адрес ${f.name}`);
   }
 }
-async function loadManifest() {
-  const response = await fetch("./firmware/manifest.json", { cache: "no-store" });
-  if (!response.ok) throw new Error(`Не удалось загрузить firmware/manifest.json (${response.status})`);
-  manifest = await response.json(); validateManifest(manifest);
+function applyManifest(m) {
+  validateManifest(m);
+  manifest = m;
   document.title = `${SITE_CONFIG.projectName} — ${SITE_CONFIG.pageTitle}`;
   const title = document.querySelector("h1"); if (title) title.textContent = SITE_CONFIG.pageTitle;
   const subtitle = document.querySelector(".subtitle"); if (subtitle) subtitle.textContent = SITE_CONFIG.subtitle;
   ui.firmwareName.textContent = `${manifest.name || SITE_CONFIG.projectName}${manifest.version ? ` • ${manifest.version}` : ""}`;
-  ui.firmwareMeta.textContent = `${manifest.files.length} файлов • прошивка из GitHub`;
+  ui.firmwareMeta.textContent = `${manifest.files.length} файлов • пакет firmware/update.zip`;
   ui.eraseAll.checked = Boolean(manifest.eraseAll);
   ui.cfgChip.textContent = manifest.chip || "—";
   ui.cfgFlash.textContent = `${manifest.physicalFlashSize || "16MB"} • KEEP`;
   ui.cfgMode.textContent = `${(manifest.toolSpiMode || "QIO").toUpperCase()} • DoNotChgBin`;
   ui.cfgFreq.textContent = `${manifest.toolSpiSpeed || "80MHz"} • KEEP`;
   ui.cfgBaud.textContent = String(manifest.baudRate || SITE_CONFIG.baudRate || 921600);
-  renderFileList(manifest.files); setBusy(false); log("Конфигурация сайта загружена.");
+  renderFileList(manifest.files);
+  setBusy(false);
+}
+
+async function loadManifest() {
+  // Сначала мгновенно используем встроенную рабочую конфигурацию.
+  applyManifest(structuredClone(DEFAULT_MANIFEST));
+  log("Рабочая конфигурация загружена локально.");
+
+  // Затем необязательно обновляем её из manifest.json. Это не блокирует COM-порт.
+  try {
+    const response = await withTimeout(
+      fetch("./firmware/manifest.json?t=" + Date.now(), { cache: "no-store" }),
+      5000,
+      "firmware/manifest.json"
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const remoteManifest = await response.json();
+    applyManifest(remoteManifest);
+    log("manifest.json обновлён.");
+  } catch (e) {
+    log(`manifest.json недоступен, используется встроенная конфигурация: ${e?.message || e}`);
+  }
 }
 function renderFileList(files, sizes = new Map()) {
   ui.fileList.innerHTML = "";
