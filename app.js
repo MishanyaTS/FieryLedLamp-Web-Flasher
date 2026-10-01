@@ -5,7 +5,7 @@ const $ = (id) => document.getElementById(id);
 const ui = {
   compatBanner: $("compatBanner"), selectPortBtn: $("selectPortBtn"), flashBtn: $("flashBtn"),
   flashBtnText: $("flashBtnText"), portDot: $("portDot"), portText: $("portText"),
-  firmwareName: $("firmwareName"), firmwareMeta: $("firmwareMeta"), progressLabel: $("progressLabel"),
+  firmwareName: $("firmwareName"), progressLabel: $("progressLabel"),
   progressPercent: $("progressPercent"), progressBar: $("progressBar"), resultBox: $("resultBox"),
   eraseAll: $("eraseAll"), cfgChip: $("cfgChip"), cfgFlash: $("cfgFlash"), cfgMode: $("cfgMode"),
   cfgFreq: $("cfgFreq"), cfgBaud: $("cfgBaud"), fileList: $("fileList"), log: $("log"),
@@ -70,7 +70,7 @@ async function loadManifest() {
   const response = await fetch("./firmware/manifest.json", { cache: "no-store" });
   if (!response.ok) throw new Error(`Не удалось загрузить firmware/manifest.json (${response.status})`);
   manifest = await response.json(); validateManifest(manifest);
-  ui.firmwareName.textContent = `${manifest.name || SITE_CONFIG.projectName}${manifest.version ? ` : ""}`;
+  ui.firmwareName.textContent = `${manifest.name || SITE_CONFIG.projectName}${manifest.version ? ` • ${manifest.version}` : ""}`;
   ui.eraseAll.checked = Boolean(manifest.eraseAll);
   ui.cfgChip.textContent = manifest.chip || "—";
   ui.cfgFlash.textContent = `${manifest.physicalFlashSize || "16MB"} • KEEP`;
