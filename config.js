@@ -4,8 +4,8 @@
 // Этот файл можно редактировать прямо на GitHub.
 
 export const SITE_CONFIG = {
-  projectName: "Прошивка",
-  pageTitle: "FieryLedLamp",
+  projectName: "FieryLedLamp",
+  pageTitle: "Прошивка",
 
   // Рабочая скорость из ESP32S3 Flash Download Tool.
   baudRate: 921600,
