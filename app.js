@@ -119,6 +119,26 @@ async function loadFirmwareFiles() {
   renderFileList(manifest.files,sizes); return files;
 }
 function createTerminal(){return{clean(){},writeLine(d){if(d!=null)log(d);},write(d){if(d!=null&&String(d).trim())log(d);}};}
+function delay(ms){return new Promise(resolve=>setTimeout(resolve,ms));}
+async function rebootEsp32S3(transport,loader){
+  log("Аппаратный перезапуск ESP32-S3 через RTS/DTR…");
+  try{
+    // В esptool-js: DTR=false => GPIO0 HIGH, RTS=true => EN LOW.
+    // Явно формируем импульс RESET, затем отпускаем EN при GPIO0=HIGH,
+    // чтобы плата загрузилась из Flash, а не осталась в bootloader.
+    await transport.setDTR(false);
+    await transport.setRTS(true);
+    await delay(150);
+    await transport.setRTS(false);
+    await transport.setDTR(false);
+    await delay(800);
+    log("Импульс RESET выполнен.");
+  }catch(e){
+    log(`RTS/DTR reset не выполнен: ${e?.message||e}. Пробую стандартный hard_reset…`);
+    await loader.after("hard_reset");
+    await delay(500);
+  }
+}
 async function safeDisconnect(t){if(!t)return;try{await t.disconnect();}catch(_){}}
 async function flash(){
   if(isBusy)return; clearResult(); setBusy(true); setProgress(0,"Подготовка прошивки…"); let transport=null;
@@ -135,7 +155,7 @@ async function flash(){
     const opts={fileArray:files.map(({data,address})=>({data,address})),flashMode:"keep",flashFreq:"keep",flashSize:"keep",eraseAll:ui.eraseAll.checked,compress:manifest.compress!==false,
       reportProgress:(i,written,total)=>{writtenByFile[i]=Math.min(written,total);const done=writtenByFile.reduce((s,n)=>s+n,0);const p=15+(totalBytes?(done/totalBytes)*83:0);setProgress(p,`Запись ${files[i]?.path||`файл ${i+1}`}… ${Math.round((written/total)*100)}%`);}};
     if(ui.eraseAll.checked)log("Включена полная очистка Flash.");
-    await loader.writeFlash(opts); setProgress(99,"Перезапуск ESP32-S3…"); await loader.after("hard_reset"); await safeDisconnect(transport);transport=null;
+    await loader.writeFlash(opts); setProgress(99,"Перезапуск ESP32-S3…"); await rebootEsp32S3(transport,loader); await safeDisconnect(transport);transport=null;
     setProgress(100,"Прошивка успешно завершена");showResult("success","Готово. ESP32-S3 прошита и перезапущена.");ui.steps.forEach(s=>{s.classList.remove("active");s.classList.add("done");});log("ГОТОВО: прошивка успешно завершена.");
   }catch(e){await safeDisconnect(transport);const msg=e?.message||String(e);setProgress(0,"Ошибка прошивки");showResult("error",msg);log(`ОШИБКА: ${msg}`);}finally{setBusy(false);}
 }
