@@ -4,7 +4,7 @@
 // Этот файл можно редактировать прямо на GitHub.
 
 export const SITE_CONFIG = {
-  projectName: "FieryLedLamp",
+  projectName: "Fiery Led Lamp",
   pageTitle: "Прошивка",
 
   // Рабочая скорость из ESP32S3 Flash Download Tool.
