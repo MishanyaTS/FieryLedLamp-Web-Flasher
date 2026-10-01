@@ -70,8 +70,7 @@ async function loadManifest() {
   const response = await fetch("./firmware/manifest.json", { cache: "no-store" });
   if (!response.ok) throw new Error(`Не удалось загрузить firmware/manifest.json (${response.status})`);
   manifest = await response.json(); validateManifest(manifest);
-  ui.firmwareName.textContent = `${manifest.name || SITE_CONFIG.projectName}${manifest.version ? ` • ${manifest.version}` : ""}`;
-  ui.firmwareMeta.textContent = `${manifest.files.length} файлов • прошивка из GitHub`;
+  ui.firmwareName.textContent = `${manifest.name || SITE_CONFIG.projectName}${manifest.version ? ` : ""}`;
   ui.eraseAll.checked = Boolean(manifest.eraseAll);
   ui.cfgChip.textContent = manifest.chip || "—";
   ui.cfgFlash.textContent = `${manifest.physicalFlashSize || "16MB"} • KEEP`;
@@ -102,7 +101,7 @@ function validateBootloader(data) {
 async function loadFirmwareFiles() {
   if (!globalThis.JSZip) throw new Error("Не удалось загрузить библиотеку JSZip.");
   if (!SITE_CONFIG.firmwareZipUrl) throw new Error("В config.js не указан firmwareZipUrl.");
-  log(`Загрузка update.zip: ${SITE_CONFIG.firmwareZipUrl}`); setProgress(3,"Загрузка update.zip с GitHub…");
+  log(`Загрузка update.zip: ${SITE_CONFIG.firmwareZipUrl}`); setProgress(3,"Загрузка update.zip…");
   const response = await fetch(SITE_CONFIG.firmwareZipUrl, {cache:"no-store"});
   if (!response.ok) throw new Error(`Не удалось загрузить update.zip (${response.status}).`);
   const zipBytes = new Uint8Array(await response.arrayBuffer());
@@ -121,7 +120,7 @@ async function loadFirmwareFiles() {
 function createTerminal(){return{clean(){},writeLine(d){if(d!=null)log(d);},write(d){if(d!=null&&String(d).trim())log(d);}};}
 function delay(ms){return new Promise(resolve=>setTimeout(resolve,ms));}
 async function rebootEsp32S3(transport,loader){
-  log("Аппаратный перезапуск ESP32-S3 через RTS/DTR…");
+  log("Аппаратный перезапуск…");
   try{
     // В esptool-js: DTR=false => GPIO0 HIGH, RTS=true => EN LOW.
     // Явно формируем импульс RESET, затем отпускаем EN при GPIO0=HIGH,
@@ -145,7 +144,7 @@ async function flash(){
   try{
     if(!selectedPort)await choosePort(); setStep(2);
     const files=await loadFirmwareFiles(); const totalBytes=files.reduce((s,f)=>s+f.data.length,0); const writtenByFile=new Array(files.length).fill(0);
-    setProgress(12,"Подключение к ESP32-S3…"); log("Подключение к ESP32-S3…");
+    setProgress(12,"Подключение к ESP32-S3…"); log("Подключение…");
     transport=new Transport(selectedPort,true);
     const loader=new ESPLoader({transport,baudrate:Number(manifest.baudRate||SITE_CONFIG.baudRate||921600),terminal:createTerminal(),debugLogging:false});
     const chipName=await loader.main(); log(`Обнаружен чип: ${chipName}`);
@@ -155,8 +154,8 @@ async function flash(){
     const opts={fileArray:files.map(({data,address})=>({data,address})),flashMode:"keep",flashFreq:"keep",flashSize:"keep",eraseAll:ui.eraseAll.checked,compress:manifest.compress!==false,
       reportProgress:(i,written,total)=>{writtenByFile[i]=Math.min(written,total);const done=writtenByFile.reduce((s,n)=>s+n,0);const p=15+(totalBytes?(done/totalBytes)*83:0);setProgress(p,`Запись ${files[i]?.path||`файл ${i+1}`}… ${Math.round((written/total)*100)}%`);}};
     if(ui.eraseAll.checked)log("Включена полная очистка Flash.");
-    await loader.writeFlash(opts); setProgress(99,"Перезапуск ESP32-S3…"); await rebootEsp32S3(transport,loader); await safeDisconnect(transport);transport=null;
-    setProgress(100,"Прошивка успешно завершена");showResult("success","Готово. ESP32-S3 прошита и перезапущена.");ui.steps.forEach(s=>{s.classList.remove("active");s.classList.add("done");});log("ГОТОВО: прошивка успешно завершена.");
+    await loader.writeFlash(opts); setProgress(99,"Перезапуск…"); await rebootEsp32S3(transport,loader); await safeDisconnect(transport);transport=null;
+    setProgress(100,"Прошивка успешно завершена");showResult("success","Готово. Плата прошита и перезапущена.");ui.steps.forEach(s=>{s.classList.remove("active");s.classList.add("done");});log("ГОТОВО: прошивка успешно завершена.");
   }catch(e){await safeDisconnect(transport);const msg=e?.message||String(e);setProgress(0,"Ошибка прошивки");showResult("error",msg);log(`ОШИБКА: ${msg}`);}finally{setBusy(false);}
 }
 function checkCompatibility(){
