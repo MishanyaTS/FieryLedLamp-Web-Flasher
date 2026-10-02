@@ -226,18 +226,27 @@ export default {
       return handleStats(request, env);
     }
 
-    const isPageView =
-      method === "GET" &&
-      (url.pathname === "/" || url.pathname === "/index.html");
-
-    const isFirmwareDownload =
-      method === "GET" &&
-      url.pathname === "/firmware/update.zip";
-
-    if (isPageView || isFirmwareDownload) {
+    if (method === "POST" && url.pathname === "/track/page") {
       try {
-        env.STATS.writeDataPoint({
-          indexes: [isFirmwareDownload ? "firmware_download" : "page_view"],
+        env.STATS?.writeDataPoint({
+          indexes: ["page_view"],
+          blobs: [
+            url.hostname,
+            "/",
+            request.cf?.country || "XX"
+          ],
+          doubles: [1]
+        });
+      } catch (_) {
+        // Ошибка статистики не должна мешать работе сайта.
+      }
+      return new Response(null, { status: 204 });
+    }
+
+    if (method === "GET" && url.pathname === "/firmware/update.zip") {
+      try {
+        env.STATS?.writeDataPoint({
+          indexes: ["firmware_download"],
           blobs: [
             url.hostname,
             url.pathname,
@@ -246,8 +255,9 @@ export default {
           doubles: [1]
         });
       } catch (_) {
-        // Ошибка статистики не должна мешать работе сайта или прошивке.
+        // Ошибка статистики не должна мешать загрузке прошивки.
       }
+      return env.ASSETS.fetch(request);
     }
 
     return env.ASSETS.fetch(request);
