@@ -19,5 +19,8 @@
       "binding": "STATS",
       "dataset": "fieryledlamp_web_stats"
     }
-  ]
+  ],
+  "vars": {
+    "CF_ACCOUNT_ID": "4171d70f701f9e20cafc6fa8bc223ddb"
+  }
 }
