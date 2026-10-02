@@ -46,6 +46,14 @@
         </div>
       </div>
 
+      <label class="check-row preserve-settings">
+        <input type="checkbox" id="saveSettings" checked />
+        <span>
+          <b>Сохранить настройки перед прошивкой</b>
+          <small>Настройки, Wi‑Fi и параметры эффектов будут сохранены в резервный раздел и восстановлены после прошивки.</small>
+        </span>
+      </label>
+
       <button class="btn flash" id="flashBtn" type="button" disabled>
         <span class="flash-icon">⬇</span>
         <span id="flashBtnText">Загрузить прошивку</span>
@@ -93,6 +101,9 @@
     </section>
   </main>
 
+  <script>
+    fetch("/track/page", { method: "POST", cache: "no-store", keepalive: true }).catch(() => {});
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <script type="module" src="./app.js"></script>
 </body>
