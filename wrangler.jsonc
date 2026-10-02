@@ -7,7 +7,12 @@
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
-    "run_worker_first": true
+    "run_worker_first": [
+      "/admin/stats",
+      "/admin/stats/",
+      "/track/*",
+      "/firmware/update.zip"
+    ]
   },
   "analytics_engine_datasets": [
     {
