@@ -1,95 +1,36 @@
 const DATASET = "fieryledlamp_web_stats";
 
-let jwksCache = null;
-let jwksCacheAt = 0;
-
-function base64UrlToBytes(value) {
-  const base64 = value.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - (value.length % 4)) % 4);
-  const binary = atob(base64);
-  return Uint8Array.from(binary, c => c.charCodeAt(0));
-}
-
-function decodeJwtPart(value) {
-  return JSON.parse(new TextDecoder().decode(base64UrlToBytes(value)));
-}
-
-function normalizeUrl(value) {
-  return String(value || "").replace(/\/$/, "");
-}
-
-async function getAccessJwks(teamDomain, forceRefresh = false) {
-  const now = Date.now();
-  if (!forceRefresh && jwksCache && now - jwksCacheAt < 60 * 60 * 1000) {
-    return jwksCache;
-  }
-
-  const response = await fetch(`${normalizeUrl(teamDomain)}/cdn-cgi/access/certs`);
-  if (!response.ok) throw new Error(`Не удалось загрузить ключи Access: HTTP ${response.status}`);
-
-  const data = await response.json();
-  if (!Array.isArray(data.keys)) throw new Error("Cloudflare Access не вернул JWKS keys.");
-
-  jwksCache = data.keys;
-  jwksCacheAt = now;
-  return jwksCache;
-}
-
-async function verifyAccessJwt(request, env) {
-  if (!env.TEAM_DOMAIN || !env.POLICY_AUD) {
-    throw new Error("Не настроены TEAM_DOMAIN и POLICY_AUD.");
-  }
-
-  const token = request.headers.get("cf-access-jwt-assertion");
-  if (!token) throw new Error("Требуется вход через Cloudflare Access.");
-
-  const parts = token.split(".");
-  if (parts.length !== 3) throw new Error("Некорректный Access JWT.");
-
-  const header = decodeJwtPart(parts[0]);
-  const payload = decodeJwtPart(parts[1]);
-
-  if (header.alg !== "RS256" || !header.kid) throw new Error("Неподдерживаемый Access JWT.");
-
-  let keys = await getAccessJwks(env.TEAM_DOMAIN);
-  let jwk = keys.find(k => k.kid === header.kid);
-  if (!jwk) {
-    keys = await getAccessJwks(env.TEAM_DOMAIN, true);
-    jwk = keys.find(k => k.kid === header.kid);
-  }
-  if (!jwk) throw new Error("Ключ подписи Access JWT не найден.");
-
-  const key = await crypto.subtle.importKey(
-    "jwk",
-    jwk,
-    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
-    false,
-    ["verify"]
-  );
-
-  const signed = new TextEncoder().encode(`${parts[0]}.${parts[1]}`);
-  const signature = base64UrlToBytes(parts[2]);
-  const valid = await crypto.subtle.verify("RSASSA-PKCS1-v1_5", key, signature, signed);
-  if (!valid) throw new Error("Подпись Access JWT недействительна.");
-
-  const now = Math.floor(Date.now() / 1000);
-  if (payload.exp && now >= Number(payload.exp)) throw new Error("Сессия Cloudflare Access истекла.");
-  if (payload.nbf && now < Number(payload.nbf)) throw new Error("Access JWT ещё не активен.");
-
-  const issuer = normalizeUrl(payload.iss);
-  const expectedIssuer = normalizeUrl(env.TEAM_DOMAIN);
-  if (issuer !== expectedIssuer) throw new Error("Неверный issuer Access JWT.");
-
-  const aud = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
-  if (!aud.includes(env.POLICY_AUD)) throw new Error("Неверный audience Access JWT.");
-
-  if (env.ADMIN_EMAIL) {
-    const email = String(payload.email || "").toLowerCase();
-    if (email !== String(env.ADMIN_EMAIL).toLowerCase()) {
-      throw new Error("Эта учётная запись не имеет доступа к статистике.");
+function unauthorized(message = "Требуется авторизация.") {
+  return new Response(message, {
+    status: 401,
+    headers: {
+      "Content-Type": "text/plain; charset=utf-8",
+      "Cache-Control": "no-store",
+      "WWW-Authenticate": 'Basic realm="FieryLedLamp Stats", charset="UTF-8"'
     }
+  });
+}
+
+function verifyAdmin(request, env) {
+  if (!env.ADMIN_USER || !env.ADMIN_PASSWORD) {
+    throw new Error("Не настроены ADMIN_USER и ADMIN_PASSWORD.");
   }
 
-  return payload;
+  const auth = request.headers.get("Authorization") || "";
+  if (!auth.startsWith("Basic ")) return false;
+
+  try {
+    const decoded = atob(auth.slice(6));
+    const separator = decoded.indexOf(":");
+    if (separator < 0) return false;
+
+    const user = decoded.slice(0, separator);
+    const password = decoded.slice(separator + 1);
+
+    return user === env.ADMIN_USER && password === env.ADMIN_PASSWORD;
+  } catch (_) {
+    return false;
+  }
 }
 
 async function queryAnalytics(env, sql) {
@@ -132,7 +73,7 @@ function escapeHtml(value) {
     .replace(/'/g, "&#039;");
 }
 
-function statsHtml({ identity, d1, d7, d30, all, countries }) {
+function statsHtml({ d1, d7, d30, all, countries }) {
   const countryRows = (countries?.data || [])
     .map(row => `<tr><td>${escapeHtml(row.country || "XX")}</td><td>${Number(row.total) || 0}</td></tr>`)
     .join("");
@@ -152,7 +93,6 @@ function statsHtml({ identity, d1, d7, d30, all, countries }) {
     h1{margin:0 0 6px;font-size:30px}
     .muted{color:#9ca6b7}
     .top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:22px;flex-wrap:wrap}
-    .user{font-size:13px;color:#9ca6b7}
     .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
     .card{background:#171b24;border:1px solid #2b3240;border-radius:16px;padding:18px}
     .card h2{font-size:15px;margin:0 0 14px;color:#cdd4df;font-weight:600}
@@ -176,10 +116,7 @@ function statsHtml({ identity, d1, d7, d30, all, countries }) {
       <h1>Статистика FieryLedLamp</h1>
       <div class="muted">Приватная статистика Web Flasher</div>
     </div>
-    <div>
-      <a class="refresh" href="/admin/stats">Обновить</a>
-      <div class="user">${escapeHtml(identity?.email || "Cloudflare Access")}</div>
-    </div>
+    <a class="refresh" href="/admin/stats">Обновить</a>
   </div>
 
   <div class="grid">
@@ -226,7 +163,7 @@ function statsHtml({ identity, d1, d7, d30, all, countries }) {
 
   <div class="note">
     «Посещения» — открытия главной страницы. «Загрузки прошивки» — запросы файла firmware/update.zip.
-    Страница не индексируется поисковиками и должна быть защищена Cloudflare Access.
+    Доступ к этой странице защищён логином и паролем.
   </div>
 </main>
 </body>
@@ -234,12 +171,11 @@ function statsHtml({ identity, d1, d7, d30, all, countries }) {
 }
 
 async function handleStats(request, env) {
-  let identity;
   try {
-    identity = await verifyAccessJwt(request, env);
+    if (!verifyAdmin(request, env)) return unauthorized();
   } catch (error) {
-    return new Response(error?.message || "Доступ запрещён.", {
-      status: 403,
+    return new Response(error?.message || "Статистика не настроена.", {
+      status: 503,
       headers: {
         "Content-Type": "text/plain; charset=utf-8",
         "Cache-Control": "no-store"
@@ -258,7 +194,6 @@ async function handleStats(request, env) {
     ]);
 
     return new Response(statsHtml({
-      identity,
       d1: totalsByEvent(q1),
       d7: totalsByEvent(q7),
       d30: totalsByEvent(q30),
