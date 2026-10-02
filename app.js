@@ -7,7 +7,7 @@ const ui = {
   flashBtnText: $("flashBtnText"), portDot: $("portDot"), portText: $("portText"),
   firmwareName: $("firmwareName"), progressLabel: $("progressLabel"),
   progressPercent: $("progressPercent"), progressBar: $("progressBar"), resultBox: $("resultBox"),
-  eraseAll: $("eraseAll"), cfgChip: $("cfgChip"), cfgFlash: $("cfgFlash"), cfgMode: $("cfgMode"),
+  eraseAll: $("eraseAll"), saveSettings: $("saveSettings"), cfgChip: $("cfgChip"), cfgFlash: $("cfgFlash"), cfgMode: $("cfgMode"),
   cfgFreq: $("cfgFreq"), cfgBaud: $("cfgBaud"), fileList: $("fileList"), log: $("log"),
   clearLogBtn: $("clearLogBtn"), steps: [$("step1"), $("step2"), $("step3")],
 };
@@ -42,8 +42,16 @@ function fmtAddress(value) {
   const n = typeof value === "string" ? Number.parseInt(value, 0) : Number(value);
   return `0x${n.toString(16).toUpperCase().padStart(8, "0")}`;
 }
+function syncEraseAllState() {
+  const preserve = Boolean(ui.saveSettings?.checked);
+  if (preserve) ui.eraseAll.checked = false;
+  ui.eraseAll.disabled = isBusy || preserve;
+}
 function setBusy(busy) {
-  isBusy = busy; ui.selectPortBtn.disabled = busy; ui.eraseAll.disabled = busy;
+  isBusy = busy;
+  ui.selectPortBtn.disabled = busy;
+  if (ui.saveSettings) ui.saveSettings.disabled = busy;
+  syncEraseAllState();
   ui.flashBtn.disabled = busy || !manifest || !("serial" in navigator);
   ui.flashBtnText.textContent = busy ? "Прошивка…" : "Загрузить прошивку";
 }
@@ -119,6 +127,104 @@ async function loadFirmwareFiles() {
 }
 function createTerminal(){return{clean(){},writeLine(d){if(d!=null)log(d);},write(d){if(d!=null&&String(d).trim())log(d);}};}
 function delay(ms){return new Promise(resolve=>setTimeout(resolve,ms));}
+async function backupSettingsBeforeFlash() {
+  if (!selectedPort) throw new Error("COM-порт не выбран.");
+
+  const baud = Number(manifest?.settingsBackupBaudRate || 115200);
+  let reader = null;
+  let opened = false;
+  let timeoutId = null;
+  let timedOut = false;
+
+  log(`Сохранение настроек перед прошивкой через USB (${baud} бод)…`);
+  setProgress(12, "Сохранение настроек…");
+
+  try {
+    await selectedPort.open({ baudRate: baud });
+    opened = true;
+
+    try {
+      await selectedPort.setSignals({ dataTerminalReady: false, requestToSend: false });
+    } catch (_) {}
+
+    await delay(350);
+
+    const writer = selectedPort.writable.getWriter();
+    try {
+      await writer.write(new TextEncoder().encode("WEBFLASH_BACKUP\n"));
+    } finally {
+      writer.releaseLock();
+    }
+
+    reader = selectedPort.readable.getReader();
+    const decoder = new TextDecoder();
+    let received = "";
+    let result = null;
+
+    timeoutId = setTimeout(() => {
+      timedOut = true;
+      reader?.cancel().catch(() => {});
+    }, 20000);
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      if (!value) continue;
+
+      received += decoder.decode(value, { stream: true });
+
+      if (received.includes("WEBFLASH_BACKUP_START")) {
+        setProgress(13, "Архивация настроек…");
+      }
+
+      if (received.includes("WEBFLASH_BACKUP_OK")) {
+        result = { ok: true };
+        break;
+      }
+
+      const errorPos = received.indexOf("WEBFLASH_BACKUP_ERROR:");
+      if (errorPos >= 0) {
+        const rest = received.slice(errorPos + "WEBFLASH_BACKUP_ERROR:".length);
+        const end = rest.search(/[\r\n]/);
+        result = { ok: false, error: (end >= 0 ? rest.slice(0, end) : rest).trim() || "unknown" };
+        break;
+      }
+
+      if (received.length > 8192) received = received.slice(-4096);
+    }
+
+    if (timeoutId) clearTimeout(timeoutId);
+
+    if (result?.ok) {
+      log("Настройки сохранены в резервный раздел лампы.");
+      setProgress(14, "Настройки сохранены");
+      return true;
+    }
+
+    if (result && !result.ok) {
+      throw new Error(`Лампа не смогла сохранить настройки: ${result.error}`);
+    }
+
+    if (timedOut) {
+      throw new Error(
+        "Текущая прошивка не поддерживает автоматическое сохранение настроек через USB или не ответила за 20 секунд. " +
+        "Для прошивки без сохранения снимите галочку «Сохранить настройки перед прошивкой»."
+      );
+    }
+
+    throw new Error("Соединение закрылось до завершения сохранения настроек.");
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+    if (reader) {
+      try { await reader.cancel(); } catch (_) {}
+      try { reader.releaseLock(); } catch (_) {}
+    }
+    if (opened) {
+      try { await selectedPort.close(); } catch (_) {}
+    }
+    await delay(350);
+  }
+}
 async function rebootEsp32S3(transport,loader){
   log("Аппаратный перезапуск…");
   try{
@@ -144,7 +250,15 @@ async function flash(){
   try{
     if(!selectedPort)await choosePort(); setStep(2);
     const files=await loadFirmwareFiles(); const totalBytes=files.reduce((s,f)=>s+f.data.length,0); const writtenByFile=new Array(files.length).fill(0);
-    setProgress(12,"Подключение к ESP32-S3…"); log("Подключение…");
+
+    if(ui.saveSettings?.checked){
+      if(ui.eraseAll.checked) throw new Error("Полная очистка Flash несовместима с сохранением настроек.");
+      await backupSettingsBeforeFlash();
+    } else {
+      log("Сохранение настроек перед прошивкой отключено.");
+    }
+
+    setProgress(15,"Подключение к ESP32-S3…"); log("Подключение…");
     transport=new Transport(selectedPort,true);
     const loader=new ESPLoader({transport,baudrate:Number(manifest.baudRate||SITE_CONFIG.baudRate||921600),terminal:createTerminal(),debugLogging:false});
     const chipName=await loader.main(); log(`Обнаружен чип: ${chipName}`);
@@ -164,5 +278,6 @@ function checkCompatibility(){
 }
 ui.selectPortBtn.addEventListener("click",async()=>{if(isBusy)return;clearResult();try{await choosePort();ui.flashBtn.disabled=!manifest;}catch(e){if(e?.name==="NotFoundError"){log("Выбор COM-порта отменён.");return;}showResult("error",e?.message||String(e));log(`Ошибка выбора порта: ${e?.message||e}`);}});
 ui.flashBtn.addEventListener("click",flash);ui.clearLogBtn.addEventListener("click",()=>{ui.log.textContent="";});
+if(ui.saveSettings) ui.saveSettings.addEventListener("change",syncEraseAllState);
 if("serial"in navigator)navigator.serial.addEventListener("disconnect",e=>{if(selectedPort&&e.target===selectedPort&&!isBusy){ui.portDot.classList.remove("good");ui.portText.textContent="Порт отключён";setStep(1);log("COM-порт отключён.");}});
 (async function init(){setStep(0);checkCompatibility();try{await loadManifest();}catch(e){ui.firmwareName.textContent="Ошибка конфигурации";showResult("error",e?.message||String(e));log(`ОШИБКА: ${e?.message||e}`);}})();
