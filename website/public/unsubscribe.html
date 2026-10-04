@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b0d12">
+  <meta name="robots" content="noindex">
+  <title>Отписка от уведомлений — FieryLedLamp</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header class="site-header"><div class="shell nav-wrap">
+  <a class="brand" href="/"><span class="brand-mark">🔥</span><span>FieryLedLamp</span></a>
+</div></header>
+<main>
+  <section class="page-hero shell">
+    <span class="eyebrow">УВЕДОМЛЕНИЯ</span>
+    <h1>Отписка от обновлений</h1>
+    <p id="unsubscribeText">Проверяем ссылку…</p>
+    <div style="margin-top:24px">
+      <button id="unsubscribeButton" class="btn primary" type="button" hidden>Отключить уведомления</button>
+      <a class="btn ghost" href="/">На главную</a>
+    </div>
+  </section>
+</main>
+<script>
+(() => {
+  const params = new URLSearchParams(location.search);
+  const token = params.get("token") || "";
+  const text = document.querySelector("#unsubscribeText");
+  const button = document.querySelector("#unsubscribeButton");
+
+  if (!/^[a-f0-9]{48}$/.test(token)) {
+    text.textContent = "Ссылка отписки некорректна.";
+    return;
+  }
+
+  text.textContent = "Нажмите кнопку, чтобы отключить все уведомления FieryLedLamp для этой регистрации.";
+  button.hidden = false;
+
+  button.addEventListener("click", async () => {
+    button.disabled = true;
+    button.textContent = "Отключение…";
+    try {
+      const response = await fetch("/api/unsubscribe", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ token })
+      });
+      const data = await response.json();
+      if (!response.ok || !data.ok) throw new Error(data.message || "Ошибка");
+      text.textContent = "Уведомления отключены.";
+      button.hidden = true;
+    } catch (error) {
+      text.textContent = error.message || "Не удалось отключить уведомления.";
+      button.disabled = false;
+      button.textContent = "Попробовать ещё раз";
+    }
+  });
+})();
+</script>
+</body>
+</html>
