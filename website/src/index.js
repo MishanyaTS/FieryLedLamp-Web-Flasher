@@ -461,7 +461,7 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    if ((url.pathname === "/admin/notifications" || url.pathname === "/admin/notifications/") && request.method === "GET") {
+    if ((url.pathname === "/admin/notifications" || url.pathname === "/admin/notifications/" || url.pathname === "/admin-notifications.html") && request.method === "GET") {
       if (!basicAuthOk(request, env)) return adminUnauthorized();
       const assetUrl = new URL("/admin-notifications.html", request.url);
       return env.ASSETS.fetch(new Request(assetUrl, request));
