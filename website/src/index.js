@@ -420,9 +420,30 @@ async function notifySubscribers(request, env) {
 
 async function providerStatus(request, env) {
   if (!basicAuthOk(request, env)) return adminUnauthorized();
+
+  let subscribers = null;
+  if (env.DB) {
+    await ensureSchema(env.DB);
+    const row = await env.DB.prepare(`
+      SELECT
+        COUNT(*) AS active,
+        SUM(CASE WHEN notify_email = 1 THEN 1 ELSE 0 END) AS email,
+        SUM(CASE WHEN notify_sms = 1 THEN 1 ELSE 0 END) AS sms
+      FROM subscribers
+      WHERE active = 1
+    `).first();
+
+    subscribers = {
+      active: Number(row?.active || 0),
+      email: Number(row?.email || 0),
+      sms: Number(row?.sms || 0)
+    };
+  }
+
   return json({
     ok: true,
     database: Boolean(env.DB),
+    subscribers,
     email: {
       provider: "Resend",
       configured: Boolean(env.RESEND_API_KEY),
@@ -439,6 +460,12 @@ async function providerStatus(request, env) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+
+    if ((url.pathname === "/admin/notifications" || url.pathname === "/admin/notifications/") && request.method === "GET") {
+      if (!basicAuthOk(request, env)) return adminUnauthorized();
+      const assetUrl = new URL("/admin-notifications.html", request.url);
+      return env.ASSETS.fetch(new Request(assetUrl, request));
+    }
 
     if (url.pathname === "/api/register" && request.method === "POST") {
       return register(request, env);
