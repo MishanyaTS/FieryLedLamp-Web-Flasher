@@ -46,7 +46,7 @@ POST /api/admin/notify
 {
   "version": "v7.8.2",
   "summary": "Краткое описание обновления",
-  "url": "https://fieryledlamp.ru/firmware/",
+  "url": "https://fieryledlamp.ru/firmware.html",
   "email": true,
   "sms": true,
   "dryRun": false
