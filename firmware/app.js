@@ -75,7 +75,7 @@ function validateManifest(m) {
   }
 }
 async function loadManifest() {
-  const response = await fetch("./firmware/manifest.json", { cache: "no-store" });
+  const response = await fetch("./manifest.json", { cache: "no-store" });
   if (!response.ok) throw new Error(`Не удалось загрузить firmware/manifest.json (${response.status})`);
   manifest = await response.json(); validateManifest(manifest);
   ui.firmwareName.textContent = manifest.name || SITE_CONFIG.projectName;

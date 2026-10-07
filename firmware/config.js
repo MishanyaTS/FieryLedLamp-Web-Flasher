@@ -10,5 +10,5 @@ export const SITE_CONFIG = {
   // Рабочая скорость из ESP32S3 Flash Download Tool.
   baudRate: 921600,
 
-  firmwareZipUrl: "./firmware/update.zip"
+  firmwareZipUrl: "./update.zip"
 };

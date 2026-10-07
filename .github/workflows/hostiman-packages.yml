@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Build packages
         shell: bash
@@ -24,7 +24,10 @@ jobs:
             cd website/public
             zip -r ../../deploy/fieryledlamp-site.zip .
           )
-          zip -r deploy/fieryledlamp-firmware.zip index.html style.css app.js config.js firmware
+          (
+            cd firmware
+            zip -r ../deploy/fieryledlamp-firmware.zip .
+          )
 
       - name: Upload packages
         uses: actions/upload-artifact@v4

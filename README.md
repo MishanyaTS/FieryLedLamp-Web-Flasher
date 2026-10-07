@@ -8,11 +8,11 @@ https://mishanyats.github.io/FieryLedLamp-Web-Flasher/
 
 ## Что где менять
 
-- `config.js` — название сайта, подписи, скорость 921600 и ссылка на пакет прошивки.
+- `firmware/config.js` — название сайта, подписи, скорость 921600 и ссылка на пакет прошивки.
 - `firmware/manifest.json` — имена BIN-файлов и адреса записи.
-- `index.html` — структура страницы и тексты.
-- `style.css` — внешний вид.
-- `app.js` — логика Web Serial и esptool-js. В рабочей конфигурации используется KEEP / KEEP / KEEP, аналог DoNotChgBin=ON.
+- `firmware/index.html` — структура страницы и тексты.
+- `firmware/style.css` — внешний вид.
+- `firmware/app.js` — логика Web Serial и esptool-js. В рабочей конфигурации используется KEEP / KEEP / KEEP, аналог DoNotChgBin=ON.
 - `.nojekyll` — служебный файл GitHub Pages, не удалять.
 
 ## Откуда берётся прошивка
@@ -25,7 +25,7 @@ https://mishanyats.github.io/FieryLedLamp-Web-Flasher/
 
 Репозиторий `MishanyaTS/FieryLedLamp` для сайта не изменялся: сайт только читает уже существующий `FieryLedLamp/update.zip`.
 
-Если позже захотите полностью отделить прошивку от основного репозитория, можно положить `update.zip` в этот репозиторий и заменить `firmwareZipUrl` в `config.js` на `./firmware/update.zip`.
+Если позже захотите полностью отделить прошивку от основного репозитория, можно положить `update.zip` в этот репозиторий и заменить `firmwareZipUrl` в `firmware/config.js` на `./update.zip`.
 
 ## Текущие адреса
 
@@ -36,3 +36,7 @@ https://mishanyats.github.io/FieryLedLamp-Web-Flasher/
 - `littlefs.bin` → `0x00C90000`
 
 Адреса хранятся в `firmware/manifest.json`.
+
+## Структура Web Flasher
+
+Все файлы страницы прошивки теперь находятся в папке `firmware/`. Любое изменение внутри этой папки автоматически публикуется на `firmware.fieryledlamp.ru` через GitHub Actions.
