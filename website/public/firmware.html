@@ -4,9 +4,105 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="theme-color" content="#10131a" />
-  <base href="/firmware-assets/" />
   <title>Прошивка Fiery Led Lamp</title>
-  <link rel="stylesheet" href="./style.css" />
+  <style>
+:root {
+  color-scheme: dark;
+  --bg: #0b0d12;
+  --card: #141822;
+  --text: #f4f7fb;
+  --muted: #9ba6b6;
+  --line: #2a3140;
+  --accent: #ff6b2c;
+  --accent2: #ff9a3c;
+  --good: #43d17a;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; background: radial-gradient(circle at 50% -20%, #222a3b 0, var(--bg) 42%); color: var(--text); font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif; }
+body { padding: 34px 18px 60px; }
+button, input { font: inherit; }
+.page { width: min(760px, 100%); margin: 0 auto; }
+.hero { padding: 18px 4px 24px; }
+.brand { display: flex; gap: 16px; align-items: center; }
+.logo { width: 62px; height: 62px; display: grid; place-items: center; border-radius: 18px; font-size: 34px; background: linear-gradient(145deg, #2a2020, #171922); border: 1px solid #3d302d; box-shadow: 0 12px 34px #0008; }
+.eyebrow { color: var(--accent2); font-weight: 800; letter-spacing: .19em; font-size: 12px; }
+h1 { margin: 4px 0 5px; font-size: clamp(27px, 4vw, 40px); line-height: 1.08; }
+.subtitle { margin: 0; color: var(--muted); font-size: 16px; }
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 24px; }
+.step { display: flex; gap: 10px; align-items: flex-start; padding: 12px; border: 1px solid var(--line); background: #10141d; border-radius: 14px; color: #7f8998; transition: .2s; }
+.step > span { flex: 0 0 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: #242a36; color: #a9b1bd; font-weight: 800; }
+.step b { display: block; font-size: 13px; color: #b7c0cd; }
+.step small { display: block; color: #707b8b; line-height: 1.3; margin-top: 2px; }
+.step.active { border-color: #734124; background: #1a1716; }
+.step.active > span { background: var(--accent); color: white; }
+.step.active b { color: white; }
+.step.done { border-color: #245b3b; background: #101b16; }
+.step.done > span { background: var(--good); color: #07150c; }
+.card { background: linear-gradient(180deg, rgba(27,32,45,.96), rgba(18,22,31,.98)); border: 1px solid var(--line); border-radius: 20px; box-shadow: 0 20px 55px #0005; margin: 14px 0; }
+.primary-card { padding: 20px; }
+.port-row, .firmware-summary { display: flex; justify-content: space-between; gap: 16px; align-items: center; }
+.port-state { display: flex; align-items: center; gap: 11px; }
+.status-dot { width: 12px; height: 12px; border-radius: 50%; background: #596273; box-shadow: 0 0 0 5px #5962731e; }
+.status-dot.good { background: var(--good); box-shadow: 0 0 0 5px #43d17a20, 0 0 16px #43d17a55; }
+.label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+.value { margin-top: 3px; font-weight: 750; }
+.btn { border: 0; border-radius: 14px; cursor: pointer; transition: transform .14s ease, filter .14s ease, opacity .14s ease; }
+.btn:active:not(:disabled) { transform: translateY(1px) scale(.995); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.secondary { padding: 11px 16px; color: white; background: #252c39; border: 1px solid #343e50; }
+.btn.secondary:hover:not(:disabled) { filter: brightness(1.12); }
+.firmware-summary { margin-top: 18px; padding: 14px 0; border-top: 1px solid var(--line); }
+.firmware-meta { text-align: right; color: var(--muted); font-size: 13px; }
+.btn.flash { width: 100%; padding: 16px 20px; margin-top: 8px; font-weight: 850; color: white; font-size: 17px; background: linear-gradient(135deg, var(--accent), #ff8c2c); box-shadow: 0 12px 28px #ff6b2c28; }
+.btn.flash:hover:not(:disabled) { filter: brightness(1.08); }
+.flash-icon { display: inline-block; margin-right: 8px; font-size: 19px; }
+.progress-wrap { margin-top: 18px; }
+.progress-head { display: flex; justify-content: space-between; color: var(--muted); font-size: 13px; margin-bottom: 8px; }
+.progress-track { height: 9px; border-radius: 99px; background: #272d38; overflow: hidden; }
+.progress-bar { height: 100%; width: 0%; border-radius: inherit; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width .12s linear; }
+.result { margin-top: 16px; padding: 13px 14px; border-radius: 12px; font-size: 14px; border: 1px solid transparent; }
+.result.success { display: block; background: #0f2518; border-color: #235b39; color: #a9f6c6; }
+.result.error { display: block; background: #291216; border-color: #6b2830; color: #ffb4bb; }
+.banner { margin-top: 18px; padding: 12px 14px; border-radius: 12px; background: #2a1716; border: 1px solid #6f322d; color: #ffc0b8; }
+.hidden { display: none !important; }
+details.card > summary { cursor: pointer; padding: 17px 20px; font-weight: 800; list-style: none; }
+details.card > summary::-webkit-details-marker { display:none; }
+details.card > summary::after { content: "▾"; float: right; color: var(--muted); }
+details[open].card > summary::after { transform: rotate(180deg); }
+.advanced-body { padding: 0 20px 20px; border-top: 1px solid var(--line); }
+.check-row { display: flex; gap: 11px; align-items: flex-start; margin: 16px 0; }
+.check-row input { margin-top: 4px; accent-color: var(--accent); }
+.check-row b, .check-row small { display: block; }
+.check-row small { color: var(--muted); margin-top: 4px; }
+.info-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.info-grid div { padding: 10px; border-radius: 10px; background: #10141c; border: 1px solid #242b38; }
+.info-grid span { display: block; color: var(--muted); font-size: 11px; }
+.info-grid b { display: block; margin-top: 3px; font-size: 13px; }
+.file-list { margin-top: 14px; border: 1px solid #252d3a; border-radius: 12px; overflow: hidden; }
+.file-row { display: grid; grid-template-columns: 100px 1fr auto; gap: 10px; align-items: center; padding: 10px 12px; border-bottom: 1px solid #252d3a; font-size: 13px; }
+.file-row:last-child { border-bottom: 0; }
+.file-row code { color: #ffae72; }
+.file-row .fname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-row .fsize { color: var(--muted); }
+.log-toolbar { display: flex; justify-content: flex-end; padding: 8px 16px 0; border-top: 1px solid var(--line); }
+.link-btn { border: 0; background: transparent; color: #9db7ff; cursor: pointer; }
+pre { margin: 0; padding: 14px 16px 18px; max-height: 300px; overflow: auto; color: #b8c2d1; font: 12px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace; white-space: pre-wrap; word-break: break-word; }
+.help { padding: 12px 6px 0; color: #d8dee9; }
+.help h2 { font-size: 17px; margin-bottom: 6px; }
+.help p { color: #b2bbc8; line-height: 1.55; }
+.help .muted { color: #7f8998; font-size: 13px; }
+@media (max-width: 680px) {
+  body { padding: 20px 12px 40px; }
+  .steps { grid-template-columns: 1fr; }
+  .port-row { align-items: stretch; flex-direction: column; }
+  .btn.secondary { width: 100%; }
+  .firmware-summary { align-items: flex-start; }
+  .info-grid { grid-template-columns: repeat(2, 1fr); }
+  .file-row { grid-template-columns: 82px 1fr; }
+  .file-row .fsize { grid-column: 2; }
+}
+
+</style>
 </head>
 <body>
   <main class="page">
@@ -101,11 +197,297 @@
       <p class="muted">Web Serial работает только в поддерживаемом браузере и в безопасном контексте: сайт должен быть открыт по HTTPS либо через localhost.</p>
     </section>
   </main>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script type="module">
+import { ESPLoader, Transport } from "https://unpkg.com/esptool-js@0.6.1/bundle.js";
+const SITE_CONFIG = {
+  projectName: "Fiery Led Lamp",
+  pageTitle: "Прошивка",
+  baudRate: 921600,
+  firmwareZipUrl: "/firmware/update.zip"
+};
 
-  <script>
-    fetch("/track/page", { method: "POST", cache: "no-store", keepalive: true }).catch(() => {});
-  </script>
-  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-  <script type="module" src="./app.js"></script>
+const $ = (id) => document.getElementById(id);
+const ui = {
+  compatBanner: $("compatBanner"), selectPortBtn: $("selectPortBtn"), flashBtn: $("flashBtn"),
+  flashBtnText: $("flashBtnText"), portDot: $("portDot"), portText: $("portText"),
+  firmwareName: $("firmwareName"), progressLabel: $("progressLabel"),
+  progressPercent: $("progressPercent"), progressBar: $("progressBar"), resultBox: $("resultBox"),
+  eraseAll: $("eraseAll"), saveSettings: $("saveSettings"), cfgChip: $("cfgChip"), cfgFlash: $("cfgFlash"), cfgMode: $("cfgMode"),
+  cfgFreq: $("cfgFreq"), cfgBaud: $("cfgBaud"), fileList: $("fileList"), log: $("log"),
+  clearLogBtn: $("clearLogBtn"), steps: [$("step1"), $("step2"), $("step3")],
+};
+
+let manifest = null;
+let selectedPort = null;
+let isBusy = false;
+
+function stamp() { return new Date().toLocaleTimeString("ru-RU", { hour12: false }); }
+function log(message = "") {
+  const line = String(message).replace(/\r/g, "");
+  ui.log.textContent += `[${stamp()}] ${line}${line.endsWith("\n") ? "" : "\n"}`;
+  ui.log.scrollTop = ui.log.scrollHeight;
+}
+function setProgress(percent, label) {
+  const p = Math.max(0, Math.min(100, Number(percent) || 0));
+  ui.progressBar.style.width = `${p}%`; ui.progressPercent.textContent = `${Math.round(p)}%`;
+  if (label) ui.progressLabel.textContent = label;
+}
+function setStep(index) {
+  ui.steps.forEach((step, i) => { step.classList.toggle("active", i === index); step.classList.toggle("done", i < index); });
+}
+function showResult(type, text) { ui.resultBox.className = `result ${type}`; ui.resultBox.textContent = text; }
+function clearResult() { ui.resultBox.className = "result hidden"; ui.resultBox.textContent = ""; }
+function fmtBytes(bytes) {
+  if (!Number.isFinite(bytes)) return "—";
+  if (bytes < 1024) return `${bytes} Б`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} КБ`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} МБ`;
+}
+function fmtAddress(value) {
+  const n = typeof value === "string" ? Number.parseInt(value, 0) : Number(value);
+  return `0x${n.toString(16).toUpperCase().padStart(8, "0")}`;
+}
+function syncEraseAllState() {
+  const preserve = Boolean(ui.saveSettings?.checked);
+  if (preserve) ui.eraseAll.checked = false;
+  ui.eraseAll.disabled = isBusy || preserve;
+}
+function setBusy(busy) {
+  isBusy = busy;
+  ui.selectPortBtn.disabled = busy;
+  if (ui.saveSettings) ui.saveSettings.disabled = busy;
+  syncEraseAllState();
+  ui.flashBtn.disabled = busy || !manifest || !("serial" in navigator);
+  ui.flashBtnText.textContent = busy ? "Прошивка…" : "Загрузить прошивку";
+}
+function portDescription(port) {
+  const info = port.getInfo?.() || {}; const parts = [];
+  if (info.usbVendorId != null) parts.push(`VID ${info.usbVendorId.toString(16).toUpperCase().padStart(4, "0")}`);
+  if (info.usbProductId != null) parts.push(`PID ${info.usbProductId.toString(16).toUpperCase().padStart(4, "0")}`);
+  return parts.length ? `Выбран (${parts.join(":")})` : "Порт выбран";
+}
+async function choosePort() {
+  if (!("serial" in navigator)) throw new Error("Этот браузер не поддерживает Web Serial.");
+  selectedPort = await navigator.serial.requestPort();
+  ui.portText.textContent = portDescription(selectedPort); ui.portDot.classList.add("good"); setStep(2);
+  log("COM-порт выбран пользователем."); return selectedPort;
+}
+function validateManifest(m) {
+  if (!m || !Array.isArray(m.files) || !m.files.length) throw new Error("В firmware/manifest.json нет списка файлов.");
+  for (const f of m.files) {
+    if (!f.name || f.address == null) throw new Error("Для каждого файла нужны name и address.");
+    if (!Number.isFinite(Number.parseInt(f.address, 0))) throw new Error(`Некорректный адрес ${f.name}`);
+  }
+}
+async function loadManifest() {
+  const response = await fetch("/firmware/manifest.json", { cache: "no-store" });
+  if (!response.ok) throw new Error(`Не удалось загрузить firmware/manifest.json (${response.status})`);
+  manifest = await response.json(); validateManifest(manifest);
+  ui.firmwareName.textContent = manifest.name || SITE_CONFIG.projectName;
+  ui.eraseAll.checked = Boolean(manifest.eraseAll);
+  ui.cfgChip.textContent = manifest.chip || "—";
+  ui.cfgFlash.textContent = `${manifest.physicalFlashSize || "16MB"} • KEEP`;
+  ui.cfgMode.textContent = `${(manifest.toolSpiMode || "QIO").toUpperCase()} • DoNotChgBin`;
+  ui.cfgFreq.textContent = `${manifest.toolSpiSpeed || "80MHz"} • KEEP`;
+  ui.cfgBaud.textContent = String(manifest.baudRate || SITE_CONFIG.baudRate || 921600);
+  renderFileList(manifest.files); setBusy(false); log("Конфигурация сайта загружена.");
+}
+function renderFileList(files, sizes = new Map()) {
+  ui.fileList.innerHTML = "";
+  files.forEach((f) => {
+    const row = document.createElement("div"); row.className = "file-row";
+    const size = sizes.get(f.name);
+    row.innerHTML = `<code>${fmtAddress(f.address)}</code><span class="fname"></span><span class="fsize">${size == null ? "из update.zip" : fmtBytes(size)}</span>`;
+    row.querySelector(".fname").textContent = f.name; ui.fileList.appendChild(row);
+  });
+}
+function decodeEspImageHeader(data) {
+  if (!(data instanceof Uint8Array) || data.length < 8 || data[0] !== 0xE9) return null;
+  const modeNames={0:"qio",1:"qout",2:"dio",3:"dout"}; const sizeNames={0:"1MB",1:"2MB",2:"4MB",3:"8MB",4:"16MB",5:"32MB",6:"64MB",7:"128MB"}; const freqNames={0:"40m",1:"26m",2:"20m",15:"80m"};
+  return {mode:modeNames[data[2]],size:sizeNames[(data[3]>>4)&15],freq:freqNames[data[3]&15]};
+}
+function validateBootloader(data) {
+  const h=decodeEspImageHeader(data); if(!h) throw new Error("bootloader.bin не похож на ESP32 bootloader.");
+  log(`Bootloader: ${String(h.mode).toUpperCase()}, ${String(h.freq).toUpperCase()}, ${h.size}.`);
+  log("DoNotChgBin = ON: заголовок bootloader.bin не изменяется.");
+}
+async function loadFirmwareFiles() {
+  if (!globalThis.JSZip) throw new Error("Не удалось загрузить библиотеку JSZip.");
+  if (!SITE_CONFIG.firmwareZipUrl) throw new Error("В config.js не указан firmwareZipUrl.");
+  log(`Загрузка update.zip: ${SITE_CONFIG.firmwareZipUrl}`); setProgress(3,"Загрузка update.zip…");
+  const response = await fetch(SITE_CONFIG.firmwareZipUrl, {cache:"no-store"});
+  if (!response.ok) throw new Error(`Не удалось загрузить update.zip (${response.status}).`);
+  const zipBytes = new Uint8Array(await response.arrayBuffer());
+  if (!zipBytes.length) throw new Error("update.zip пустой.");
+  log(`update.zip загружен: ${fmtBytes(zipBytes.length)}.`); setProgress(10,"Распаковка update.zip…");
+  const zip = await globalThis.JSZip.loadAsync(zipBytes, {checkCRC32:true});
+  const files=[]; const sizes=new Map();
+  for(const f of manifest.files){
+    const entry=zip.file(f.name); if(!entry) throw new Error(`В update.zip отсутствует ${f.name}.`);
+    const data=new Uint8Array(await entry.async("uint8array")); if(!data.length) throw new Error(`${f.name} пустой.`);
+    const address=Number.parseInt(f.address,0); if(address===0) validateBootloader(data);
+    files.push({data,address,path:f.name}); sizes.set(f.name,data.length); log(`${f.name}: ${fmtBytes(data.length)} → ${fmtAddress(address)}`);
+  }
+  renderFileList(manifest.files,sizes); return files;
+}
+function createTerminal(){return{clean(){},writeLine(d){if(d!=null)log(d);},write(d){if(d!=null&&String(d).trim())log(d);}};}
+function delay(ms){return new Promise(resolve=>setTimeout(resolve,ms));}
+async function backupSettingsBeforeFlash() {
+  if (!selectedPort) throw new Error("COM-порт не выбран.");
+
+  const baud = Number(manifest?.settingsBackupBaudRate || 115200);
+  let reader = null;
+  let opened = false;
+  let timeoutId = null;
+  let timedOut = false;
+
+  log(`Сохранение настроек перед прошивкой через USB (${baud} бод)…`);
+  setProgress(12, "Сохранение настроек…");
+
+  try {
+    await selectedPort.open({ baudRate: baud });
+    opened = true;
+
+    try {
+      await selectedPort.setSignals({ dataTerminalReady: false, requestToSend: false });
+    } catch (_) {}
+
+    await delay(350);
+
+    const writer = selectedPort.writable.getWriter();
+    try {
+      await writer.write(new TextEncoder().encode("WEBFLASH_BACKUP\n"));
+    } finally {
+      writer.releaseLock();
+    }
+
+    reader = selectedPort.readable.getReader();
+    const decoder = new TextDecoder();
+    let received = "";
+    let result = null;
+
+    timeoutId = setTimeout(() => {
+      timedOut = true;
+      reader?.cancel().catch(() => {});
+    }, 20000);
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      if (!value) continue;
+
+      received += decoder.decode(value, { stream: true });
+
+      if (received.includes("WEBFLASH_BACKUP_START")) {
+        setProgress(13, "Архивация настроек…");
+      }
+
+      if (received.includes("WEBFLASH_BACKUP_OK")) {
+        result = { ok: true };
+        break;
+      }
+
+      const errorPos = received.indexOf("WEBFLASH_BACKUP_ERROR:");
+      if (errorPos >= 0) {
+        const rest = received.slice(errorPos + "WEBFLASH_BACKUP_ERROR:".length);
+        const end = rest.search(/[\r\n]/);
+        result = { ok: false, error: (end >= 0 ? rest.slice(0, end) : rest).trim() || "unknown" };
+        break;
+      }
+
+      if (received.length > 8192) received = received.slice(-4096);
+    }
+
+    if (timeoutId) clearTimeout(timeoutId);
+
+    if (result?.ok) {
+      log("Настройки сохранены в резервный раздел лампы.");
+      setProgress(14, "Настройки сохранены");
+      return true;
+    }
+
+    if (result && !result.ok) {
+      throw new Error(`Лампа не смогла сохранить настройки: ${result.error}`);
+    }
+
+    if (timedOut) {
+      throw new Error(
+        "Текущая прошивка не поддерживает автоматическое сохранение настроек через USB или не ответила за 20 секунд. " +
+        "Для прошивки без сохранения снимите галочку «Сохранить настройки перед прошивкой»."
+      );
+    }
+
+    throw new Error("Соединение закрылось до завершения сохранения настроек.");
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+    if (reader) {
+      try { await reader.cancel(); } catch (_) {}
+      try { reader.releaseLock(); } catch (_) {}
+    }
+    if (opened) {
+      try { await selectedPort.close(); } catch (_) {}
+    }
+    await delay(350);
+  }
+}
+async function rebootEsp32S3(transport,loader){
+  log("Аппаратный перезапуск…");
+  try{
+    // В esptool-js: DTR=false => GPIO0 HIGH, RTS=true => EN LOW.
+    // Явно формируем импульс RESET, затем отпускаем EN при GPIO0=HIGH,
+    // чтобы плата загрузилась из Flash, а не осталась в bootloader.
+    await transport.setDTR(false);
+    await transport.setRTS(true);
+    await delay(150);
+    await transport.setRTS(false);
+    await transport.setDTR(false);
+    await delay(800);
+    log("Импульс RESET выполнен.");
+  }catch(e){
+    log(`RTS/DTR reset не выполнен: ${e?.message||e}. Пробую стандартный hard_reset…`);
+    await loader.after("hard_reset");
+    await delay(500);
+  }
+}
+async function safeDisconnect(t){if(!t)return;try{await t.disconnect();}catch(_){}}
+async function flash(){
+  if(isBusy)return; clearResult(); setBusy(true); setProgress(0,"Подготовка прошивки…"); let transport=null;
+  try{
+    if(!selectedPort)await choosePort(); setStep(2);
+    const files=await loadFirmwareFiles(); const totalBytes=files.reduce((s,f)=>s+f.data.length,0); const writtenByFile=new Array(files.length).fill(0);
+
+    if(ui.saveSettings?.checked){
+      if(ui.eraseAll.checked) throw new Error("Полная очистка Flash несовместима с сохранением настроек.");
+      await backupSettingsBeforeFlash();
+    } else {
+      log("Сохранение настроек перед прошивкой отключено.");
+    }
+
+    setProgress(15,"Подключение к ESP32-S3…"); log("Подключение…");
+    transport=new Transport(selectedPort,true);
+    const loader=new ESPLoader({transport,baudrate:Number(manifest.baudRate||SITE_CONFIG.baudRate||921600),terminal:createTerminal(),debugLogging:false});
+    const chipName=await loader.main(); log(`Обнаружен чип: ${chipName}`);
+    const expected=String(manifest.chip||"ESP32-S3").toUpperCase().replace(/[^A-Z0-9]/g,""); const detected=String(chipName||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
+    if(expected&&!detected.includes(expected))throw new Error(`Подключён ${chipName}, пакет предназначен для ${manifest.chip}.`);
+    log("Режим записи: KEEP / KEEP / KEEP (аналог DoNotChgBin=ON).");
+    const opts={fileArray:files.map(({data,address})=>({data,address})),flashMode:"keep",flashFreq:"keep",flashSize:"keep",eraseAll:ui.eraseAll.checked,compress:manifest.compress!==false,
+      reportProgress:(i,written,total)=>{writtenByFile[i]=Math.min(written,total);const done=writtenByFile.reduce((s,n)=>s+n,0);const p=15+(totalBytes?(done/totalBytes)*83:0);setProgress(p,`Запись ${files[i]?.path||`файл ${i+1}`}… ${Math.round((written/total)*100)}%`);}};
+    if(ui.eraseAll.checked)log("Включена полная очистка Flash.");
+    await loader.writeFlash(opts); setProgress(99,"Перезапуск…"); await rebootEsp32S3(transport,loader); await safeDisconnect(transport);transport=null;
+    setProgress(100,"Прошивка успешно завершена");showResult("success","Готово. Плата прошита и перезапущена.");ui.steps.forEach(s=>{s.classList.remove("active");s.classList.add("done");});log("ГОТОВО: прошивка успешно завершена.");
+  }catch(e){await safeDisconnect(transport);const msg=e?.message||String(e);setProgress(0,"Ошибка прошивки");showResult("error",msg);log(`ОШИБКА: ${msg}`);}finally{setBusy(false);}
+}
+function checkCompatibility(){
+  if(!window.isSecureContext){ui.compatBanner.textContent="COM-порт недоступен: откройте сайт по HTTPS или localhost.";ui.compatBanner.classList.remove("hidden");}
+  if(!("serial" in navigator)){ui.compatBanner.textContent="Этот браузер не поддерживает Web Serial. Используйте совместимый Chromium-браузер.";ui.compatBanner.classList.remove("hidden");ui.selectPortBtn.disabled=true;ui.flashBtn.disabled=true;return false;}return true;
+}
+ui.selectPortBtn.addEventListener("click",async()=>{if(isBusy)return;clearResult();try{await choosePort();ui.flashBtn.disabled=!manifest;}catch(e){if(e?.name==="NotFoundError"){log("Выбор COM-порта отменён.");return;}showResult("error",e?.message||String(e));log(`Ошибка выбора порта: ${e?.message||e}`);}});
+ui.flashBtn.addEventListener("click",flash);ui.clearLogBtn.addEventListener("click",()=>{ui.log.textContent="";});
+if(ui.saveSettings) ui.saveSettings.addEventListener("change",syncEraseAllState);
+if("serial"in navigator)navigator.serial.addEventListener("disconnect",e=>{if(selectedPort&&e.target===selectedPort&&!isBusy){ui.portDot.classList.remove("good");ui.portText.textContent="Порт отключён";setStep(1);log("COM-порт отключён.");}});
+(async function init(){setStep(0);checkCompatibility();try{await loadManifest();}catch(e){ui.firmwareName.textContent="Ошибка конфигурации";showResult("error",e?.message||String(e));log(`ОШИБКА: ${e?.message||e}`);}})();
+
+</script>
 </body>
 </html>
