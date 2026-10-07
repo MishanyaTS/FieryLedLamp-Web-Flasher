@@ -47,8 +47,17 @@ jobs:
           rm -rf .deploy
           mkdir -p .deploy/firmware
           cp -a website/public/. .deploy/
-          cp index.html app.js config.js style.css .deploy/firmware/
-          cp -a firmware .deploy/firmware/firmware
+
+          # Web Flasher page lives directly under the main domain:
+          # https://fieryledlamp.ru/firmware.html
+          sed \
+            -e 's#href="./style.css"#href="/firmware/style.css"#' \
+            -e 's#src="./app.js"#src="/firmware/app.js"#' \
+            index.html > .deploy/firmware.html
+
+          # Flasher assets and firmware package
+          cp app.js config.js style.css .deploy/firmware/
+          cp -a firmware/. .deploy/firmware/
 
       - name: Install lftp
         run: |
