@@ -1,0 +1,39 @@
+name: Check DNSSEC temp
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/check-dnssec-temp.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check DNSSEC
+        shell: bash
+        run: |
+          set +e
+          for resolver in 8.8.8.8 1.1.1.1; do
+            echo "=== resolver $resolver A ==="
+            dig @"$resolver" fieryledlamp.ru A +dnssec +comments +answer +authority
+            echo "=== resolver $resolver AAAA ==="
+            dig @"$resolver" fieryledlamp.ru AAAA +dnssec +comments +answer +authority
+            echo "=== resolver $resolver DS ==="
+            dig @"$resolver" fieryledlamp.ru DS +dnssec +comments +answer +authority
+          done
+
+          echo "=== AUTH DNSKEY ==="
+          for ns in ns1.hostiman.ru ns2.hostiman.ru ns3.hostiman.ru ns4.hostiman.ru; do
+            echo "--- $ns ---"
+            dig @"$ns" fieryledlamp.ru DNSKEY +dnssec +comments +answer +authority
+          done
+
+          echo "=== TLD DS DIRECT ==="
+          for ns in a.dns.ripn.net b.dns.ripn.net c.tld-servers.ru; do
+            echo "--- $ns ---"
+            dig @"$ns" fieryledlamp.ru DS +dnssec +comments +answer +authority
+          done
