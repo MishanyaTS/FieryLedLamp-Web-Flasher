@@ -1,0 +1,29 @@
+name: Check certificates now
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/check-certificates-now.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check DNS and HTTPS certificates
+        shell: bash
+        run: |
+          set +e
+          for host in fieryledlamp.ru firmware.fieryledlamp.ru; do
+            echo "=== $host DNS ==="
+            dig +short A "$host"
+            dig +short AAAA "$host"
+            echo "=== $host HTTPS ==="
+            curl -sSIL --max-time 20 "https://$host" | sed -n '1,12p'
+            echo "=== $host CERT ==="
+            echo | openssl s_client -servername "$host" -connect "$host:443" 2>/dev/null | openssl x509 -noout -subject -issuer -dates -ext subjectAltName
+            echo
+          done
