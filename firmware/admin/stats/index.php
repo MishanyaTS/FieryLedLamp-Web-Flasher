@@ -57,7 +57,6 @@ header('X-Robots-Tag: noindex, nofollow');
   <div class="top">
     <div>
       <h1>Статистика FieryLedLamp</h1>
-      <div class="muted">Приватная статистика Web Flasher на HostiMan</div>
     </div>
     <a class="refresh" href="/admin/stats/">Обновить</a>
   </div>
@@ -70,7 +69,7 @@ header('X-Robots-Tag: noindex, nofollow');
   </div>
 
   <div class="note">
-    После отказа от Cloudflare статистика хранится локально на HostiMan. Посещения считаются при открытии страницы Web Flasher, загрузки — при запросе update.zip из прошивальщика. Старые данные Cloudflare автоматически сюда не переносятся.
+    После отказа от Cloudflare статистика хранится локально на HostiMan. Посещения считаются при открытии страницы Web Flasher, загрузки — при запросе update.zip из прошивальщика.
   </div>
 </main>
 </body>
