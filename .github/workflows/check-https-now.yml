@@ -13,13 +13,18 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - name: Check domains
+      - name: Check IPv4 and IPv6
         shell: bash
         run: |
           set +e
-          echo "=== MAIN ==="
-          curl -sSIL --max-time 20 https://fieryledlamp.ru | sed -n '1,12p'
-          echo | openssl s_client -servername fieryledlamp.ru -connect fieryledlamp.ru:443 2>/dev/null | openssl x509 -noout -subject -issuer -dates -ext subjectAltName
-          echo "=== FIRMWARE ==="
-          curl -sSIL --max-time 20 https://firmware.fieryledlamp.ru | sed -n '1,12p'
-          echo | openssl s_client -servername firmware.fieryledlamp.ru -connect firmware.fieryledlamp.ru:443 2>/dev/null | openssl x509 -noout -subject -issuer -dates -ext subjectAltName
+          echo "=== MAIN IPv4 ==="
+          curl -4 -sSIL --max-time 20 https://fieryledlamp.ru | sed -n '1,12p'
+          echo | openssl s_client -servername fieryledlamp.ru -connect 81.90.182.128:443 2>/dev/null | openssl x509 -noout -subject -issuer -dates -ext subjectAltName
+
+          echo "=== MAIN IPv6 ==="
+          curl -6 -sSIL --max-time 20 https://fieryledlamp.ru | sed -n '1,12p'
+          echo | openssl s_client -servername fieryledlamp.ru -connect '[2a00:ab00:1103:7:53::1]:443' 2>/dev/null | openssl x509 -noout -subject -issuer -dates -ext subjectAltName
+
+          echo "=== FIRMWARE IPv4 ==="
+          curl -4 -sSIL --max-time 20 https://firmware.fieryledlamp.ru | sed -n '1,12p'
+          echo | openssl s_client -servername firmware.fieryledlamp.ru -connect 81.90.182.128:443 2>/dev/null | openssl x509 -noout -subject -issuer -dates -ext subjectAltName
