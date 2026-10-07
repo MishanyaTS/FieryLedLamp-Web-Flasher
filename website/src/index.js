@@ -305,7 +305,7 @@ async function notifySubscribers(request, env) {
   const version = String(body.version || "").trim();
   const summary = String(body.summary || "").trim();
   const title = String(body.title || "").trim();
-  const updateUrl = String(body.url || "https://fieryledlamp.ru/firmware.html").trim();
+  const updateUrl = String(body.url || "https://firmware.fieryledlamp.ru").trim();
   const useEmail = body.email !== false;
   const useSms = body.sms === true;
   const dryRun = body.dryRun === true;
