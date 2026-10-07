@@ -45,13 +45,9 @@ jobs:
       - name: Prepare unified website
         run: |
           rm -rf .deploy
-          mkdir -p .deploy/firmware-assets
+          mkdir -p .deploy/firmware
           cp -a website/public/. .deploy/
-
-          # Assets used by https://fieryledlamp.ru/firmware.html
-          cp app.js config.js style.css .deploy/firmware-assets/
-          mkdir -p .deploy/firmware-assets/firmware
-          cp -a firmware/. .deploy/firmware-assets/firmware/
+          cp -a firmware/. .deploy/firmware/
 
       - name: Install lftp
         run: |
