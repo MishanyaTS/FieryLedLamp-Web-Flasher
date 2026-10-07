@@ -45,19 +45,13 @@ jobs:
       - name: Prepare unified website
         run: |
           rm -rf .deploy
-          mkdir -p .deploy/firmware
+          mkdir -p .deploy/firmware-assets
           cp -a website/public/. .deploy/
 
-          # Web Flasher page lives directly under the main domain:
-          # https://fieryledlamp.ru/firmware.html
-          sed \
-            -e 's#href="./style.css"#href="/firmware/style.css"#' \
-            -e 's#src="./app.js"#src="/firmware/app.js"#' \
-            index.html > .deploy/firmware.html
-
-          # Flasher assets and firmware package
-          cp app.js config.js style.css .deploy/firmware/
-          cp -a firmware/. .deploy/firmware/
+          # Assets used by https://fieryledlamp.ru/firmware.html
+          cp app.js config.js style.css .deploy/firmware-assets/
+          mkdir -p .deploy/firmware-assets/firmware
+          cp -a firmware/. .deploy/firmware-assets/firmware/
 
       - name: Install lftp
         run: |
