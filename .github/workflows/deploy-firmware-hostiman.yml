@@ -37,6 +37,30 @@ jobs:
           test -n "$FTP_USER" || { echo "Missing HOSTIMAN_FIRMWARE_FTP_USER"; exit 1; }
           test -n "$FTP_PASSWORD" || { echo "Missing HOSTIMAN_FIRMWARE_FTP_PASSWORD"; exit 1; }
 
+      - name: Prepare firmware site
+        env:
+          STATS_ADMIN_USER: ${{ secrets.STATS_ADMIN_USER }}
+          STATS_ADMIN_PASSWORD: ${{ secrets.STATS_ADMIN_PASSWORD }}
+        run: |
+          rm -rf .deploy-firmware
+          mkdir -p .deploy-firmware
+          cp -a firmware/. .deploy-firmware/
+
+          USER_B64=""
+          PASS_SHA=""
+          if [ -n "$STATS_ADMIN_USER" ] && [ -n "$STATS_ADMIN_PASSWORD" ]; then
+            USER_B64="$(printf '%s' "$STATS_ADMIN_USER" | base64 -w0)"
+            PASS_SHA="$(printf '%s' "$STATS_ADMIN_PASSWORD" | sha256sum | awk '{print $1}')"
+          fi
+
+          cat > .deploy-firmware/stats-config.php <<EOF
+          <?php
+          return [
+              'user_b64' => '$USER_B64',
+              'password_sha256' => '$PASS_SHA',
+          ];
+          EOF
+
       - name: Install lftp
         run: |
           sudo apt-get update
@@ -55,6 +79,8 @@ jobs:
           set net:max-retries 3
           set net:timeout 20
           set mirror:parallel-transfer-count 1
-          mirror --reverse --delete --verbose firmware/ /
+          mirror --reverse --delete --verbose \
+            --exclude-glob stats-data.php \
+            .deploy-firmware/ /
           bye
           LFTP_COMMANDS
