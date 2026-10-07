@@ -61,11 +61,6 @@ jobs:
           ];
           EOF
 
-      - name: Install lftp
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y lftp
-
       - name: Deploy firmware folder as site root
         env:
           FTP_HOST: ${{ secrets.HOSTIMAN_FTP_HOST }}
@@ -73,14 +68,121 @@ jobs:
           FTP_USER: ${{ secrets.HOSTIMAN_FIRMWARE_FTP_USER }}
           FTP_PASSWORD: ${{ secrets.HOSTIMAN_FIRMWARE_FTP_PASSWORD }}
         run: |
-          lftp -u "$FTP_USER","$FTP_PASSWORD" -p "$FTP_PORT" "$FTP_HOST" <<'LFTP_COMMANDS'
-          set ftp:ssl-allow no
-          set ftp:passive-mode true
-          set net:max-retries 3
-          set net:timeout 20
-          set mirror:parallel-transfer-count 1
-          mirror --reverse --delete --verbose \
-            --exclude-glob stats-data.php \
-            .deploy-firmware/ /
-          bye
-          LFTP_COMMANDS
+          python3 - <<'PY'
+          import ftplib
+          import os
+          import posixpath
+          from pathlib import Path
+
+          host = os.environ["FTP_HOST"]
+          port = int(os.environ.get("FTP_PORT", "21"))
+          user = os.environ["FTP_USER"]
+          password = os.environ["FTP_PASSWORD"]
+          local_root = Path(".deploy-firmware")
+          preserve = {"stats-data.php"}
+
+          ftp = ftplib.FTP(timeout=30)
+          ftp.connect(host, port)
+          ftp.login(user, password)
+          ftp.set_pasv(True)
+
+          def list_dir(path):
+              try:
+                  return list(ftp.mlsd(path))
+              except Exception:
+                  names = ftp.nlst(path)
+                  out = []
+                  for name in names:
+                      base = posixpath.basename(name.rstrip("/"))
+                      if base in (".", ".."):
+                          continue
+                      out.append((base, {"type": "unknown"}))
+                  return out
+
+          def ensure_dir(remote_dir):
+              if remote_dir in ("", "/"):
+                  return
+              parts = [p for p in remote_dir.split("/") if p]
+              cur = ""
+              for part in parts:
+                  cur += "/" + part
+                  try:
+                      ftp.mkd(cur)
+                  except ftplib.error_perm as e:
+                      if not str(e).startswith("550"):
+                          raise
+
+          def upload_file(local_file, remote_file):
+              ensure_dir(posixpath.dirname(remote_file))
+              with local_file.open("rb") as fh:
+                  ftp.storbinary(f"STOR {remote_file}", fh, blocksize=1024 * 256)
+              print(f"Uploaded {remote_file}")
+
+          def remote_type(path):
+              try:
+                  old = ftp.pwd()
+                  ftp.cwd(path)
+                  ftp.cwd(old)
+                  return "dir"
+              except Exception:
+                  return "file"
+
+          def delete_tree(remote_path):
+              if posixpath.basename(remote_path.rstrip("/")) in preserve:
+                  return
+              if remote_type(remote_path) == "dir":
+                  for name, facts in list_dir(remote_path):
+                      child = posixpath.join(remote_path, name)
+                      delete_tree(child)
+                  try:
+                      ftp.rmd(remote_path)
+                      print(f"Removed dir {remote_path}")
+                  except Exception:
+                      pass
+              else:
+                  try:
+                      ftp.delete(remote_path)
+                      print(f"Removed file {remote_path}")
+                  except Exception:
+                      pass
+
+          local_paths = set()
+          local_dirs = {"/"}
+
+          for p in local_root.rglob("*"):
+              rel = p.relative_to(local_root).as_posix()
+              remote = "/" + rel
+              if p.is_dir():
+                  local_dirs.add(remote)
+                  ensure_dir(remote)
+              else:
+                  local_paths.add(remote)
+                  upload_file(p, remote)
+
+          # Remove stale files/directories from the FTP root, but preserve runtime stats-data.php.
+          def clean_remote(remote_dir="/"):
+              for name, facts in list_dir(remote_dir):
+                  remote = posixpath.join(remote_dir.rstrip("/"), name)
+                  if not remote.startswith("/"):
+                      remote = "/" + remote
+                  if name in preserve and remote_dir == "/":
+                      continue
+                  is_dir = facts.get("type") == "dir"
+                  if facts.get("type") == "unknown":
+                      is_dir = remote_type(remote) == "dir"
+
+                  if is_dir:
+                      if remote not in local_dirs:
+                          delete_tree(remote)
+                      else:
+                          clean_remote(remote)
+                  elif remote not in local_paths:
+                      try:
+                          ftp.delete(remote)
+                          print(f"Removed stale file {remote}")
+                      except Exception:
+                          pass
+
+          clean_remote("/")
+          ftp.quit()
+          PY
