@@ -1,0 +1,35 @@
+name: Build HostiMan packages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p deploy
+          (
+            cd website/public
+            zip -r ../../deploy/fieryledlamp-site.zip .
+          )
+          zip -r deploy/fieryledlamp-firmware.zip index.html style.css app.js config.js firmware
+
+      - name: Upload packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: hostiman-packages
+          path: deploy/*.zip
+          if-no-files-found: error
+          retention-days: 7
