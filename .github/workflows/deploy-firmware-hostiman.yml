@@ -1,0 +1,70 @@
+name: Deploy firmware site to HostiMan
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "index.html"
+      - "style.css"
+      - "app.js"
+      - "config.js"
+      - "firmware/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-firmware-hostiman
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Upload firmware.fieryledlamp.ru
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Check HostiMan FTP settings
+        env:
+          FTP_HOST: ${{ secrets.HOSTIMAN_FTP_HOST }}
+          FTP_PORT: ${{ secrets.HOSTIMAN_FTP_PORT }}
+          FTP_USER: ${{ secrets.HOSTIMAN_FIRMWARE_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.HOSTIMAN_FIRMWARE_FTP_PASSWORD }}
+        run: |
+          test -n "$FTP_HOST" || { echo "Missing HOSTIMAN_FTP_HOST"; exit 1; }
+          test -n "$FTP_PORT" || { echo "Missing HOSTIMAN_FTP_PORT"; exit 1; }
+          test -n "$FTP_USER" || { echo "Missing HOSTIMAN_FIRMWARE_FTP_USER"; exit 1; }
+          test -n "$FTP_PASSWORD" || { echo "Missing HOSTIMAN_FIRMWARE_FTP_PASSWORD"; exit 1; }
+
+      - name: Prepare firmware site
+        run: |
+          rm -rf .deploy-firmware
+          mkdir -p .deploy-firmware
+          cp index.html style.css app.js config.js .deploy-firmware/
+          cp -a firmware .deploy-firmware/firmware
+
+      - name: Install lftp
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lftp
+
+      - name: Deploy firmware site
+        env:
+          FTP_HOST: ${{ secrets.HOSTIMAN_FTP_HOST }}
+          FTP_PORT: ${{ secrets.HOSTIMAN_FTP_PORT }}
+          FTP_USER: ${{ secrets.HOSTIMAN_FIRMWARE_FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.HOSTIMAN_FIRMWARE_FTP_PASSWORD }}
+        run: |
+          lftp -u "$FTP_USER","$FTP_PASSWORD" -p "$FTP_PORT" "$FTP_HOST" <<'LFTP_COMMANDS'
+          set ftp:ssl-allow no
+          set ftp:passive-mode true
+          set net:max-retries 3
+          set net:timeout 20
+          set mirror:parallel-transfer-count 1
+          mirror --reverse --delete --verbose .deploy-firmware/ /
+          bye
+          LFTP_COMMANDS
