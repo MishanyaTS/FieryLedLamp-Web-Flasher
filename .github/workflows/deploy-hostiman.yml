@@ -6,11 +6,6 @@ on:
       - main
     paths:
       - "website/public/**"
-      - "index.html"
-      - "app.js"
-      - "config.js"
-      - "style.css"
-      - "firmware/**"
       - ".github/workflows/deploy-hostiman.yml"
   workflow_dispatch:
 
@@ -28,7 +23,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Check HostiMan FTP settings
         env:
@@ -42,19 +37,12 @@ jobs:
           test -n "$FTP_USER" || { echo "Missing HOSTIMAN_FTP_USER"; exit 1; }
           test -n "$FTP_PASSWORD" || { echo "Missing HOSTIMAN_FTP_PASSWORD"; exit 1; }
 
-      - name: Prepare unified website
-        run: |
-          rm -rf .deploy
-          mkdir -p .deploy/firmware
-          cp -a website/public/. .deploy/
-          cp -a firmware/. .deploy/firmware/
-
       - name: Install lftp
         run: |
           sudo apt-get update
           sudo apt-get install -y lftp
 
-      - name: Deploy unified website to HostiMan
+      - name: Deploy website/public to HostiMan
         env:
           FTP_HOST: ${{ secrets.HOSTIMAN_FTP_HOST }}
           FTP_PORT: ${{ secrets.HOSTIMAN_FTP_PORT }}
@@ -70,6 +58,6 @@ jobs:
           mirror --reverse --delete --verbose \
             --exclude-glob .well-known/** \
             --exclude-glob .htaccess \
-            .deploy/ /
+            website/public/ /
           bye
           LFTP_COMMANDS
