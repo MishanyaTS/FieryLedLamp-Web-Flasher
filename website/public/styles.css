@@ -130,12 +130,12 @@
 .manual-page-shot{margin:0 0 20px;padding:10px;border:1px solid #303949;border-radius:18px;background:#11161f;box-shadow:0 18px 48px #0005;overflow:hidden}
 .manual-page-shot img{width:min(420px,100%);max-height:720px;object-fit:contain;margin:0 auto;border-radius:12px}
 .manual-page-shot figcaption{text-align:center;color:#778293;font-size:12px;padding:9px 0 2px}
-.manual-shot{height:118px;margin:-4px -4px 16px;border-radius:12px;overflow:hidden;border:1px solid #303949;background:#080b10}
+.manual-shot{height:78px;margin:-4px -4px 16px;border-radius:12px;overflow:hidden;border:1px solid #303949;background:#080b10}
 .manual-shot img{width:100%;height:100%;object-fit:cover;object-position:center var(--shot-y,50%);display:block;filter:saturate(.96) contrast(1.03)}
 .manual-item:hover .manual-shot img{transform:scale(1.015);transition:transform .18s ease}
 @media(max-width:680px){
   .manual-page-shot img{width:min(360px,100%)}
-  .manual-shot{height:145px}
+  .manual-shot{height:92px}
 }
 
 /* Version history */
