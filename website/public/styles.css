@@ -309,3 +309,11 @@ background:linear-gradient(180deg,#131821,#0e1219);border-color:#283141;box-shad
   .prose section{padding:19px;border-radius:17px}
   .footer-grid{gap:30px}
 }
+
+/* Heading clipping fix */
+.page-hero h1,.hero h1,.version-hero-copy h1{
+  line-height:1.08;
+  padding-top:.04em;
+  padding-bottom:.10em;
+  overflow:visible;
+}
