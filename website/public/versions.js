@@ -1,88 +1,94 @@
 (() => {
-  // Источник истории находится в папке firmware этого репозитория.
   const SOURCE = "/Version.txt";
 
-  const historyEl = document.querySelector("#versionHistory");
-  const currentEl = document.querySelector("#currentVersion");
-  const countEl = document.querySelector("#versionCount");
-  const visibleCountEl = document.querySelector("#versionVisibleCount");
-  const latestNotesEl = document.querySelector("#versionLatestNotes");
-  const searchEl = document.querySelector("#versionSearch");
-  const noResultsEl = document.querySelector("#versionNoResults");
-  const filterButtons = [...document.querySelectorAll(".version-filter")];
-  if (!historyEl) return;
+  const history = document.querySelector("#versionHistory");
+  const currentVersion = document.querySelector("#currentVersion");
+  const latestNotes = document.querySelector("#versionLatestNotes");
+  const search = document.querySelector("#versionSearch");
+  const visibleCount = document.querySelector("#versionVisibleCount");
+  const noResults = document.querySelector("#versionNoResults");
+  const filters = [...document.querySelectorAll(".version-filter")];
 
-  const escapeHtml = (value) => String(value)
+  if (!history) return;
+
+  const escapeHtml = value => String(value)
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 
-  function isVersionHeading(line) {
-    const value = line.trim();
-    return /^(?:Версия\s+)?(?:FieryLedLamp\s+)?v?\d+(?:\.\d+)+(?:\s+.*)?$/i.test(value)
-      || /^FieryLedLamp\s+v?\d+(?:\.\d+)+(?:\s+.*)?$/i.test(value);
-  }
+  const isVersionHeading = line =>
+    /^(?:Версия\s+)?(?:FieryLedLamp[_\s]+)?v?\d+(?:\.\d+)+(?:[_\s].*)?$/i.test(line.trim());
 
   function parseHistory(text) {
     const lines = text.replace(/\r/g, "").split("\n");
     const currentLine = lines.find(line => /^Текущая версия\s*:/i.test(line.trim())) || "";
     const current = currentLine.replace(/^Текущая версия\s*:\s*/i, "").trim();
 
-    const markerIndex = lines.findIndex(line => /ИСТОРИЯ ВЕРСИЙ/i.test(line));
-    const body = markerIndex >= 0 ? lines.slice(markerIndex + 1) : lines;
+    const marker = lines.findIndex(line => /ИСТОРИЯ ВЕРСИЙ/i.test(line));
+    const source = marker >= 0 ? lines.slice(marker + 1) : lines;
     const versions = [];
-    let currentVersion = null;
+    let version = null;
 
-    for (const raw of body) {
-      const trimmed = raw.trim();
-      if (!trimmed) continue;
+    for (const raw of source) {
+      const line = raw.trim();
+      if (!line) continue;
 
-      if (isVersionHeading(trimmed)) {
-        currentVersion = { title: trimmed, lines: [] };
-        versions.push(currentVersion);
-        continue;
+      if (isVersionHeading(line)) {
+        version = { title: line, changes: [] };
+        versions.push(version);
+      } else if (version) {
+        version.changes.push(line);
       }
-
-      if (currentVersion) currentVersion.lines.push(trimmed);
     }
 
     return { current, versions };
   }
 
-  function versionNumber(title) {
+  function getVersionNumber(title) {
     const match = title.match(/v?(\d+(?:\.\d+)+)/i);
     return match ? "v" + match[1] : title;
   }
 
   function renderLatest(data) {
     const latest = data.versions[0];
-    if (currentEl) currentEl.textContent = data.current || latest?.title || "не определена";
-    if (countEl) countEl.textContent = String(data.versions.length);
+    if (currentVersion) {
+      currentVersion.textContent = data.current || latest?.title || "не определена";
+    }
+    if (!latestNotes || !latest) return;
 
-    if (!latestNotesEl || !latest) return;
-    const lines = latest.lines.filter(line => /^[-–—]\s*/.test(line)).slice(0, 3);
-    latestNotesEl.innerHTML = lines.length
-      ? lines.map(line => `<div><span>✓</span><p>${escapeHtml(line.replace(/^[-–—]\s*/, ""))}</p></div>`).join("")
-      : '<div><span>✓</span><p>Актуальная версия прошивки FieryLedLamp.</p></div>';
+    const items = latest.changes
+      .filter(line => /^[-–—]\s*/.test(line))
+      .slice(0, 3)
+      .map(line => line.replace(/^[-–—]\s*/, ""));
+
+    latestNotes.innerHTML = (items.length ? items : ["Актуальная версия прошивки FieryLedLamp."])
+      .map(item => `<div><span>✓</span><p>${escapeHtml(item)}</p></div>`)
+      .join("");
   }
 
   function render(data) {
     renderLatest(data);
 
-    historyEl.innerHTML = data.versions.map((version, index) => {
-      const cleanTitle = versionNumber(version.title);
-      const subtitle = version.title.replace(cleanTitle, "").replace(/^\s*FieryLedLamp\s*/i, "").trim();
-      const body = version.lines.map(line => {
+    history.innerHTML = data.versions.map((version, index) => {
+      const number = getVersionNumber(version.title);
+      const subtitle = version.title
+        .replace(number, "")
+        .replace(/^\s*(?:Версия\s+)?FieryLedLamp[_\s]*/i, "")
+        .trim();
+
+      const changes = version.changes.map(line => {
         const bullet = /^[-–—]\s*/.test(line);
-        const clean = bullet ? line.replace(/^[-–—]\s*/, "") : line;
+        const text = bullet ? line.replace(/^[-–—]\s*/, "") : line;
         return bullet
-          ? `<li>${escapeHtml(clean)}</li>`
-          : `<div class="version-note">${escapeHtml(clean)}</div>`;
+          ? `<li>${escapeHtml(text)}</li>`
+          : `<li class="version-note-line">${escapeHtml(text)}</li>`;
       }).join("");
 
-      return `<article class="version-entry" data-search="${escapeHtml((version.title + " " + version.lines.join(" ")).toLowerCase())}">
+      const searchText = (version.title + " " + version.changes.join(" ")).toLowerCase();
+
+      return `<article class="version-entry" data-search="${escapeHtml(searchText)}">
         <div class="version-rail">
           <span class="version-dot ${index === 0 ? "current" : ""}"></span>
           <span class="version-line"></span>
@@ -90,7 +96,7 @@
         <details class="version-release" ${index < 2 ? "open" : ""}>
           <summary>
             <div class="version-release-main">
-              <div class="version-number">${escapeHtml(cleanTitle)}</div>
+              <div class="version-number">${escapeHtml(number)}</div>
               <div class="version-release-title">
                 <h3>${index === 0 ? "Текущая версия" : "FieryLedLamp"}</h3>
                 ${subtitle ? `<span>${escapeHtml(subtitle)}</span>` : ""}
@@ -101,9 +107,7 @@
               <span class="version-toggle"></span>
             </div>
           </summary>
-          <div class="version-release-body">
-            <ul>${body}</ul>
-          </div>
+          <div class="version-release-body"><ul>${changes}</ul></div>
         </details>
       </article>`;
     }).join("");
@@ -112,55 +116,52 @@
   }
 
   function applyFilter() {
-    const q = (searchEl?.value || "").trim().toLowerCase();
-    const entries = [...historyEl.querySelectorAll(".version-entry")];
-    let visible = 0;
+    const query = (search?.value || "").trim().toLowerCase();
+    const entries = [...history.querySelectorAll(".version-entry")];
+    let shown = 0;
 
     for (const entry of entries) {
-      const match = !q || entry.dataset.search.includes(q);
-      entry.hidden = !match;
-      if (match) {
-        visible++;
-        const details = entry.querySelector("details");
-        if (q && details) details.open = true;
+      const matches = !query || entry.dataset.search.includes(query);
+      entry.hidden = !matches;
+      if (matches) {
+        shown++;
+        if (query) entry.querySelector("details")?.setAttribute("open", "");
       }
     }
 
-    if (visibleCountEl) visibleCountEl.textContent = `Показано: ${visible}`;
-    if (noResultsEl) noResultsEl.hidden = visible !== 0;
+    if (visibleCount) visibleCount.textContent = `Показано: ${shown}`;
+    if (noResults) noResults.hidden = shown !== 0;
   }
 
-  if (searchEl) {
-    searchEl.addEventListener("input", () => {
-      filterButtons.forEach(btn => btn.classList.toggle("active", btn.dataset.query === ""));
-      applyFilter();
-    });
-  }
+  search?.addEventListener("input", () => {
+    filters.forEach(button => button.classList.toggle("active", button.dataset.query === ""));
+    applyFilter();
+  });
 
-  filterButtons.forEach(button => {
+  filters.forEach(button => {
     button.addEventListener("click", () => {
-      filterButtons.forEach(btn => btn.classList.remove("active"));
+      filters.forEach(item => item.classList.remove("active"));
       button.classList.add("active");
-      if (searchEl) searchEl.value = button.dataset.query || "";
+      if (search) search.value = button.dataset.query || "";
       applyFilter();
     });
   });
 
-  fetch(SOURCE + "?t=" + Date.now(), { cache: "no-store" })
+  fetch(SOURCE + "?v=" + Date.now(), { cache: "no-store" })
     .then(response => {
       if (!response.ok) throw new Error("HTTP " + response.status);
       return response.text();
     })
     .then(text => {
       const data = parseHistory(text);
-      if (!data.versions.length) throw new Error("История версий не найдена");
+      if (!data.versions.length) throw new Error("В Version.txt не найдены версии");
       render(data);
     })
     .catch(error => {
-      historyEl.innerHTML = `<div class="version-state error"><b>Не удалось загрузить историю версий</b><span>${escapeHtml(error.message)}</span></div>`;
-      if (currentEl) currentEl.textContent = "недоступна";
-      if (countEl) countEl.textContent = "—";
-      if (visibleCountEl) visibleCountEl.textContent = "—";
-      if (latestNotesEl) latestNotesEl.innerHTML = '<div><span>!</span><p>Источник временно недоступен.</p></div>';
+      history.innerHTML = `<div class="version-state error"><b>Не удалось загрузить историю версий</b><span>${escapeHtml(error.message)}</span></div>`;
+      if (currentVersion) currentVersion.textContent = "недоступна";
+      if (visibleCount) visibleCount.textContent = "—";
+      if (latestNotes) latestNotes.innerHTML = '<div><span>!</span><p>Источник временно недоступен.</p></div>';
+      if (noResults) noResults.hidden = true;
     });
 })();
