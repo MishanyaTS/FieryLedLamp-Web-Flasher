@@ -58,8 +58,8 @@
 
   function renderLatest(data) {
     const latest = data.versions[0];
-    currentEl.textContent = data.current || latest?.title || "не определена";
-    countEl.textContent = String(data.versions.length);
+    if (currentEl) currentEl.textContent = data.current || latest?.title || "не определена";
+    if (countEl) countEl.textContent = String(data.versions.length);
 
     if (!latestNotesEl || !latest) return;
     const lines = latest.lines.filter(line => /^[-–—]\s*/.test(line)).slice(0, 3);
@@ -121,7 +121,8 @@
       entry.hidden = !match;
       if (match) {
         visible++;
-        if (q) entry.querySelector("details").open = true;
+        const details = entry.querySelector("details");
+        if (q && details) details.open = true;
       }
     }
 
@@ -157,8 +158,8 @@
     })
     .catch(error => {
       historyEl.innerHTML = `<div class="version-state error"><b>Не удалось загрузить историю версий</b><span>${escapeHtml(error.message)}</span></div>`;
-      currentEl.textContent = "недоступна";
-      countEl.textContent = "—";
+      if (currentEl) currentEl.textContent = "недоступна";
+      if (countEl) countEl.textContent = "—";
       if (visibleCountEl) visibleCountEl.textContent = "—";
       if (latestNotesEl) latestNotesEl.innerHTML = '<div><span>!</span><p>Источник временно недоступен.</p></div>';
     });
