@@ -209,7 +209,7 @@
     })
     .then(text => {
       const data = parseHistory(text);
-      if (!data.versions.length) throw new Error("В Version.txt не найдены версии");
+      if (!data.versions.length) throw new Error("История версий не найдена");
       render(data);
     })
     .catch(error => {
