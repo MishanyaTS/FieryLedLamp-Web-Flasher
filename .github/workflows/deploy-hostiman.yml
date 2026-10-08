@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - "website/public/**"
+      - "firmware/Version.txt"
       - ".github/workflows/deploy-hostiman.yml"
   workflow_dispatch:
 
@@ -36,6 +37,9 @@ jobs:
           test -n "$FTP_PORT" || { echo "Missing HOSTIMAN_FTP_PORT"; exit 1; }
           test -n "$FTP_USER" || { echo "Missing HOSTIMAN_FTP_USER"; exit 1; }
           test -n "$FTP_PASSWORD" || { echo "Missing HOSTIMAN_FTP_PASSWORD"; exit 1; }
+
+      - name: Copy firmware version history into website
+        run: cp firmware/Version.txt website/public/Version.txt
 
       - name: Install lftp
         run: |

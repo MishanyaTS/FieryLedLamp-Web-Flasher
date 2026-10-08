@@ -1,6 +1,6 @@
 (() => {
   // Источник истории находится в папке firmware этого репозитория.
-  const SOURCE = "https://raw.githubusercontent.com/MishanyaTS/FieryLedLamp-Web-Flasher/main/firmware/Version.txt";
+  const SOURCE = "/Version.txt";
 
   const historyEl = document.querySelector("#versionHistory");
   const currentEl = document.querySelector("#currentVersion");
