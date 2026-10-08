@@ -27,30 +27,81 @@
 </header>
 
 <main>
-  <section class="page-hero shell version-hero">
-    <span class="eyebrow">ОБНОВЛЕНИЯ</span>
-    <h1>История версий FieryLedLamp</h1>
-    <p>Полный список изменений прошивки. История загружается из официального файла <code>Version.txt</code> проекта FieryLedLamp на GitHub.</p>
+  <section class="version-hero-shell">
+    <div class="shell version-hero-grid">
+      <div class="version-hero-copy">
+        <span class="eyebrow">ИСТОРИЯ ПРОЕКТА</span>
+        <h1>История версий<br><span>FieryLedLamp</span></h1>
+        <p>Все изменения прошивки в одном месте — новые функции, исправления, поддержка оборудования и улучшения Web-интерфейса.</p>
+        <div class="version-hero-actions">
+          <a class="btn primary" href="https://firmware.fieryledlamp.ru">Прошить последнюю версию</a>
+          <a class="btn ghost" href="https://github.com/MishanyaTS/FieryLedLamp-Web-Flasher/blob/main/firmware/Version.txt" target="_blank" rel="noopener">Открыть Version.txt</a>
+        </div>
+      </div>
+
+      <aside class="version-latest-card">
+        <div class="version-latest-top">
+          <div class="version-orb"><span></span></div>
+          <div>
+            <small>АКТУАЛЬНАЯ ВЕРСИЯ</small>
+            <strong id="currentVersion">загрузка…</strong>
+          </div>
+          <span class="version-live">CURRENT</span>
+        </div>
+        <div id="versionLatestNotes" class="version-latest-notes">
+          <div class="version-skeleton"></div>
+          <div class="version-skeleton short"></div>
+        </div>
+        <div class="version-latest-meta">
+          <span><b id="versionCount">—</b> версий в истории</span>
+          <span><b>134</b> эффекта</span>
+        </div>
+      </aside>
+    </div>
   </section>
 
-  <section class="section shell" style="padding-top:26px">
+  <section class="section shell version-main">
     <div class="version-toolbar">
       <label class="version-search">
-        <span>Поиск по истории</span>
-        <input id="versionSearch" type="search" placeholder="Например: Wi-Fi, TFT, матрица, Web Flasher…" autocomplete="off">
+        <span>Поиск по изменениям</span>
+        <div class="version-search-box">
+          <span class="version-search-icon">⌕</span>
+          <input id="versionSearch" type="search" placeholder="Wi-Fi, TFT, матрица, Web Flasher…" autocomplete="off">
+        </div>
       </label>
-      <a class="version-source" href="https://github.com/MishanyaTS/FieryLedLamp/blob/main/FieryLedLamp/Version.txt" target="_blank" rel="noopener">Исходный Version.txt ↗</a>
+      <div class="version-source-info">
+        <span class="version-source-dot"></span>
+        <div><small>Источник</small><b>firmware/Version.txt</b></div>
+      </div>
     </div>
 
-    <div class="version-summary">
-      <span>Текущая версия: <strong id="currentVersion">загрузка…</strong></span>
-      <span>Версий в истории: <strong id="versionCount">—</strong></span>
+    <div class="version-filters" aria-label="Быстрые фильтры">
+      <button class="version-filter active" type="button" data-query="">Все</button>
+      <button class="version-filter" type="button" data-query="Wi-Fi">Wi-Fi</button>
+      <button class="version-filter" type="button" data-query="матриц">Матрица</button>
+      <button class="version-filter" type="button" data-query="диспле">Дисплей</button>
+      <button class="version-filter" type="button" data-query="обновлен">Обновления</button>
+      <button class="version-filter" type="button" data-query="эффект">Эффекты</button>
     </div>
 
-    <div id="versionHistory" class="version-list">
-      <div class="version-state">Загрузка истории версий…</div>
+    <div class="version-section-head">
+      <div>
+        <span class="eyebrow">CHANGELOG</span>
+        <h2>Все изменения</h2>
+      </div>
+      <span id="versionVisibleCount" class="version-visible-count">—</span>
     </div>
-    <div id="versionNoResults" class="version-no-results" hidden>По вашему запросу ничего не найдено.</div>
+
+    <div id="versionHistory" class="version-timeline">
+      <div class="version-state">
+        <span class="version-loader"></span>
+        Загрузка истории версий…
+      </div>
+    </div>
+    <div id="versionNoResults" class="version-no-results" hidden>
+      <b>Ничего не найдено</b>
+      <span>Попробуйте изменить запрос или выбрать другой фильтр.</span>
+    </div>
   </section>
 </main>
 
