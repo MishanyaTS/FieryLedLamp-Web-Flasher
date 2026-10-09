@@ -41,6 +41,18 @@ jobs:
       - name: Copy firmware version history into website
         run: cp firmware/Version.txt website/public/Version.txt
 
+      - name: Prepare Fiery Lamp Control downloads
+        run: |
+          mkdir -p "website/public/Fiery Lamp Control"
+          curl --fail --location --retry 3 --retry-delay 2 \
+            -o "website/public/Fiery Lamp Control/FieryLampControl.exe" \
+            "https://github.com/MishanyaTS/Fiery_Lamp_Control/releases/download/Fiery_Lamp_Control_Update/FieryLampControl.exe"
+          curl --fail --location --retry 3 --retry-delay 2 \
+            -o "website/public/Fiery Lamp Control/FieryLampControl.ipa" \
+            "https://github.com/MishanyaTS/Fiery_Lamp_Control/releases/download/Fiery_Lamp_Control/FieryLampControl.ipa"
+          test -s "website/public/Fiery Lamp Control/FieryLampControl.exe"
+          test -s "website/public/Fiery Lamp Control/FieryLampControl.ipa"
+
       - name: Install lftp
         run: |
           sudo apt-get update
