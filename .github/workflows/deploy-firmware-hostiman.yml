@@ -38,28 +38,10 @@ jobs:
           test -n "$FTP_PASSWORD" || { echo "Missing HOSTIMAN_FIRMWARE_FTP_PASSWORD"; exit 1; }
 
       - name: Prepare firmware site
-        env:
-          STATS_ADMIN_USER: ${{ secrets.STATS_ADMIN_USER }}
-          STATS_ADMIN_PASSWORD: ${{ secrets.STATS_ADMIN_PASSWORD }}
         run: |
           rm -rf .deploy-firmware
           mkdir -p .deploy-firmware
           cp -a firmware/. .deploy-firmware/
-
-          USER_B64=""
-          PASS_SHA=""
-          if [ -n "$STATS_ADMIN_USER" ] && [ -n "$STATS_ADMIN_PASSWORD" ]; then
-            USER_B64="$(printf '%s' "$STATS_ADMIN_USER" | base64 -w0)"
-            PASS_SHA="$(printf '%s' "$STATS_ADMIN_PASSWORD" | sha256sum | awk '{print $1}')"
-          fi
-
-          cat > .deploy-firmware/stats-config.php <<EOF
-          <?php
-          return [
-              'user_b64' => '$USER_B64',
-              'password_sha256' => '$PASS_SHA',
-          ];
-          EOF
 
       - name: Deploy firmware folder as site root
         env:
@@ -79,7 +61,7 @@ jobs:
           user = os.environ["FTP_USER"]
           password = os.environ["FTP_PASSWORD"]
           local_root = Path(".deploy-firmware")
-          preserve = {"stats-data.php"}
+          preserve = set()
 
           ftp = ftplib.FTP(timeout=30)
           ftp.connect(host, port)
@@ -159,7 +141,7 @@ jobs:
                   local_paths.add(remote)
                   upload_file(p, remote)
 
-          # Remove stale files/directories from the FTP root, but preserve runtime stats-data.php.
+          # Remove stale files/directories from the FTP root.
           def clean_remote(remote_dir="/"):
               for name, facts in list_dir(remote_dir):
                   remote = posixpath.join(remote_dir.rstrip("/"), name)
