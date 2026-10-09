@@ -593,6 +593,7 @@
     .replaceAll("'", "&#039;");
 
   const num = value => new Intl.NumberFormat("ru-RU").format(Number(value) || 0);
+  let statsCsrf = "";
 
   function renderRows(targetId, rows, nameKey) {
     const target = document.querySelector(targetId);
@@ -648,6 +649,7 @@
   async function loadStats() {
     try {
       const me = await parse(await api("me"));
+      statsCsrf = me.csrf || "";
       if (!me.user.isAdmin) {
         location.href = "/account.html";
         return;
@@ -665,6 +667,62 @@
     document.querySelector("#statsLoading").hidden = false;
     document.querySelector("#statsLoading").textContent = "Загрузка статистики…";
     loadStats();
+  });
+
+  document.querySelector("#statsRefresh")?.addEventListener("click", async event => {
+    const button = event.currentTarget;
+    const oldText = button.textContent;
+    button.disabled = true;
+    button.textContent = "Обновление…";
+    const status = document.querySelector("#statsActionStatus");
+    if (status) {
+      status.hidden = true;
+      status.textContent = "";
+    }
+    try {
+      await loadStats();
+    } finally {
+      button.disabled = false;
+      button.textContent = oldText;
+    }
+  });
+
+  document.querySelector("#statsClear")?.addEventListener("click", async event => {
+    const confirmed = confirm(
+      "Очистить всю собранную статистику?\n\nБудут удалены посещения сайта и Web Flasher, страны, уникальные посетители и счётчики скачиваний.\n\nЗарегистрированные пользователи и аккаунты удалены НЕ будут.\n\nЭто действие нельзя отменить."
+    );
+    if (!confirmed) return;
+
+    const button = event.currentTarget;
+    const oldText = button.textContent;
+    const status = document.querySelector("#statsActionStatus");
+    button.disabled = true;
+    button.textContent = "Очистка…";
+
+    try {
+      const response = await fetch("/api/index.php?action=admin-stats-clear", {
+        method: "POST",
+        credentials: "same-origin",
+        cache: "no-store",
+        headers: { "x-csrf-token": statsCsrf }
+      });
+      const data = await parse(response);
+      if (status) {
+        status.textContent = data.message || "Статистика очищена.";
+        status.className = "stats-action-status success";
+        status.hidden = false;
+      }
+      await loadStats();
+    } catch (error) {
+      if (status) {
+        status.textContent = error.message;
+        status.className = "stats-action-status error";
+        status.hidden = false;
+      }
+    } finally {
+      button.disabled = false;
+      button.textContent = oldText;
+    }
   });
 
   loadStats();
