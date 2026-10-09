@@ -320,8 +320,8 @@ background:linear-gradient(180deg,#131821,#0e1219);border-color:#283141;box-shad
 .components-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
 .component-card{overflow:hidden;border:1px solid #283141;border-radius:22px;background:linear-gradient(180deg,#131821,#0e1219);box-shadow:0 16px 42px #0002;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
 .component-card:hover{transform:translateY(-3px);border-color:#3b4657;box-shadow:0 22px 52px #0004}
-.component-photo{height:260px;display:grid;place-items:center;padding:18px;background:radial-gradient(circle at 50% 25%,#273040 0,#11161e 56%,#0b0f15 100%);border-bottom:1px solid #252d39}
-.component-photo img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;border-radius:12px}
+.component-photo{height:285px;display:grid;place-items:center;padding:28px;background:linear-gradient(180deg,#171d28 0%,#111720 58%,#0e131b 100%);border-bottom:1px solid #2a3340;overflow:hidden}
+.component-photo img{display:block;max-width:78%;max-height:78%;width:auto;height:auto;object-fit:contain;border-radius:14px;filter:drop-shadow(0 12px 24px #0006)}
 .component-body{padding:22px}
 .component-tag{display:inline-flex;align-items:center;min-height:26px;padding:0 9px;border-radius:99px;font-size:10px;font-weight:900;letter-spacing:.07em;text-transform:uppercase}
 .component-tag.required{background:#4b291c;border:1px solid #75452f;color:#ffad7d}
@@ -331,8 +331,8 @@ background:linear-gradient(180deg,#131821,#0e1219);border-color:#283141;box-shad
 .component-specs{display:flex;flex-wrap:wrap;gap:7px;margin:18px 0}
 .component-specs span{padding:6px 9px;border:1px solid #2d3745;border-radius:99px;background:#0b0f15;color:#8d98a8;font-size:11px;font-weight:700}
 .component-buy{width:100%;justify-content:center;text-align:center}
-@media(max-width:800px){.components-grid{grid-template-columns:1fr}.component-photo{height:240px}.component-body p{min-height:0}.component-note{grid-template-columns:1fr;gap:7px}}
-@media(max-width:500px){.component-photo{height:210px}.component-body{padding:18px}.component-body h2{font-size:22px}}
+@media(max-width:800px){.components-grid{grid-template-columns:1fr}.component-photo{height:260px}.component-photo img{max-width:82%;max-height:82%}.component-body p{min-height:0}.component-note{grid-template-columns:1fr;gap:7px}}
+@media(max-width:500px){.component-photo{height:225px;padding:20px}.component-photo img{max-width:88%;max-height:88%}.component-body{padding:18px}.component-body h2{font-size:22px}}
 
 /* Fiery Lamp Control page */
 .control-hero{padding-bottom:58px}
@@ -456,3 +456,6 @@ background:linear-gradient(180deg,#131821,#0e1219);border-color:#283141;box-shad
 .stats-action-status.success{border-color:#285f3a;background:#102419;color:#9ee8b5}
 .stats-action-status.error{border-color:#72363a;background:#281417;color:#ffaaaa}
 @media(max-width:700px){.stats-toolbar{align-items:flex-start;flex-direction:column}.stats-toolbar-actions{width:100%;justify-content:flex-start}.stats-toolbar-actions label{flex:1;min-width:150px}.stats-toolbar-actions select{width:100%}}
+
+.component-buy-group{display:grid;gap:9px}
+.component-buy-group .component-buy{margin:0}
