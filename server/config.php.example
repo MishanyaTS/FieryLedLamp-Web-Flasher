@@ -1,0 +1,15 @@
+<?php
+// Сохранить на HostiMan как: /www/fieryledlamp-private/config.php
+// Не помещать этот файл в public-каталог.
+return [
+    'db_dsn' => 'mysql:host=localhost;dbname=FIERY_DB;charset=utf8mb4',
+    'db_user' => 'FIERY_DB_USER',
+    'db_password' => 'CHANGE_ME',
+    'app_url' => 'https://fieryledlamp.ru',
+    'app_key' => 'CHANGE_TO_LONG_RANDOM_SECRET',
+    'mail_provider' => 'resend',
+    'resend_api_key' => 're_CHANGE_ME',
+    'mail_from' => 'FieryLedLamp <updates@fieryledlamp.ru>',
+    'mail_from_name' => 'FieryLedLamp',
+    'mail_from_email' => 'updates@fieryledlamp.ru',
+];
