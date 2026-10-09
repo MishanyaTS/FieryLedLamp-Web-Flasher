@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#0b0d12">
+  <title>Статистика — FieryLedLamp</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="shell nav-wrap">
+    <a class="brand" href="/"><span class="brand-mark">🔥</span><span>FieryLedLamp</span></a>
+    <button class="menu-btn" type="button" aria-expanded="false" aria-controls="site-nav">Меню</button>
+    <nav class="nav" id="site-nav">
+      <a href="/">Главная</a>
+      <a href="/setup.html">Начало работы</a>
+      <a href="/instruction.html">Инструкция</a>
+      <a href="/hardware.html">Подключение</a>
+      <a href="/components.html">Компоненты</a>
+      <a href="/downloads.html">Скачать</a>
+      <a href="/fiery-lamp-control.html">Fiery Lamp Control</a>
+      <a class="active" href="/account.html">Аккаунт</a>
+      <a href="/versions.html">История версий</a>
+      <a class="nav-cta" href="https://firmware.fieryledlamp.ru">Прошить</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="page-hero shell">
+    <span class="eyebrow">АДМИНИСТРАТОР</span>
+    <h1>Статистика FieryLedLamp</h1>
+    <p>Посещения, регистрации, страны и скачивания проекта. Данные доступны только администратору.</p>
+  </section>
+
+  <section id="adminStats" class="shell stats-shell">
+    <div class="stats-toolbar">
+      <div><span class="eyebrow">АНАЛИТИКА</span><h2 style="margin:5px 0 0">Общая статистика</h2></div>
+      <label><select id="statsDays" aria-label="Период статистики"><option value="7">7 дней</option><option value="30" selected>30 дней</option><option value="90">90 дней</option><option value="365">1 год</option></select></label>
+    </div>
+
+    <div id="statsLoading" class="stats-loading">Загрузка статистики…</div>
+
+    <div id="statsContent" hidden>
+      <div class="stats-cards">
+        <div class="stats-card"><span>Посещения сайта</span><strong id="statPageViews">0</strong></div>
+        <div class="stats-card"><span>Посещения Web Flasher</span><strong id="statFlasherViews">0</strong></div>
+        <div class="stats-card"><span>Уникальные посетители</span><strong id="statUnique">0</strong></div>
+        <div class="stats-card"><span>Регистрации</span><strong id="statRegistrations">0</strong></div>
+        <div class="stats-card"><span>Подтверждены</span><strong id="statVerified">0</strong></div>
+        <div class="stats-card"><span>Подписчики</span><strong id="statSubscribers">0</strong></div>
+        <div class="stats-card"><span>Скачивания прошивки</span><strong id="statFirmware">0</strong></div>
+        <div class="stats-card"><span>Windows</span><strong id="statWindows">0</strong></div>
+        <div class="stats-card"><span>iOS</span><strong id="statIos">0</strong></div>
+        <div class="stats-card"><span>Android / RuStore</span><strong id="statAndroid">0</strong></div>
+      </div>
+
+      <section class="stats-section">
+        <div class="stats-section-head">
+          <div><h2>Выбранный период</h2><p>Посещения, регистрации и скачивания по дням.</p></div>
+          <div class="stats-period">
+            <div><small>Посещений</small><strong id="periodVisits">0</strong></div>
+            <div><small>Уникальных</small><strong id="periodUnique">0</strong></div>
+            <div><small>Регистраций</small><strong id="periodRegistrations">0</strong></div>
+          </div>
+        </div>
+        <div id="statsChart" class="stats-chart"></div>
+      </section>
+
+      <section class="stats-section">
+        <div class="stats-section-head"><div><h2>Страны и страницы</h2><p>Данные за выбранный период.</p></div></div>
+        <div class="stats-tables">
+          <div class="stats-table-wrap"><table class="stats-table"><thead><tr><th>Страна посетителей</th><th>Посещения</th></tr></thead><tbody id="countryRows"></tbody></table></div>
+          <div class="stats-table-wrap"><table class="stats-table"><thead><tr><th>Страна регистрации</th><th>Регистрации</th></tr></thead><tbody id="registrationCountryRows"></tbody></table></div>
+          <div class="stats-table-wrap"><table class="stats-table"><thead><tr><th>Страница</th><th>Просмотры</th></tr></thead><tbody id="pageRows"></tbody></table></div>
+        </div>
+        <div id="statsPrivacy" class="stats-privacy"></div>
+      </section>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="shell footer-grid">
+    <div><a class="brand" href="/"><span class="brand-mark">🔥</span><span>FieryLedLamp</span></a><p>Открытый проект умной LED-лампы на ESP32-S3.</p></div>
+    <div><b>Администратор</b><a href="/account.html">Аккаунт</a><a href="/admin-notifications.html">Рассылка обновлений</a><a href="/admin-stats.html">Статистика</a></div>
+    <div><b>Ссылки</b><a href="https://github.com/MishanyaTS/FieryLedLamp" target="_blank" rel="noopener">GitHub</a><a href="https://firmware.fieryledlamp.ru">Web Flasher</a></div>
+  </div>
+  <div class="shell footer-bottom">FieryLedLamp · 2026</div>
+</footer>
+<script src="/site.js"></script>
+</body>
+</html>
