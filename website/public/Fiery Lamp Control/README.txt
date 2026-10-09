@@ -1,1 +1,8 @@
-Fiery Lamp Control\n\nПри деплое сюда автоматически загружаются FieryLampControl.exe и FieryLampControl.ipa.\nAndroid распространяется через RuStore.\n
+Fiery Lamp Control
+
+Файлы хранятся непосредственно в этой папке репозитория:
+- FieryLampControl.exe
+- FieryLampControl.ipa
+
+При деплое сайта эти файлы загружаются на HostiMan без скачивания из GitHub Releases.
+Android распространяется через RuStore.
