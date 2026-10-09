@@ -446,3 +446,13 @@ background:linear-gradient(180deg,#131821,#0e1219);border-color:#283141;box-shad
 .users-empty{text-align:center!important;color:#7e8998;padding:34px!important}
 @media(max-width:1050px){.users-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.users-toolbar{grid-template-columns:1fr 1fr}.users-refresh{width:100%}}
 @media(max-width:620px){.users-cards{grid-template-columns:1fr 1fr}.users-toolbar{grid-template-columns:1fr}.users-summary{align-items:flex-start;flex-direction:column}.users-panel{padding:15px}}
+
+.btn.danger{border-color:#6b2f32;background:#2a1518;color:#ff9b9f}
+.btn.danger:hover{background:#36191d;border-color:#8a3b40}
+
+.stats-toolbar-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+.stats-refresh,.stats-clear{min-height:42px;padding-inline:15px}
+.stats-action-status{margin:-6px 0 16px;padding:12px 14px;border-radius:12px;border:1px solid #303949;background:#10151d;font-size:12px;line-height:1.5}
+.stats-action-status.success{border-color:#285f3a;background:#102419;color:#9ee8b5}
+.stats-action-status.error{border-color:#72363a;background:#281417;color:#ffaaaa}
+@media(max-width:700px){.stats-toolbar{align-items:flex-start;flex-direction:column}.stats-toolbar-actions{width:100%;justify-content:flex-start}.stats-toolbar-actions label{flex:1;min-width:150px}.stats-toolbar-actions select{width:100%}}
