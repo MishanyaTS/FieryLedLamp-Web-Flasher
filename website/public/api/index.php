@@ -130,6 +130,11 @@ switch ($action) {
         require_method('GET');
         admin_stats($pdo);
         break;
+    case 'admin-stats-clear':
+        require_method('POST');
+        require_csrf();
+        admin_stats_clear($pdo);
+        break;
     case 'admin-users':
         require_method('GET');
         admin_users($pdo);
@@ -460,6 +465,29 @@ function admin_users(PDO $pdo): never {
         'filter' => $filter,
         'sort' => $sort,
     ]);
+}
+
+function admin_stats_clear(PDO $pdo): never {
+    require_admin($pdo);
+
+    try {
+        $pdo->beginTransaction();
+        $pdo->exec('DELETE FROM analytics_counters');
+        $pdo->exec('DELETE FROM analytics_unique_visitors');
+        $pdo->exec('DELETE FROM analytics_geo_cache');
+        $pdo->commit();
+
+        json_response([
+            'ok' => true,
+            'message' => 'Статистика очищена. Пользователи и аккаунты не удалены.',
+        ]);
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        json_response([
+            'ok' => false,
+            'message' => 'Не удалось очистить статистику.',
+        ], 500);
+    }
 }
 
 function admin_stats(PDO $pdo): never {
