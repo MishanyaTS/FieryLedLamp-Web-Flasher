@@ -7,3 +7,4 @@ Disallow: /account.html
 Disallow: /admin-notifications.html
 
 Disallow: /admin-stats.html
+Disallow: /admin-users.html
