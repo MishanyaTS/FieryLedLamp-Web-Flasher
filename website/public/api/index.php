@@ -118,6 +118,10 @@ switch ($action) {
         require_method('POST');
         track_public_event($pdo, $config);
         break;
+    case 'track-pixel':
+        require_method('GET');
+        track_pixel_event($pdo, $config);
+        break;
     case 'download':
         require_method('GET');
         track_download_and_redirect($pdo, $config);
@@ -322,6 +326,29 @@ function track_public_event(PDO $pdo, array $config): never {
         (string)($d['visitorId'] ?? '')
     );
     json_response(['ok' => true]);
+}
+
+function track_pixel_event(PDO $pdo, array $config): never {
+    $event = (string)($_GET['event'] ?? '');
+    if (!in_array($event, ['page_view','firmware_page_view','firmware_download'], true)) {
+        http_response_code(204);
+        exit;
+    }
+
+    record_analytics_event(
+        $pdo,
+        $config,
+        $event,
+        (string)($_GET['item'] ?? ''),
+        (string)($_GET['path'] ?? ''),
+        (string)($_GET['visitorId'] ?? '')
+    );
+
+    header('Content-Type: image/gif');
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+    header('Pragma: no-cache');
+    echo base64_decode('R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==');
+    exit;
 }
 
 function track_download_and_redirect(PDO $pdo, array $config): never {
