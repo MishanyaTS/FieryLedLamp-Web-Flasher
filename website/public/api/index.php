@@ -50,6 +50,18 @@ try {
 
 $action = (string)($_GET['action'] ?? '');
 
+if ($action === 'track') {
+    $origin = (string)($_SERVER['HTTP_ORIGIN'] ?? '');
+    if ($origin === 'https://firmware.fieryledlamp.ru') {
+        header('Access-Control-Allow-Origin: https://firmware.fieryledlamp.ru');
+        header('Vary: Origin');
+    }
+    if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
+        http_response_code(204);
+        exit;
+    }
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'verify-email') {
     verify_email($pdo, $config);
 }
@@ -101,6 +113,18 @@ switch ($action) {
         require_method('POST');
         require_csrf();
         admin_notify($pdo, $config);
+        break;
+    case 'track':
+        require_method('POST');
+        track_public_event($pdo, $config);
+        break;
+    case 'download':
+        require_method('GET');
+        track_download_and_redirect($pdo, $config);
+        break;
+    case 'admin-stats':
+        require_method('GET');
+        admin_stats($pdo);
         break;
     default:
         json_response(['ok' => false, 'message' => 'Неизвестный запрос.'], 404);
@@ -187,6 +211,254 @@ function require_admin(PDO $pdo): array {
         json_response(['ok' => false, 'message' => 'Нет прав администратора.'], 403);
     }
     return $user;
+}
+
+function analytics_visitor_hash(array $config, string $provided = ''): string {
+    $seed = trim($provided);
+    if ($seed === '' || strlen($seed) > 160) {
+        $seed = (string)($_SERVER['REMOTE_ADDR'] ?? '') . '|' . (string)($_SERVER['HTTP_USER_AGENT'] ?? '');
+    }
+    $key = (string)($config['app_key'] ?? 'fieryledlamp');
+    return hash_hmac('sha256', $seed, $key);
+}
+
+function analytics_country(PDO $pdo, string $visitorHash): array {
+    try {
+        $stmt = $pdo->prepare('SELECT country_code,country_name FROM analytics_geo_cache WHERE visitor_hash=? LIMIT 1');
+        $stmt->execute([$visitorHash]);
+        $cached = $stmt->fetch();
+        if ($cached) {
+            return [
+                (string)($cached['country_code'] ?: 'XX'),
+                (string)($cached['country_name'] ?: 'Неизвестно'),
+            ];
+        }
+    } catch (Throwable $e) {
+        return ['XX', 'Неизвестно'];
+    }
+
+    $code = 'XX';
+    $name = 'Неизвестно';
+    $ip = (string)($_SERVER['REMOTE_ADDR'] ?? '');
+    $isPublicIp = $ip !== ''
+        && filter_var($ip, FILTER_VALIDATE_IP)
+        && filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
+
+    if ($isPublicIp && function_exists('curl_init')) {
+        $ch = curl_init('https://ipwho.is/' . rawurlencode($ip) . '?fields=success,country,country_code');
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 3,
+            CURLOPT_CONNECTTIMEOUT => 2,
+            CURLOPT_USERAGENT => 'FieryLedLamp-Stats/1.0',
+        ]);
+        $raw = curl_exec($ch);
+        $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode >= 200 && $httpCode < 300 && is_string($raw) && $raw !== '') {
+            $geo = json_decode($raw, true);
+            if (is_array($geo) && !empty($geo['success'])) {
+                $candidateCode = strtoupper((string)($geo['country_code'] ?? ''));
+                $candidateName = trim((string)($geo['country'] ?? ''));
+                if (preg_match('/^[A-Z]{2}$/', $candidateCode)) $code = $candidateCode;
+                if ($candidateName !== '') $name = substr($candidateName, 0, 80);
+            }
+        }
+    }
+
+    try {
+        $stmt = $pdo->prepare('INSERT INTO analytics_geo_cache(visitor_hash,country_code,country_name,resolved_at) VALUES(?,?,?,NOW()) ON DUPLICATE KEY UPDATE country_code=VALUES(country_code),country_name=VALUES(country_name),resolved_at=VALUES(resolved_at)');
+        $stmt->execute([$visitorHash, $code, $name]);
+    } catch (Throwable $e) {}
+
+    return [$code, $name];
+}
+
+function record_analytics_event(PDO $pdo, array $config, string $eventType, string $item = '', string $path = '', string $visitorId = ''): void {
+    $allowed = [
+        'page_view',
+        'firmware_page_view',
+        'registration',
+        'firmware_download',
+        'app_windows_download',
+        'app_ios_download',
+        'app_android_click',
+    ];
+    if (!in_array($eventType, $allowed, true)) return;
+
+    $item = substr(trim($item), 0, 80);
+    $path = substr(trim($path), 0, 255);
+    $visitorHash = analytics_visitor_hash($config, $visitorId);
+
+    try {
+        [$countryCode, $countryName] = analytics_country($pdo, $visitorHash);
+
+        $stmt = $pdo->prepare('INSERT INTO analytics_counters(stat_date,event_type,item,path,country_code,country_name,event_count) VALUES(CURDATE(),?,?,?,?,?,1) ON DUPLICATE KEY UPDATE event_count=event_count+1,country_name=VALUES(country_name)');
+        $stmt->execute([$eventType, $item, $path, $countryCode, $countryName]);
+
+        if ($eventType === 'page_view' || $eventType === 'firmware_page_view') {
+            $stmt = $pdo->prepare('INSERT IGNORE INTO analytics_unique_visitors(stat_date,visitor_hash,country_code,country_name) VALUES(CURDATE(),?,?,?)');
+            $stmt->execute([$visitorHash, $countryCode, $countryName]);
+        }
+    } catch (Throwable $e) {
+        // Statistics must never break registration, downloads, or the public site.
+    }
+}
+
+function track_public_event(PDO $pdo, array $config): never {
+    $d = input_json();
+    $event = (string)($d['event'] ?? '');
+    if (!in_array($event, ['page_view','firmware_page_view','firmware_download'], true)) {
+        json_response(['ok' => false, 'message' => 'Некорректное событие.'], 422);
+    }
+
+    record_analytics_event(
+        $pdo,
+        $config,
+        $event,
+        (string)($d['item'] ?? ''),
+        (string)($d['path'] ?? ''),
+        (string)($d['visitorId'] ?? '')
+    );
+    json_response(['ok' => true]);
+}
+
+function track_download_and_redirect(PDO $pdo, array $config): never {
+    $file = (string)($_GET['file'] ?? '');
+    $map = [
+        'windows' => ['app_windows_download', app_url($config) . '/Fiery%20Lamp%20Control/FieryLampControl.exe'],
+        'ios' => ['app_ios_download', app_url($config) . '/Fiery%20Lamp%20Control/FieryLampControl.ipa'],
+        'android' => ['app_android_click', 'https://www.rustore.ru/catalog/app/com.mishanyats.fierylampcontrol'],
+    ];
+    if (!isset($map[$file])) {
+        http_response_code(404);
+        exit;
+    }
+
+    [$event, $target] = $map[$file];
+    record_analytics_event($pdo, $config, $event, $file, '/fiery-lamp-control.html', '');
+    header('Location: ' . $target, true, 302);
+    exit;
+}
+
+function analytics_sum(PDO $pdo, string $eventType): int {
+    $stmt = $pdo->prepare('SELECT COALESCE(SUM(event_count),0) FROM analytics_counters WHERE event_type=?');
+    $stmt->execute([$eventType]);
+    return (int)$stmt->fetchColumn();
+}
+
+function admin_stats(PDO $pdo): never {
+    require_admin($pdo);
+
+    $days = (int)($_GET['days'] ?? 30);
+    if (!in_array($days, [7,30,90,365], true)) $days = 30;
+    $from = date('Y-m-d', time() - (($days - 1) * 86400));
+
+    try {
+        $totals = [
+            'pageViews' => analytics_sum($pdo, 'page_view'),
+            'flasherViews' => analytics_sum($pdo, 'firmware_page_view'),
+            'firmwareDownloads' => analytics_sum($pdo, 'firmware_download'),
+            'windowsDownloads' => analytics_sum($pdo, 'app_windows_download'),
+            'iosDownloads' => analytics_sum($pdo, 'app_ios_download'),
+            'androidClicks' => analytics_sum($pdo, 'app_android_click'),
+            'registrations' => (int)$pdo->query('SELECT COUNT(*) FROM users')->fetchColumn(),
+            'verifiedUsers' => (int)$pdo->query('SELECT COUNT(*) FROM users WHERE email_verified_at IS NOT NULL')->fetchColumn(),
+            'subscribers' => (int)$pdo->query('SELECT COUNT(*) FROM users WHERE email_verified_at IS NOT NULL AND notify_updates=1')->fetchColumn(),
+            'uniqueVisitors' => (int)$pdo->query('SELECT COUNT(DISTINCT visitor_hash) FROM analytics_unique_visitors')->fetchColumn(),
+        ];
+
+        $stmt = $pdo->prepare("SELECT stat_date,event_type,SUM(event_count) AS cnt
+            FROM analytics_counters
+            WHERE stat_date>=? AND event_type IN ('page_view','firmware_page_view','registration','firmware_download','app_windows_download','app_ios_download','app_android_click')
+            GROUP BY stat_date,event_type ORDER BY stat_date");
+        $stmt->execute([$from]);
+        $rows = $stmt->fetchAll();
+
+        $daily = [];
+        for ($i = 0; $i < $days; $i++) {
+            $date = date('Y-m-d', strtotime($from . ' +' . $i . ' days'));
+            $daily[$date] = ['date'=>$date,'visits'=>0,'registrations'=>0,'firmware'=>0,'apps'=>0];
+        }
+        foreach ($rows as $row) {
+            $date = (string)$row['stat_date'];
+            if (!isset($daily[$date])) continue;
+            $count = (int)$row['cnt'];
+            switch ((string)$row['event_type']) {
+                case 'page_view':
+                case 'firmware_page_view':
+                    $daily[$date]['visits'] += $count;
+                    break;
+                case 'registration':
+                    $daily[$date]['registrations'] += $count;
+                    break;
+                case 'firmware_download':
+                    $daily[$date]['firmware'] += $count;
+                    break;
+                case 'app_windows_download':
+                case 'app_ios_download':
+                case 'app_android_click':
+                    $daily[$date]['apps'] += $count;
+                    break;
+            }
+        }
+
+        $stmt = $pdo->prepare("SELECT country_code,country_name,SUM(event_count) AS cnt
+            FROM analytics_counters
+            WHERE stat_date>=? AND event_type IN ('page_view','firmware_page_view')
+            GROUP BY country_code,country_name ORDER BY cnt DESC LIMIT 15");
+        $stmt->execute([$from]);
+        $countries = $stmt->fetchAll();
+
+        $stmt = $pdo->prepare("SELECT country_code,country_name,SUM(event_count) AS cnt
+            FROM analytics_counters
+            WHERE stat_date>=? AND event_type='registration'
+            GROUP BY country_code,country_name ORDER BY cnt DESC LIMIT 15");
+        $stmt->execute([$from]);
+        $registrationCountries = $stmt->fetchAll();
+
+        $stmt = $pdo->prepare("SELECT path,SUM(event_count) AS cnt
+            FROM analytics_counters
+            WHERE stat_date>=? AND event_type='page_view' AND path<>''
+            GROUP BY path ORDER BY cnt DESC LIMIT 15");
+        $stmt->execute([$from]);
+        $topPages = $stmt->fetchAll();
+
+        $stmt = $pdo->prepare('SELECT COUNT(DISTINCT visitor_hash) FROM analytics_unique_visitors WHERE stat_date>=?');
+        $stmt->execute([$from]);
+        $periodUnique = (int)$stmt->fetchColumn();
+
+        $stmt = $pdo->prepare("SELECT COALESCE(SUM(event_count),0) FROM analytics_counters WHERE stat_date>=? AND event_type IN ('page_view','firmware_page_view')");
+        $stmt->execute([$from]);
+        $periodVisits = (int)$stmt->fetchColumn();
+
+        $stmt = $pdo->prepare('SELECT COUNT(*) FROM users WHERE created_at>=?');
+        $stmt->execute([$from . ' 00:00:00']);
+        $periodRegistrations = (int)$stmt->fetchColumn();
+
+        json_response([
+            'ok' => true,
+            'days' => $days,
+            'from' => $from,
+            'totals' => $totals,
+            'period' => [
+                'visits' => $periodVisits,
+                'uniqueVisitors' => $periodUnique,
+                'registrations' => $periodRegistrations,
+            ],
+            'daily' => array_values($daily),
+            'countries' => $countries,
+            'registrationCountries' => $registrationCountries,
+            'topPages' => $topPages,
+            'privacy' => 'IP-адреса не сохраняются. Для определения страны IP передаётся сервису ipwho.is и кэшируется только страна.',
+        ]);
+    } catch (Throwable $e) {
+        json_response([
+            'ok' => false,
+            'message' => 'Таблицы статистики ещё не созданы. Импортируйте server/stats_migration.sql в базу fieryledlamp.',
+        ], 503);
+    }
 }
 
 function issue_token(PDO $pdo, int $userId, string $type, int $ttl): string {
@@ -311,6 +583,14 @@ function register_user(PDO $pdo, array $config): never {
         ->execute([$name, $email, $hash, $notify]);
 
     $id = (int)$pdo->lastInsertId();
+    record_analytics_event(
+        $pdo,
+        $config,
+        'registration',
+        '',
+        '/register.html',
+        (string)($d['visitorId'] ?? '')
+    );
     $_SESSION['user_id'] = $id;
     session_regenerate_id(true);
 
