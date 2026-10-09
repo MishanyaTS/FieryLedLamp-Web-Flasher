@@ -1,0 +1,1 @@
+Fiery Lamp Control\n\nПри деплое сюда автоматически загружаются FieryLampControl.exe и FieryLampControl.ipa.\nAndroid распространяется через RuStore.\n
