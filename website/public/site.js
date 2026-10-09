@@ -839,3 +839,33 @@
 
   loadUsers();
 })();
+
+
+(() => {
+  const passwordInputs = [...document.querySelectorAll('input[type="password"]')];
+
+  passwordInputs.forEach(input => {
+    if (input.closest(".password-field")) return;
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "password-field";
+    input.parentNode.insertBefore(wrapper, input);
+    wrapper.appendChild(input);
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "password-visibility-toggle";
+    button.setAttribute("aria-label", "Показать пароль");
+    button.setAttribute("title", "Показать пароль");
+    button.innerHTML = '<span class="password-eye" aria-hidden="true"></span>';
+    wrapper.appendChild(button);
+
+    button.addEventListener("click", () => {
+      const hidden = input.type === "password";
+      input.type = hidden ? "text" : "password";
+      button.classList.toggle("visible", hidden);
+      button.setAttribute("aria-label", hidden ? "Скрыть пароль" : "Показать пароль");
+      button.setAttribute("title", hidden ? "Скрыть пароль" : "Показать пароль");
+    });
+  });
+})();
