@@ -320,4 +320,4 @@ ui.selectPortBtn.addEventListener("click",async()=>{if(isBusy)return;clearResult
 ui.flashBtn.addEventListener("click",flash);ui.clearLogBtn.addEventListener("click",()=>{ui.log.textContent="";});
 if(ui.saveSettings) ui.saveSettings.addEventListener("change",syncEraseAllState);
 if("serial"in navigator)navigator.serial.addEventListener("disconnect",e=>{if(selectedPort&&e.target===selectedPort&&!isBusy){ui.portDot.classList.remove("good");ui.portText.textContent="Порт отключён";setStep(1);log("COM-порт отключён.");}});
-(async function init(){trackAnalytics("firmware_page_view", "", "/");setStep(0);checkCompatibility();try{await loadManifest();}catch(e){ui.firmwareName.textContent="Ошибка конфигурации";showResult("error",e?.message||String(e));log(`ОШИБКА: ${e?.message||e}`);}})();
+(async function init(){setStep(0);checkCompatibility();try{await loadManifest();}catch(e){ui.firmwareName.textContent="Ошибка конфигурации";showResult("error",e?.message||String(e));log(`ОШИБКА: ${e?.message||e}`);}})();
