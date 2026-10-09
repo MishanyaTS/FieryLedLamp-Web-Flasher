@@ -130,6 +130,10 @@ switch ($action) {
         require_method('GET');
         admin_stats($pdo);
         break;
+    case 'admin-users':
+        require_method('GET');
+        admin_users($pdo);
+        break;
     default:
         json_response(['ok' => false, 'message' => 'Неизвестный запрос.'], 404);
 }
@@ -373,6 +377,89 @@ function analytics_sum(PDO $pdo, string $eventType): int {
     $stmt = $pdo->prepare('SELECT COALESCE(SUM(event_count),0) FROM analytics_counters WHERE event_type=?');
     $stmt->execute([$eventType]);
     return (int)$stmt->fetchColumn();
+}
+
+function admin_users(PDO $pdo): never {
+    require_admin($pdo);
+
+    $query = trim((string)($_GET['q'] ?? ''));
+    $filter = (string)($_GET['filter'] ?? 'all');
+    $sort = (string)($_GET['sort'] ?? 'newest');
+
+    $allowedFilters = ['all','verified','unverified','subscribed','admin'];
+    if (!in_array($filter, $allowedFilters, true)) $filter = 'all';
+
+    $orderMap = [
+        'newest' => 'created_at DESC, id DESC',
+        'oldest' => 'created_at ASC, id ASC',
+        'name' => 'name ASC, id DESC',
+        'email' => 'email ASC, id DESC',
+    ];
+    if (!isset($orderMap[$sort])) $sort = 'newest';
+
+    $where = [];
+    $params = [];
+
+    if ($query !== '') {
+        $where[] = '(name LIKE ? OR email LIKE ?)';
+        $like = '%' . $query . '%';
+        $params[] = $like;
+        $params[] = $like;
+    }
+
+    switch ($filter) {
+        case 'verified':
+            $where[] = 'email_verified_at IS NOT NULL';
+            break;
+        case 'unverified':
+            $where[] = 'email_verified_at IS NULL';
+            break;
+        case 'subscribed':
+            $where[] = 'notify_updates=1';
+            break;
+        case 'admin':
+            $where[] = 'is_admin=1';
+            break;
+    }
+
+    $sql = 'SELECT id,name,email,email_verified_at,notify_updates,is_admin,created_at,updated_at FROM users';
+    if ($where) $sql .= ' WHERE ' . implode(' AND ', $where);
+    $sql .= ' ORDER BY ' . $orderMap[$sort] . ' LIMIT 500';
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    $rows = $stmt->fetchAll();
+
+    $users = array_map(static function(array $row): array {
+        return [
+            'id' => (int)$row['id'],
+            'name' => (string)$row['name'],
+            'email' => (string)$row['email'],
+            'verified' => $row['email_verified_at'] !== null,
+            'verifiedAt' => $row['email_verified_at'],
+            'notifyUpdates' => (bool)$row['notify_updates'],
+            'isAdmin' => (bool)$row['is_admin'],
+            'createdAt' => (string)$row['created_at'],
+            'updatedAt' => (string)$row['updated_at'],
+        ];
+    }, $rows);
+
+    $counts = [
+        'all' => (int)$pdo->query('SELECT COUNT(*) FROM users')->fetchColumn(),
+        'verified' => (int)$pdo->query('SELECT COUNT(*) FROM users WHERE email_verified_at IS NOT NULL')->fetchColumn(),
+        'unverified' => (int)$pdo->query('SELECT COUNT(*) FROM users WHERE email_verified_at IS NULL')->fetchColumn(),
+        'subscribed' => (int)$pdo->query('SELECT COUNT(*) FROM users WHERE notify_updates=1')->fetchColumn(),
+        'admins' => (int)$pdo->query('SELECT COUNT(*) FROM users WHERE is_admin=1')->fetchColumn(),
+    ];
+
+    json_response([
+        'ok' => true,
+        'users' => $users,
+        'count' => count($users),
+        'counts' => $counts,
+        'filter' => $filter,
+        'sort' => $sort,
+    ]);
 }
 
 function admin_stats(PDO $pdo): never {
