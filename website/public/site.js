@@ -220,3 +220,296 @@
       if (noResults) noResults.hidden = true;
     });
 })();
+
+(() => {
+  const api = (action, options = {}) => fetch("/api/index.php?action=" + encodeURIComponent(action), {
+    credentials: "same-origin",
+    cache: "no-store",
+    ...options,
+    headers: {
+      "content-type": "application/json",
+      ...(options.headers || {})
+    }
+  });
+
+  const parse = async response => {
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.ok) throw new Error(data.message || "Ошибка сервера.");
+    return data;
+  };
+
+  const setStatus = (form, message, type = "") => {
+    const box = form?.querySelector(".form-status");
+    if (!box) return;
+    box.textContent = message || "";
+    box.className = "form-status" + (type ? " " + type : "");
+  };
+
+  const busy = (button, state, text = "Подождите…") => {
+    if (!button) return;
+    if (state) {
+      button.dataset.oldText = button.textContent;
+      button.textContent = text;
+      button.disabled = true;
+    } else {
+      button.textContent = button.dataset.oldText || button.textContent;
+      button.disabled = false;
+    }
+  };
+
+  const params = new URLSearchParams(location.search);
+
+  const registerForm = document.querySelector("#registerForm");
+  if (registerForm) {
+    registerForm.addEventListener("submit", async event => {
+      event.preventDefault();
+      if (registerForm.password.value !== registerForm.password2.value) {
+        setStatus(registerForm, "Пароли не совпадают.", "error");
+        return;
+      }
+      const button = registerForm.querySelector("button[type=submit]");
+      busy(button, true, "Регистрация…");
+      setStatus(registerForm, "");
+      try {
+        const data = await parse(await api("register", {
+          method: "POST",
+          body: JSON.stringify({
+            name: registerForm.name.value.trim(),
+            email: registerForm.email.value.trim(),
+            password: registerForm.password.value,
+            notifyUpdates: registerForm.notifyUpdates.checked,
+            website: registerForm.website.value
+          })
+        }));
+        setStatus(registerForm,
+          data.emailSent
+            ? "Аккаунт создан. На почту отправлена ссылка подтверждения."
+            : "Аккаунт создан, но письмо подтверждения отправить не удалось. Его можно отправить повторно из аккаунта.",
+          data.emailSent ? "success" : "error"
+        );
+        setTimeout(() => location.href = "/account.html", 700);
+      } catch (error) {
+        setStatus(registerForm, error.message, "error");
+      } finally {
+        busy(button, false);
+      }
+    });
+  }
+
+  const loginForm = document.querySelector("#loginForm");
+  if (loginForm) {
+    if (params.get("verified") === "1") setStatus(loginForm, "E-mail подтверждён. Теперь можно войти.", "success");
+    if (params.get("verified") === "0") setStatus(loginForm, "Ссылка подтверждения недействительна или устарела.", "error");
+    if (params.get("reset") === "1") setStatus(loginForm, "Пароль изменён. Войдите с новым паролем.", "success");
+
+    loginForm.addEventListener("submit", async event => {
+      event.preventDefault();
+      const button = loginForm.querySelector("button[type=submit]");
+      busy(button, true, "Вход…");
+      try {
+        await parse(await api("login", {
+          method: "POST",
+          body: JSON.stringify({
+            email: loginForm.email.value.trim(),
+            password: loginForm.password.value
+          })
+        }));
+        location.href = "/account.html";
+      } catch (error) {
+        setStatus(loginForm, error.message, "error");
+      } finally {
+        busy(button, false);
+      }
+    });
+  }
+
+  const forgotForm = document.querySelector("#forgotForm");
+  if (forgotForm) {
+    forgotForm.addEventListener("submit", async event => {
+      event.preventDefault();
+      const button = forgotForm.querySelector("button[type=submit]");
+      busy(button, true, "Отправка…");
+      try {
+        const data = await parse(await api("request-reset", {
+          method: "POST",
+          body: JSON.stringify({ email: forgotForm.email.value.trim() })
+        }));
+        setStatus(forgotForm, data.message, "success");
+      } catch (error) {
+        setStatus(forgotForm, error.message, "error");
+      } finally {
+        busy(button, false);
+      }
+    });
+  }
+
+  const resetForm = document.querySelector("#resetForm");
+  if (resetForm) {
+    resetForm.token.value = params.get("token") || "";
+    if (!resetForm.token.value) setStatus(resetForm, "В ссылке отсутствует токен восстановления.", "error");
+
+    resetForm.addEventListener("submit", async event => {
+      event.preventDefault();
+      if (resetForm.password.value !== resetForm.password2.value) {
+        setStatus(resetForm, "Пароли не совпадают.", "error");
+        return;
+      }
+      const button = resetForm.querySelector("button[type=submit]");
+      busy(button, true, "Сохранение…");
+      try {
+        await parse(await api("reset-password", {
+          method: "POST",
+          body: JSON.stringify({
+            token: resetForm.token.value,
+            password: resetForm.password.value
+          })
+        }));
+        location.href = "/login.html?reset=1";
+      } catch (error) {
+        setStatus(resetForm, error.message, "error");
+      } finally {
+        busy(button, false);
+      }
+    });
+  }
+
+  const account = document.querySelector("#accountPanel");
+  if (account) {
+    let csrf = "";
+
+    const accountStatus = (message, type = "") => {
+      const box = document.querySelector("#accountStatus");
+      box.textContent = message || "";
+      box.className = "form-status" + (type ? " " + type : "");
+    };
+
+    const loadAccount = async () => {
+      try {
+        const data = await parse(await api("me", { headers: {} }));
+        csrf = data.csrf;
+        document.querySelector("#accountName").textContent = data.user.name;
+        document.querySelector("#accountEmail").textContent = data.user.email;
+        document.querySelector("#accountCreated").textContent = data.user.createdAt || "—";
+        document.querySelector("#notifyUpdates").checked = Boolean(data.user.notifyUpdates);
+        const badge = document.querySelector("#verifyBadge");
+        badge.textContent = data.user.verified ? "E-mail подтверждён" : "E-mail не подтверждён";
+        badge.className = "auth-badge " + (data.user.verified ? "success" : "warning");
+        document.querySelector("#resendVerify").hidden = data.user.verified;
+        const adminLink = document.querySelector("#adminNotifyLink");
+        if (adminLink) adminLink.hidden = !data.user.isAdmin;
+        account.hidden = false;
+        document.querySelector("#accountLoading").hidden = true;
+      } catch (_) {
+        location.href = "/login.html";
+      }
+    };
+
+    document.querySelector("#savePreferences")?.addEventListener("click", async event => {
+      const button = event.currentTarget;
+      busy(button, true, "Сохранение…");
+      try {
+        await parse(await api("preferences", {
+          method: "POST",
+          headers: { "x-csrf-token": csrf },
+          body: JSON.stringify({ notifyUpdates: document.querySelector("#notifyUpdates").checked })
+        }));
+        accountStatus("Настройки сохранены.", "success");
+      } catch (error) {
+        accountStatus(error.message, "error");
+      } finally {
+        busy(button, false);
+      }
+    });
+
+    document.querySelector("#resendVerify")?.addEventListener("click", async event => {
+      const button = event.currentTarget;
+      busy(button, true, "Отправка…");
+      try {
+        const data = await parse(await api("resend-verification", {
+          method: "POST",
+          headers: { "x-csrf-token": csrf },
+          body: "{}"
+        }));
+        accountStatus(data.message, "success");
+      } catch (error) {
+        accountStatus(error.message, "error");
+      } finally {
+        busy(button, false);
+      }
+    });
+
+    document.querySelector("#logoutButton")?.addEventListener("click", async () => {
+      try {
+        await api("logout", { method: "POST", headers: { "x-csrf-token": csrf }, body: "{}" });
+      } finally {
+        location.href = "/login.html";
+      }
+    });
+
+    loadAccount();
+  }
+
+  const adminForm = document.querySelector("#adminNotifyForm");
+  if (adminForm) {
+    let csrf = "";
+    const result = document.querySelector("#adminNotifyResult");
+
+    const show = (message, type = "") => {
+      result.hidden = false;
+      result.textContent = message;
+      result.className = "notify-result" + (type ? " " + type : "");
+    };
+
+    const loadAdmin = async () => {
+      try {
+        const me = await parse(await api("me", { headers: {} }));
+        if (!me.user.isAdmin) throw new Error("Нет прав администратора.");
+        csrf = me.csrf;
+
+        const data = await parse(await api("admin-providers", { headers: {} }));
+        document.querySelector("#adminDbState").textContent = "Подключена";
+        document.querySelector("#adminMailState").textContent = data.emailConfigured ? "Готов" : "Не настроен";
+        document.querySelector("#adminSubscribers").textContent = data.subscribers;
+      } catch (error) {
+        show(error.message, "error");
+        adminForm.querySelectorAll("button,input,textarea").forEach(el => el.disabled = true);
+      }
+    };
+
+    const send = async dryRun => {
+      const button = dryRun ? document.querySelector("#adminDryRun") : document.querySelector("#adminSend");
+      busy(button, true, dryRun ? "Проверка…" : "Отправка…");
+      try {
+        const data = await parse(await api("admin-notify", {
+          method: "POST",
+          headers: { "x-csrf-token": csrf },
+          body: JSON.stringify({
+            version: adminForm.version.value.trim(),
+            title: adminForm.title.value.trim(),
+            summary: adminForm.summary.value.trim(),
+            url: adminForm.url.value.trim(),
+            dryRun
+          })
+        }));
+        show(
+          dryRun
+            ? "Получателей: " + data.planned
+            : "Отправлено: " + data.sent + ". Ошибок: " + data.failed + ". Уже отправлялось: " + data.skipped + ".",
+          dryRun ? "info" : "success"
+        );
+      } catch (error) {
+        show(error.message, "error");
+      } finally {
+        busy(button, false);
+      }
+    };
+
+    document.querySelector("#adminDryRun")?.addEventListener("click", () => send(true));
+    adminForm.addEventListener("submit", event => {
+      event.preventDefault();
+      if (confirm("Отправить уведомление зарегистрированным пользователям?")) send(false);
+    });
+
+    loadAdmin();
+  }
+})();

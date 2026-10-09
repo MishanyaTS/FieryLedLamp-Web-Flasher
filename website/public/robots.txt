@@ -1,3 +1,7 @@
 User-agent: *
 Allow: /
 Sitemap: https://fieryledlamp.ru/sitemap.xml
+
+Disallow: /api/
+Disallow: /account.html
+Disallow: /admin-notifications.html

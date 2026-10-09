@@ -53,6 +53,9 @@ jobs:
           test -s "website/public/Fiery Lamp Control/FieryLampControl.exe"
           test -s "website/public/Fiery Lamp Control/FieryLampControl.ipa"
 
+      - name: Validate registration PHP
+        run: php -l website/public/api/index.php
+
       - name: Install lftp
         run: |
           sudo apt-get update
