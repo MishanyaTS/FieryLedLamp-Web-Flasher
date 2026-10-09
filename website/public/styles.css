@@ -312,3 +312,24 @@ background:linear-gradient(180deg,#131821,#0e1219);border-color:#283141;box-shad
   padding-bottom:.10em;
   overflow:visible;
 }
+
+/* Components page */
+.components-section{padding-top:34px}
+.component-note{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:start;margin-bottom:26px;padding:18px 20px;border:1px solid #4b382f;border-radius:17px;background:linear-gradient(135deg,#181410,#10141c)}
+.component-note b{color:#ff9e69;white-space:nowrap}.component-note p{margin:0;color:#9ca7b6;line-height:1.6}
+.components-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.component-card{overflow:hidden;border:1px solid #283141;border-radius:22px;background:linear-gradient(180deg,#131821,#0e1219);box-shadow:0 16px 42px #0002;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+.component-card:hover{transform:translateY(-3px);border-color:#3b4657;box-shadow:0 22px 52px #0004}
+.component-photo{height:260px;display:grid;place-items:center;padding:18px;background:radial-gradient(circle at 50% 25%,#273040 0,#11161e 56%,#0b0f15 100%);border-bottom:1px solid #252d39}
+.component-photo img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;border-radius:12px}
+.component-body{padding:22px}
+.component-tag{display:inline-flex;align-items:center;min-height:26px;padding:0 9px;border-radius:99px;font-size:10px;font-weight:900;letter-spacing:.07em;text-transform:uppercase}
+.component-tag.required{background:#4b291c;border:1px solid #75452f;color:#ffad7d}
+.component-tag.optional{background:#121b25;border:1px solid #314153;color:#8fb5d8}
+.component-body h2{margin:12px 0 9px;font-size:24px;letter-spacing:-.03em}
+.component-body p{margin:0;color:#9ba6b5;line-height:1.6;min-height:72px}
+.component-specs{display:flex;flex-wrap:wrap;gap:7px;margin:18px 0}
+.component-specs span{padding:6px 9px;border:1px solid #2d3745;border-radius:99px;background:#0b0f15;color:#8d98a8;font-size:11px;font-weight:700}
+.component-buy{width:100%;justify-content:center;text-align:center}
+@media(max-width:800px){.components-grid{grid-template-columns:1fr}.component-photo{height:240px}.component-body p{min-height:0}.component-note{grid-template-columns:1fr;gap:7px}}
+@media(max-width:500px){.component-photo{height:210px}.component-body{padding:18px}.component-body h2{font-size:22px}}
