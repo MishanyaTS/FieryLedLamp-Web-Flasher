@@ -333,3 +333,24 @@ background:linear-gradient(180deg,#131821,#0e1219);border-color:#283141;box-shad
 .component-buy{width:100%;justify-content:center;text-align:center}
 @media(max-width:800px){.components-grid{grid-template-columns:1fr}.component-photo{height:240px}.component-body p{min-height:0}.component-note{grid-template-columns:1fr;gap:7px}}
 @media(max-width:500px){.component-photo{height:210px}.component-body{padding:18px}.component-body h2{font-size:22px}}
+
+/* Fiery Lamp Control page */
+.control-hero{padding-bottom:58px}
+.control-hero p{max-width:820px}
+.control-platforms{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;padding-top:36px}
+.control-card{position:relative;overflow:hidden;display:flex;flex-direction:column;min-height:390px;padding:26px;border:1px solid #283141;border-radius:24px;background:linear-gradient(180deg,#131821,#0e1219);box-shadow:0 18px 48px #0003;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+.control-card:hover{transform:translateY(-3px);border-color:#3c4657;box-shadow:0 24px 58px #0005}
+.control-card.featured{border-color:#68402d;background:radial-gradient(circle at 100% 0,#ff743321,transparent 48%),linear-gradient(180deg,#151821,#0e1219)}
+.control-platform-icon{display:grid;place-items:center;width:58px;height:58px;border:1px solid #333d4b;border-radius:17px;background:#0b0f15;font-size:28px;box-shadow:inset 0 1px #ffffff0b}
+.control-card.featured .control-platform-icon{border-color:#6c432f;background:#251711}
+.control-platform-label{display:inline-flex;align-self:flex-start;margin-top:18px;padding:6px 9px;border:1px solid #303949;border-radius:99px;color:#8e99a9;font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
+.control-card h2{margin:12px 0 10px;font-size:28px;letter-spacing:-.035em}
+.control-card p{margin:0;color:#9ca7b6;line-height:1.65}
+.control-card .component-specs{margin-top:18px}
+.control-card .control-download{margin-top:auto;width:100%;justify-content:center;text-align:center}
+.control-small{display:block;margin-top:10px;color:#697483;font-size:11px;line-height:1.45;text-align:center}
+.control-info{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:28px}
+.control-info>div{padding:20px;border:1px solid #283141;border-radius:18px;background:linear-gradient(180deg,#121720,#0d1118)}
+.control-info h3{margin:0 0 8px;font-size:17px}
+.control-info p{margin:0;color:#8e99a8;line-height:1.58;font-size:13px}
+@media(max-width:900px){.control-platforms{grid-template-columns:1fr}.control-card{min-height:0}.control-card .control-download{margin-top:24px}.control-info{grid-template-columns:1fr}}
