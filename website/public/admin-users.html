@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#0b0d12">
+  <title>Пользователи — FieryLedLamp</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="shell nav-wrap">
+    <a class="brand" href="/"><span class="brand-mark">🔥</span><span>FieryLedLamp</span></a>
+    <button class="menu-btn" type="button" aria-expanded="false" aria-controls="site-nav">Меню</button>
+    <nav class="nav" id="site-nav">
+      <a href="/">Главная</a>
+      <a href="/setup.html">Начало работы</a>
+      <a href="/instruction.html">Инструкция</a>
+      <a href="/hardware.html">Подключение</a>
+      <a href="/components.html">Компоненты</a>
+      <a href="/downloads.html">Скачать</a>
+      <a href="/fiery-lamp-control.html">Fiery Lamp Control</a>
+      <a class="active" href="/account.html">Аккаунт</a>
+      <a href="/versions.html">История версий</a>
+      <a class="nav-cta" href="https://firmware.fieryledlamp.ru">Прошить</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="page-hero shell">
+    <span class="eyebrow">АДМИНИСТРАТОР</span>
+    <h1>Пользователи</h1>
+    <p>Список зарегистрированных пользователей FieryLedLamp. Доступен только администратору.</p>
+  </section>
+
+  <section id="adminUsers" class="shell users-shell">
+    <div class="admin-subnav">
+      <a class="btn ghost" href="/admin-stats.html">Статистика</a>
+      <a class="btn ghost active" href="/admin-users.html">Пользователи</a>
+      <a class="btn ghost" href="/admin-notifications.html">Рассылка обновлений</a>
+    </div>
+
+    <div id="usersLoading" class="stats-loading">Загрузка пользователей…</div>
+
+    <div id="usersContent" hidden>
+      <div class="users-cards">
+        <div class="stats-card"><span>Всего</span><strong id="usersAllCount">0</strong></div>
+        <div class="stats-card"><span>Подтверждены</span><strong id="usersVerifiedCount">0</strong></div>
+        <div class="stats-card"><span>Не подтверждены</span><strong id="usersUnverifiedCount">0</strong></div>
+        <div class="stats-card"><span>Подписаны</span><strong id="usersSubscribedCount">0</strong></div>
+        <div class="stats-card"><span>Администраторы</span><strong id="usersAdminsCount">0</strong></div>
+      </div>
+
+      <section class="users-panel">
+        <div class="users-toolbar">
+          <label class="users-search">
+            <span>Поиск</span>
+            <input id="usersSearch" type="search" placeholder="Имя или e-mail">
+          </label>
+
+          <label>
+            <span>Фильтр</span>
+            <select id="usersFilter">
+              <option value="all">Все пользователи</option>
+              <option value="verified">E-mail подтверждён</option>
+              <option value="unverified">E-mail не подтверждён</option>
+              <option value="subscribed">Подписаны на обновления</option>
+              <option value="admin">Администраторы</option>
+            </select>
+          </label>
+
+          <label>
+            <span>Сортировка</span>
+            <select id="usersSort">
+              <option value="newest">Сначала новые</option>
+              <option value="oldest">Сначала старые</option>
+              <option value="name">По имени</option>
+              <option value="email">По e-mail</option>
+            </select>
+          </label>
+
+          <button id="usersRefresh" class="btn ghost users-refresh" type="button">Обновить</button>
+        </div>
+
+        <div class="users-summary"><strong id="usersResultCount">Найдено: 0</strong><span>Показывается до 500 записей.</span></div>
+
+        <div class="users-table-wrap">
+          <table class="users-table">
+            <thead>
+              <tr>
+                <th>Пользователь</th>
+                <th>E-mail</th>
+                <th>Подтверждение</th>
+                <th>Рассылка</th>
+                <th>Дата регистрации</th>
+              </tr>
+            </thead>
+            <tbody id="usersRows"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="shell footer-grid">
+    <div><a class="brand" href="/"><span class="brand-mark">🔥</span><span>FieryLedLamp</span></a><p>Открытый проект умной LED-лампы на ESP32-S3.</p></div>
+    <div><b>Администратор</b><a href="/account.html">Аккаунт</a><a href="/admin-stats.html">Статистика</a><a href="/admin-users.html">Пользователи</a><a href="/admin-notifications.html">Рассылка обновлений</a></div>
+    <div><b>Ссылки</b><a href="https://github.com/MishanyaTS/FieryLedLamp" target="_blank" rel="noopener">GitHub</a><a href="https://firmware.fieryledlamp.ru">Web Flasher</a></div>
+  </div>
+  <div class="shell footer-bottom">FieryLedLamp · 2026</div>
+</footer>
+
+<script src="/site.js"></script>
+</body>
+</html>
