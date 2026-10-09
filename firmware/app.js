@@ -1,8 +1,9 @@
 import { ESPLoader, Transport } from "https://unpkg.com/esptool-js@0.6.1/bundle.js";
 import { SITE_CONFIG } from "./config.js";
 
-const ANALYTICS_URL = "https://fieryledlamp.ru/api/index.php?action=track";
+const ANALYTICS_URL = "https://fieryledlamp.ru/api/index.php";
 const ANALYTICS_STORAGE_KEY = "fiery_analytics_id";
+const ANALYTICS_BEACONS = [];
 
 function analyticsVisitorId() {
   try {
@@ -18,20 +19,25 @@ function analyticsVisitorId() {
 }
 
 function trackAnalytics(event, item = "", path = "/") {
-  const payload = JSON.stringify({ event, item, path, visitorId: analyticsVisitorId() });
   try {
-    if (navigator.sendBeacon) {
-      navigator.sendBeacon(ANALYTICS_URL, new Blob([payload], { type: "text/plain;charset=UTF-8" }));
-      return;
-    }
+    const params = new URLSearchParams({
+      action: "track-pixel",
+      event,
+      item,
+      path,
+      visitorId: analyticsVisitorId(),
+      t: String(Date.now())
+    });
+    const image = new Image();
+    ANALYTICS_BEACONS.push(image);
+    const done = () => {
+      const index = ANALYTICS_BEACONS.indexOf(image);
+      if (index >= 0) ANALYTICS_BEACONS.splice(index, 1);
+    };
+    image.onload = done;
+    image.onerror = done;
+    image.src = ANALYTICS_URL + "?" + params.toString();
   } catch (_) {}
-  fetch(ANALYTICS_URL, {
-    method: "POST",
-    body: payload,
-    mode: "no-cors",
-    keepalive: true,
-    cache: "no-store"
-  }).catch(() => {});
 }
 
 const $ = (id) => document.getElementById(id);
