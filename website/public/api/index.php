@@ -1,0 +1,565 @@
+<?php
+declare(strict_types=1);
+
+function json_response(array $data, int $status = 200): never {
+    http_response_code($status);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+
+$configFile = dirname(__DIR__, 2) . '/fieryledlamp-private/config.php';
+if (!is_file($configFile)) {
+    json_response(['ok' => false, 'message' => 'Регистрация ещё не настроена на сервере.'], 503);
+}
+$config = require $configFile;
+if (!is_array($config)) {
+    json_response(['ok' => false, 'message' => 'Ошибка конфигурации сервера.'], 500);
+}
+
+session_name('fieryledlamp_session');
+session_set_cookie_params([
+    'lifetime' => 60 * 60 * 24 * 30,
+    'path' => '/',
+    'secure' => true,
+    'httponly' => true,
+    'samesite' => 'Lax',
+]);
+session_start();
+if (empty($_SESSION['csrf'])) {
+    $_SESSION['csrf'] = bin2hex(random_bytes(24));
+}
+
+try {
+    $pdo = new PDO(
+        (string)$config['db_dsn'],
+        (string)$config['db_user'],
+        (string)$config['db_password'],
+        [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES => false,
+        ]
+    );
+} catch (Throwable $e) {
+    json_response(['ok' => false, 'message' => 'База данных недоступна.'], 503);
+}
+
+$action = (string)($_GET['action'] ?? '');
+
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'verify-email') {
+    verify_email($pdo, $config);
+}
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'unsubscribe') {
+    unsubscribe($pdo, $config);
+}
+
+switch ($action) {
+    case 'register':
+        require_method('POST');
+        register_user($pdo, $config);
+        break;
+    case 'login':
+        require_method('POST');
+        login_user($pdo);
+        break;
+    case 'logout':
+        require_method('POST');
+        require_csrf();
+        logout_user();
+        break;
+    case 'me':
+        require_method('GET');
+        current_user_response($pdo);
+        break;
+    case 'preferences':
+        require_method('POST');
+        require_csrf();
+        update_preferences($pdo);
+        break;
+    case 'resend-verification':
+        require_method('POST');
+        require_csrf();
+        resend_verification($pdo, $config);
+        break;
+    case 'request-reset':
+        require_method('POST');
+        request_reset($pdo, $config);
+        break;
+    case 'reset-password':
+        require_method('POST');
+        reset_password($pdo);
+        break;
+    case 'admin-providers':
+        require_method('GET');
+        admin_providers($pdo, $config);
+        break;
+    case 'admin-notify':
+        require_method('POST');
+        require_csrf();
+        admin_notify($pdo, $config);
+        break;
+    default:
+        json_response(['ok' => false, 'message' => 'Неизвестный запрос.'], 404);
+}
+
+function require_method(string $method): void {
+    if (($_SERVER['REQUEST_METHOD'] ?? '') !== $method) {
+        json_response(['ok' => false, 'message' => 'Метод не поддерживается.'], 405);
+    }
+}
+
+function input_json(): array {
+    $raw = file_get_contents('php://input');
+    $data = json_decode($raw ?: '{}', true);
+    return is_array($data) ? $data : [];
+}
+
+function text_length(string $value): int {
+    return function_exists('mb_strlen') ? mb_strlen($value, 'UTF-8') : strlen($value);
+}
+
+function require_csrf(): void {
+    $token = (string)($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
+    if ($token === '' || !hash_equals((string)($_SESSION['csrf'] ?? ''), $token)) {
+        json_response(['ok' => false, 'message' => 'Сессия устарела. Обновите страницу.'], 419);
+    }
+}
+
+function client_key(): string {
+    return hash('sha256', (string)($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
+}
+
+function rate_limit(PDO $pdo, string $action, int $limit, int $seconds): void {
+    $key = client_key();
+    $stmt = $pdo->prepare('SELECT attempts, window_started_at FROM rate_limits WHERE key_hash=? AND action_name=?');
+    $stmt->execute([$key, $action]);
+    $row = $stmt->fetch();
+
+    if (!$row) {
+        $pdo->prepare('INSERT INTO rate_limits(key_hash, action_name, attempts, window_started_at) VALUES(?,?,1,NOW())')
+            ->execute([$key, $action]);
+        return;
+    }
+
+    $started = strtotime((string)$row['window_started_at']) ?: 0;
+    if ((time() - $started) >= $seconds) {
+        $pdo->prepare('UPDATE rate_limits SET attempts=1, window_started_at=NOW() WHERE key_hash=? AND action_name=?')
+            ->execute([$key, $action]);
+        return;
+    }
+
+    if ((int)$row['attempts'] >= $limit) {
+        json_response(['ok' => false, 'message' => 'Слишком много попыток. Попробуйте позже.'], 429);
+    }
+
+    $pdo->prepare('UPDATE rate_limits SET attempts=attempts+1 WHERE key_hash=? AND action_name=?')
+        ->execute([$key, $action]);
+}
+
+function user_by_id(PDO $pdo, int $id): ?array {
+    $stmt = $pdo->prepare('SELECT id,name,email,email_verified_at,notify_updates,is_admin,created_at FROM users WHERE id=? LIMIT 1');
+    $stmt->execute([$id]);
+    $row = $stmt->fetch();
+    return $row ?: null;
+}
+
+function require_user(PDO $pdo): array {
+    $id = (int)($_SESSION['user_id'] ?? 0);
+    if (!$id) {
+        json_response(['ok' => false, 'message' => 'Требуется вход в аккаунт.'], 401);
+    }
+
+    $user = user_by_id($pdo, $id);
+    if (!$user) {
+        $_SESSION = [];
+        json_response(['ok' => false, 'message' => 'Аккаунт не найден.'], 401);
+    }
+    return $user;
+}
+
+function require_admin(PDO $pdo): array {
+    $user = require_user($pdo);
+    if (!(bool)$user['is_admin']) {
+        json_response(['ok' => false, 'message' => 'Нет прав администратора.'], 403);
+    }
+    return $user;
+}
+
+function issue_token(PDO $pdo, int $userId, string $type, int $ttl): string {
+    $raw = bin2hex(random_bytes(32));
+    $hash = hash('sha256', $raw);
+    $expires = date('Y-m-d H:i:s', time() + $ttl);
+
+    $pdo->prepare('DELETE FROM auth_tokens WHERE user_id=? AND token_type=? AND used_at IS NULL')
+        ->execute([$userId, $type]);
+
+    $pdo->prepare('INSERT INTO auth_tokens(user_id,token_type,token_hash,expires_at) VALUES(?,?,?,?)')
+        ->execute([$userId, $type, $hash, $expires]);
+
+    return $raw;
+}
+
+function consume_token(PDO $pdo, string $raw, string $type): ?int {
+    if (!preg_match('/^[a-f0-9]{64}$/i', $raw)) {
+        return null;
+    }
+
+    $hash = hash('sha256', $raw);
+    $stmt = $pdo->prepare('SELECT id,user_id FROM auth_tokens WHERE token_hash=? AND token_type=? AND used_at IS NULL AND expires_at>NOW() LIMIT 1');
+    $stmt->execute([$hash, $type]);
+    $row = $stmt->fetch();
+
+    if (!$row) {
+        return null;
+    }
+
+    $pdo->prepare('UPDATE auth_tokens SET used_at=NOW() WHERE id=?')->execute([(int)$row['id']]);
+    return (int)$row['user_id'];
+}
+
+function app_url(array $config): string {
+    return rtrim((string)($config['app_url'] ?? 'https://fieryledlamp.ru'), '/');
+}
+
+function send_email(array $config, string $to, string $subject, string $html): bool {
+    $provider = (string)($config['mail_provider'] ?? 'mail');
+
+    if ($provider === 'resend') {
+        $key = (string)($config['resend_api_key'] ?? '');
+        $from = (string)($config['mail_from'] ?? 'FieryLedLamp <updates@fieryledlamp.ru>');
+        if ($key === '' || !function_exists('curl_init')) {
+            return false;
+        }
+
+        $ch = curl_init('https://api.resend.com/emails');
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HTTPHEADER => [
+                'Authorization: Bearer ' . $key,
+                'Content-Type: application/json',
+            ],
+            CURLOPT_POSTFIELDS => json_encode([
+                'from' => $from,
+                'to' => [$to],
+                'subject' => $subject,
+                'html' => $html,
+            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            CURLOPT_TIMEOUT => 20,
+        ]);
+        curl_exec($ch);
+        $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        return $code >= 200 && $code < 300;
+    }
+
+    $fromEmail = (string)($config['mail_from_email'] ?? 'updates@fieryledlamp.ru');
+    $fromName = (string)($config['mail_from_name'] ?? 'FieryLedLamp');
+    $headers = implode("\r\n", [
+        'MIME-Version: 1.0',
+        'Content-Type: text/html; charset=UTF-8',
+        'From: ' . $fromName . ' <' . $fromEmail . '>',
+    ]);
+    $encodedSubject = '=?UTF-8?B?' . base64_encode($subject) . '?=';
+    return @mail($to, $encodedSubject, $html, $headers);
+}
+
+function email_layout(string $title, string $body, string $buttonText = '', string $buttonUrl = ''): string {
+    $button = '';
+    if ($buttonUrl !== '') {
+        $button = '<p style="margin:24px 0"><a href="' . htmlspecialchars($buttonUrl, ENT_QUOTES) . '" style="display:inline-block;padding:12px 18px;background:#ff6b2c;color:#fff;text-decoration:none;border-radius:10px;font-weight:700">' . htmlspecialchars($buttonText, ENT_QUOTES) . '</a></p>';
+    }
+
+    return '<!doctype html><html><body style="margin:0;background:#0b0d12;color:#eef1f5;font-family:Arial,sans-serif"><div style="max-width:620px;margin:auto;padding:32px 20px"><div style="padding:26px;background:#141923;border:1px solid #303949;border-radius:18px"><div style="color:#ff8d55;font-weight:700;margin-bottom:10px">FieryLedLamp</div><h1 style="font-size:26px;margin:0 0 18px">' . htmlspecialchars($title, ENT_QUOTES) . '</h1>' . $body . $button . '<p style="color:#788393;font-size:12px;margin-top:28px">fieryledlamp.ru</p></div></div></body></html>';
+}
+
+function register_user(PDO $pdo, array $config): never {
+    rate_limit($pdo, 'register', 5, 900);
+    $d = input_json();
+
+    if (!empty($d['website'])) {
+        json_response(['ok' => true, 'emailSent' => true]);
+    }
+
+    $name = trim((string)($d['name'] ?? ''));
+    $email = strtolower(trim((string)($d['email'] ?? '')));
+    $password = (string)($d['password'] ?? '');
+    $notify = !empty($d['notifyUpdates']) ? 1 : 0;
+
+    if (text_length($name) < 2 || text_length($name) > 80) {
+        json_response(['ok' => false, 'message' => 'Укажите имя от 2 до 80 символов.'], 422);
+    }
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 190) {
+        json_response(['ok' => false, 'message' => 'Укажите корректный e-mail.'], 422);
+    }
+    if (strlen($password) < 8 || strlen($password) > 200) {
+        json_response(['ok' => false, 'message' => 'Пароль должен содержать не менее 8 символов.'], 422);
+    }
+
+    $stmt = $pdo->prepare('SELECT id FROM users WHERE email=? LIMIT 1');
+    $stmt->execute([$email]);
+    if ($stmt->fetch()) {
+        json_response(['ok' => false, 'message' => 'Аккаунт с таким e-mail уже существует.'], 409);
+    }
+
+    $hash = password_hash($password, PASSWORD_DEFAULT);
+    $pdo->prepare('INSERT INTO users(name,email,password_hash,notify_updates) VALUES(?,?,?,?)')
+        ->execute([$name, $email, $hash, $notify]);
+
+    $id = (int)$pdo->lastInsertId();
+    $_SESSION['user_id'] = $id;
+    session_regenerate_id(true);
+
+    $token = issue_token($pdo, $id, 'verify', 86400);
+    $url = app_url($config) . '/api/index.php?action=verify-email&token=' . urlencode($token);
+    $body = '<p style="color:#aeb7c4;line-height:1.6">Здравствуйте, ' . htmlspecialchars($name, ENT_QUOTES) . '! Нажмите кнопку, чтобы подтвердить e-mail для аккаунта FieryLedLamp.</p>';
+    $sent = send_email($config, $email, 'Подтверждение e-mail — FieryLedLamp', email_layout('Подтвердите e-mail', $body, 'Подтвердить e-mail', $url));
+
+    json_response(['ok' => true, 'emailSent' => $sent]);
+}
+
+function login_user(PDO $pdo): never {
+    rate_limit($pdo, 'login', 10, 900);
+    $d = input_json();
+    $email = strtolower(trim((string)($d['email'] ?? '')));
+    $password = (string)($d['password'] ?? '');
+
+    $stmt = $pdo->prepare('SELECT id,password_hash FROM users WHERE email=? LIMIT 1');
+    $stmt->execute([$email]);
+    $row = $stmt->fetch();
+
+    if (!$row || !password_verify($password, (string)$row['password_hash'])) {
+        json_response(['ok' => false, 'message' => 'Неверный e-mail или пароль.'], 401);
+    }
+
+    $_SESSION['user_id'] = (int)$row['id'];
+    session_regenerate_id(true);
+    json_response(['ok' => true, 'csrf' => $_SESSION['csrf']]);
+}
+
+function logout_user(): never {
+    $_SESSION = [];
+    if (ini_get('session.use_cookies')) {
+        setcookie(session_name(), '', [
+            'expires' => time() - 42000,
+            'path' => '/',
+            'secure' => true,
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
+    }
+    session_destroy();
+    json_response(['ok' => true]);
+}
+
+function current_user_response(PDO $pdo): never {
+    $u = require_user($pdo);
+    json_response([
+        'ok' => true,
+        'csrf' => $_SESSION['csrf'],
+        'user' => [
+            'name' => $u['name'],
+            'email' => $u['email'],
+            'verified' => !empty($u['email_verified_at']),
+            'notifyUpdates' => (bool)$u['notify_updates'],
+            'isAdmin' => (bool)$u['is_admin'],
+            'createdAt' => date('d.m.Y', strtotime((string)$u['created_at'])),
+        ],
+    ]);
+}
+
+function update_preferences(PDO $pdo): never {
+    $u = require_user($pdo);
+    $d = input_json();
+    $notify = !empty($d['notifyUpdates']) ? 1 : 0;
+    $pdo->prepare('UPDATE users SET notify_updates=?, updated_at=NOW() WHERE id=?')
+        ->execute([$notify, (int)$u['id']]);
+    json_response(['ok' => true]);
+}
+
+function resend_verification(PDO $pdo, array $config): never {
+    rate_limit($pdo, 'resend', 5, 3600);
+    $u = require_user($pdo);
+
+    if (!empty($u['email_verified_at'])) {
+        json_response(['ok' => true, 'message' => 'E-mail уже подтверждён.']);
+    }
+
+    $token = issue_token($pdo, (int)$u['id'], 'verify', 86400);
+    $url = app_url($config) . '/api/index.php?action=verify-email&token=' . urlencode($token);
+    $body = '<p style="color:#aeb7c4;line-height:1.6">Нажмите кнопку, чтобы подтвердить e-mail для аккаунта FieryLedLamp.</p>';
+
+    if (!send_email($config, (string)$u['email'], 'Подтверждение e-mail — FieryLedLamp', email_layout('Подтвердите e-mail', $body, 'Подтвердить e-mail', $url))) {
+        json_response(['ok' => false, 'message' => 'Не удалось отправить письмо.'], 503);
+    }
+
+    json_response(['ok' => true, 'message' => 'Письмо подтверждения отправлено.']);
+}
+
+function verify_email(PDO $pdo, array $config): never {
+    $id = consume_token($pdo, (string)($_GET['token'] ?? ''), 'verify');
+    if (!$id) {
+        header('Location: ' . app_url($config) . '/login.html?verified=0');
+        exit;
+    }
+
+    $pdo->prepare('UPDATE users SET email_verified_at=COALESCE(email_verified_at,NOW()), updated_at=NOW() WHERE id=?')
+        ->execute([$id]);
+
+    header('Location: ' . app_url($config) . '/login.html?verified=1');
+    exit;
+}
+
+function request_reset(PDO $pdo, array $config): never {
+    rate_limit($pdo, 'reset-request', 5, 3600);
+    $d = input_json();
+    $email = strtolower(trim((string)($d['email'] ?? '')));
+    $message = 'Если аккаунт существует, на e-mail отправлена ссылка восстановления.';
+
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        json_response(['ok' => true, 'message' => $message]);
+    }
+
+    $stmt = $pdo->prepare('SELECT id,email FROM users WHERE email=? LIMIT 1');
+    $stmt->execute([$email]);
+    $u = $stmt->fetch();
+
+    if ($u) {
+        $token = issue_token($pdo, (int)$u['id'], 'reset', 3600);
+        $url = app_url($config) . '/reset-password.html?token=' . urlencode($token);
+        $body = '<p style="color:#aeb7c4;line-height:1.6">Получен запрос на восстановление пароля. Ссылка действует 1 час.</p>';
+        send_email($config, (string)$u['email'], 'Восстановление пароля — FieryLedLamp', email_layout('Новый пароль', $body, 'Создать новый пароль', $url));
+    }
+
+    json_response(['ok' => true, 'message' => $message]);
+}
+
+function reset_password(PDO $pdo): never {
+    rate_limit($pdo, 'reset-password', 8, 3600);
+    $d = input_json();
+    $token = (string)($d['token'] ?? '');
+    $password = (string)($d['password'] ?? '');
+
+    if (strlen($password) < 8 || strlen($password) > 200) {
+        json_response(['ok' => false, 'message' => 'Пароль должен содержать не менее 8 символов.'], 422);
+    }
+
+    $id = consume_token($pdo, $token, 'reset');
+    if (!$id) {
+        json_response(['ok' => false, 'message' => 'Ссылка недействительна или срок её действия истёк.'], 422);
+    }
+
+    $pdo->prepare('UPDATE users SET password_hash=?, updated_at=NOW() WHERE id=?')
+        ->execute([password_hash($password, PASSWORD_DEFAULT), $id]);
+
+    $pdo->prepare("UPDATE auth_tokens SET used_at=NOW() WHERE user_id=? AND token_type='reset' AND used_at IS NULL")
+        ->execute([$id]);
+
+    json_response(['ok' => true]);
+}
+
+function unsubscribe_token(array $config, int $id, string $email): string {
+    return hash_hmac('sha256', $id . '|' . $email, (string)$config['app_key']);
+}
+
+function unsubscribe(PDO $pdo, array $config): never {
+    $id = (int)($_GET['id'] ?? 0);
+    $token = (string)($_GET['token'] ?? '');
+    $u = user_by_id($pdo, $id);
+
+    if (!$u || !hash_equals(unsubscribe_token($config, $id, (string)$u['email']), $token)) {
+        http_response_code(400);
+        echo 'Некорректная ссылка.';
+        exit;
+    }
+
+    $pdo->prepare('UPDATE users SET notify_updates=0, updated_at=NOW() WHERE id=?')->execute([$id]);
+    header('Content-Type: text/html; charset=utf-8');
+    echo '<!doctype html><meta charset="utf-8"><title>Подписка отключена</title><body style="font-family:Arial;background:#0b0d12;color:#fff;padding:40px"><h1>Уведомления отключены</h1><p>Письма об обновлениях для этого аккаунта больше не отправляются.</p><p><a style="color:#ff8d55" href="' . htmlspecialchars(app_url($config), ENT_QUOTES) . '">Вернуться на сайт</a></p></body>';
+    exit;
+}
+
+function email_configured(array $config): bool {
+    $provider = (string)($config['mail_provider'] ?? 'mail');
+    return $provider === 'mail' || ($provider === 'resend' && !empty($config['resend_api_key']));
+}
+
+function admin_providers(PDO $pdo, array $config): never {
+    require_admin($pdo);
+    $count = (int)$pdo->query('SELECT COUNT(*) FROM users WHERE email_verified_at IS NOT NULL AND notify_updates=1')->fetchColumn();
+    json_response([
+        'ok' => true,
+        'emailConfigured' => email_configured($config),
+        'subscribers' => $count,
+    ]);
+}
+
+function admin_notify(PDO $pdo, array $config): never {
+    require_admin($pdo);
+
+    if (!email_configured($config)) {
+        json_response(['ok' => false, 'message' => 'E-mail провайдер не настроен.'], 503);
+    }
+
+    $d = input_json();
+    $version = trim((string)($d['version'] ?? ''));
+    $title = trim((string)($d['title'] ?? ''));
+    $summary = trim((string)($d['summary'] ?? ''));
+    $url = trim((string)($d['url'] ?? ''));
+    $dry = !empty($d['dryRun']);
+
+    if ($version === '' || text_length($version) > 80) {
+        json_response(['ok' => false, 'message' => 'Укажите версию.'], 422);
+    }
+    if ($title === '') {
+        $title = 'FieryLedLamp — доступно обновление ' . $version;
+    }
+    if (!filter_var($url, FILTER_VALIDATE_URL) || stripos($url, 'https://') !== 0) {
+        json_response(['ok' => false, 'message' => 'Укажите корректную HTTPS-ссылку.'], 422);
+    }
+
+    $users = $pdo->query('SELECT id,name,email FROM users WHERE email_verified_at IS NOT NULL AND notify_updates=1 ORDER BY id')->fetchAll();
+
+    if ($dry) {
+        json_response(['ok' => true, 'planned' => count($users)]);
+    }
+
+    $sent = 0;
+    $failed = 0;
+    $skipped = 0;
+
+    foreach ($users as $u) {
+        $check = $pdo->prepare('SELECT id FROM notification_log WHERE user_id=? AND version=? AND status="sent" LIMIT 1');
+        $check->execute([(int)$u['id'], $version]);
+        if ($check->fetch()) {
+            $skipped++;
+            continue;
+        }
+
+        $unsub = app_url($config) . '/api/index.php?action=unsubscribe&id=' . (int)$u['id'] . '&token=' . urlencode(unsubscribe_token($config, (int)$u['id'], (string)$u['email']));
+        $body = '<p style="color:#aeb7c4;line-height:1.6">Здравствуйте, ' . htmlspecialchars((string)$u['name'], ENT_QUOTES) . '!</p><p style="color:#aeb7c4;line-height:1.6">' . nl2br(htmlspecialchars($summary !== '' ? $summary : 'Доступна новая версия FieryLedLamp.', ENT_QUOTES)) . '</p><p style="color:#7e8998;font-size:12px">Не хотите получать письма? <a style="color:#ff9d69" href="' . htmlspecialchars($unsub, ENT_QUOTES) . '">Отключить уведомления</a>.</p>';
+
+        $ok = send_email($config, (string)$u['email'], $title, email_layout($version, $body, 'Открыть обновление', $url));
+
+        $log = $pdo->prepare('INSERT INTO notification_log(user_id,version,status,error_text,sent_at) VALUES(?,?,?,?,?) ON DUPLICATE KEY UPDATE status=VALUES(status),error_text=VALUES(error_text),sent_at=VALUES(sent_at)');
+        $log->execute([
+            (int)$u['id'],
+            $version,
+            $ok ? 'sent' : 'failed',
+            $ok ? null : 'mail provider error',
+            $ok ? date('Y-m-d H:i:s') : null,
+        ]);
+
+        if ($ok) {
+            $sent++;
+        } else {
+            $failed++;
+        }
+    }
+
+    json_response(['ok' => true, 'sent' => $sent, 'failed' => $failed, 'skipped' => $skipped]);
+}
