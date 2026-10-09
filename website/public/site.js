@@ -221,6 +221,56 @@
     });
 })();
 
+
+(() => {
+  const STORAGE_KEY = "fiery_analytics_id";
+  const TRACK_URL = "/api/index.php?action=track";
+
+  function visitorId() {
+    try {
+      let id = localStorage.getItem(STORAGE_KEY);
+      if (!id) {
+        id = globalThis.crypto?.randomUUID?.() || (Date.now().toString(36) + "-" + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2));
+        localStorage.setItem(STORAGE_KEY, id);
+      }
+      return id;
+    } catch (_) {
+      return "";
+    }
+  }
+
+  function track(event, item = "", path = location.pathname) {
+    const payload = JSON.stringify({ event, item, path, visitorId: visitorId() });
+    try {
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon(TRACK_URL, new Blob([payload], { type: "text/plain;charset=UTF-8" }));
+        return;
+      }
+    } catch (_) {}
+    fetch(TRACK_URL, {
+      method: "POST",
+      body: payload,
+      headers: { "content-type": "text/plain;charset=UTF-8" },
+      credentials: "same-origin",
+      keepalive: true,
+      cache: "no-store"
+    }).catch(() => {});
+  }
+
+  window.FieryAnalytics = { id: visitorId, track };
+
+  const excluded = [
+    "/admin-stats.html",
+    "/admin-notifications.html",
+    "/account.html",
+    "/login.html",
+    "/register.html",
+    "/forgot-password.html",
+    "/reset-password.html"
+  ];
+  if (!excluded.includes(location.pathname)) track("page_view");
+})();
+
 (() => {
   const api = (action, options = {}) => fetch("/api/index.php?action=" + encodeURIComponent(action), {
     credentials: "same-origin",
@@ -278,7 +328,8 @@
             email: registerForm.email.value.trim(),
             password: registerForm.password.value,
             notifyUpdates: registerForm.notifyUpdates.checked,
-            website: registerForm.website.value
+            website: registerForm.website.value,
+            visitorId: window.FieryAnalytics?.id?.() || ""
           })
         }));
         setStatus(registerForm,
@@ -397,6 +448,8 @@
         document.querySelector("#resendVerify").hidden = data.user.verified;
         const adminLink = document.querySelector("#adminNotifyLink");
         if (adminLink) adminLink.hidden = !data.user.isAdmin;
+        const adminStatsLink = document.querySelector("#adminStatsLink");
+        if (adminStatsLink) adminStatsLink.hidden = !data.user.isAdmin;
         account.hidden = false;
         document.querySelector("#accountLoading").hidden = true;
       } catch (_) {
