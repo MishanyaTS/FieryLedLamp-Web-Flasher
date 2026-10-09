@@ -566,3 +566,104 @@
     loadAdmin();
   }
 })();
+
+
+(() => {
+  const statsRoot = document.querySelector("#adminStats");
+  if (!statsRoot) return;
+
+  const api = (action) => fetch("/api/index.php?action=" + action, {
+    credentials: "same-origin",
+    cache: "no-store"
+  });
+
+  const parse = async response => {
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.ok) throw new Error(data.message || "Ошибка сервера.");
+    return data;
+  };
+
+  const esc = value => String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+
+  const num = value => new Intl.NumberFormat("ru-RU").format(Number(value) || 0);
+
+  function renderRows(targetId, rows, nameKey) {
+    const target = document.querySelector(targetId);
+    if (!target) return;
+    if (!rows.length) {
+      target.innerHTML = '<tr><td colspan="2">Нет данных</td></tr>';
+      return;
+    }
+    target.innerHTML = rows.map(row =>
+      '<tr><td>' + esc(row[nameKey] || "Неизвестно") + '</td><td>' + num(row.cnt) + '</td></tr>'
+    ).join("");
+  }
+
+  function renderStats(data) {
+    document.querySelector("#statPageViews").textContent = num(data.totals.pageViews);
+    document.querySelector("#statFlasherViews").textContent = num(data.totals.flasherViews);
+    document.querySelector("#statUnique").textContent = num(data.totals.uniqueVisitors);
+    document.querySelector("#statRegistrations").textContent = num(data.totals.registrations);
+    document.querySelector("#statVerified").textContent = num(data.totals.verifiedUsers);
+    document.querySelector("#statSubscribers").textContent = num(data.totals.subscribers);
+    document.querySelector("#statFirmware").textContent = num(data.totals.firmwareDownloads);
+    document.querySelector("#statWindows").textContent = num(data.totals.windowsDownloads);
+    document.querySelector("#statIos").textContent = num(data.totals.iosDownloads);
+    document.querySelector("#statAndroid").textContent = num(data.totals.androidClicks);
+
+    document.querySelector("#periodVisits").textContent = num(data.period.visits);
+    document.querySelector("#periodUnique").textContent = num(data.period.uniqueVisitors);
+    document.querySelector("#periodRegistrations").textContent = num(data.period.registrations);
+
+    renderRows("#countryRows", data.countries, "country_name");
+    renderRows("#registrationCountryRows", data.registrationCountries, "country_name");
+    renderRows("#pageRows", data.topPages, "path");
+
+    const chart = document.querySelector("#statsChart");
+    const max = Math.max(1, ...data.daily.map(row => Number(row.visits) || 0));
+    chart.innerHTML = data.daily.map(row => {
+      const height = Math.max(2, Math.round(((Number(row.visits) || 0) / max) * 100));
+      const label = String(row.date).slice(5).split("-").reverse().join(".");
+      let markers = "";
+      if (row.registrations) markers += '<i class="stats-marker registrations" title="Регистрации: ' + num(row.registrations) + '"></i>';
+      if (row.firmware) markers += '<i class="stats-marker firmware" title="Прошивка: ' + num(row.firmware) + '"></i>';
+      if (row.apps) markers += '<i class="stats-marker apps" title="Приложения: ' + num(row.apps) + '"></i>';
+      return '<div class="stats-day" title="' + esc(row.date) + ': ' + num(row.visits) + ' посещений">' +
+        '<div class="stats-day-bars"><i class="stats-bar visits" style="height:' + height + '%"></i>' + markers + '</div>' +
+        '<span>' + esc(label) + '</span></div>';
+    }).join("");
+
+    document.querySelector("#statsPrivacy").textContent = data.privacy || "";
+    document.querySelector("#statsContent").hidden = false;
+    document.querySelector("#statsLoading").hidden = true;
+  }
+
+  async function loadStats() {
+    try {
+      const me = await parse(await api("me"));
+      if (!me.user.isAdmin) {
+        location.href = "/account.html";
+        return;
+      }
+      const days = document.querySelector("#statsDays").value;
+      const data = await parse(await api("admin-stats&days=" + encodeURIComponent(days)));
+      renderStats(data);
+    } catch (error) {
+      document.querySelector("#statsLoading").textContent = error.message;
+    }
+  }
+
+  document.querySelector("#statsDays")?.addEventListener("change", () => {
+    document.querySelector("#statsContent").hidden = true;
+    document.querySelector("#statsLoading").hidden = false;
+    document.querySelector("#statsLoading").textContent = "Загрузка статистики…";
+    loadStats();
+  });
+
+  loadStats();
+})();
