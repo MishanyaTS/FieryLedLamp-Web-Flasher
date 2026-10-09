@@ -384,3 +384,5 @@ background:linear-gradient(180deg,#131821,#0e1219);border-color:#283141;box-shad
 .admin-stat{padding:18px;border:1px solid #2a3341;border-radius:15px;background:#0b0f15}.admin-stat+.admin-stat{margin-top:10px}.admin-stat span,.admin-stat strong{display:block}.admin-stat span{color:#768191;font-size:11px;text-transform:uppercase;letter-spacing:.07em}.admin-stat strong{font-size:22px;margin-top:5px}
 @media(max-width:850px){.auth-grid,.admin-email-grid{grid-template-columns:1fr}.account-grid{grid-template-columns:1fr}}
 @media(max-width:560px){.auth-card,.auth-side{padding:20px}.account-actions{flex-direction:column}.account-actions .btn{width:100%;justify-content:center}}
+
+#adminNotifyLink[hidden]{display:none!important}
