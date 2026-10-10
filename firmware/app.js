@@ -1,6 +1,45 @@
 import { ESPLoader, Transport } from "https://unpkg.com/esptool-js@0.6.1/bundle.js";
 import { SITE_CONFIG } from "./config.js";
 
+
+const ANALYTICS_URL = "./track.php";
+const ANALYTICS_STORAGE_KEY = "fiery_analytics_id";
+const ANALYTICS_BEACONS = [];
+
+function analyticsVisitorId() {
+  try {
+    let id = localStorage.getItem(ANALYTICS_STORAGE_KEY);
+    if (!id) {
+      id = globalThis.crypto?.randomUUID?.() || (Date.now().toString(36) + "-" + Math.random().toString(36).slice(2));
+      localStorage.setItem(ANALYTICS_STORAGE_KEY, id);
+    }
+    return id;
+  } catch (_) {
+    return "";
+  }
+}
+
+function trackAnalytics(event, item = "", path = "/") {
+  try {
+    const params = new URLSearchParams({
+      event,
+      item,
+      path,
+      visitorId: analyticsVisitorId(),
+      t: String(Date.now())
+    });
+    const image = new Image();
+    ANALYTICS_BEACONS.push(image);
+    const done = () => {
+      const index = ANALYTICS_BEACONS.indexOf(image);
+      if (index >= 0) ANALYTICS_BEACONS.splice(index, 1);
+    };
+    image.onload = done;
+    image.onerror = done;
+    image.src = ANALYTICS_URL + "?" + params.toString();
+  } catch (_) {}
+}
+
 const $ = (id) => document.getElementById(id);
 const ui = {
   compatBanner: $("compatBanner"), selectPortBtn: $("selectPortBtn"), flashBtn: $("flashBtn"),
@@ -112,6 +151,7 @@ async function loadFirmwareFiles() {
   log(`Загрузка update.zip: ${SITE_CONFIG.firmwareZipUrl}`); setProgress(3,"Загрузка update.zip…");
   const response = await fetch(SITE_CONFIG.firmwareZipUrl, {cache:"no-store"});
   if (!response.ok) throw new Error(`Не удалось загрузить update.zip (${response.status}).`);
+  trackAnalytics("firmware_download", "update.zip", "/");
   const zipBytes = new Uint8Array(await response.arrayBuffer());
   if (!zipBytes.length) throw new Error("update.zip пустой.");
   log(`update.zip загружен: ${fmtBytes(zipBytes.length)}.`); setProgress(10,"Распаковка update.zip…");
@@ -280,4 +320,4 @@ ui.selectPortBtn.addEventListener("click",async()=>{if(isBusy)return;clearResult
 ui.flashBtn.addEventListener("click",flash);ui.clearLogBtn.addEventListener("click",()=>{ui.log.textContent="";});
 if(ui.saveSettings) ui.saveSettings.addEventListener("change",syncEraseAllState);
 if("serial"in navigator)navigator.serial.addEventListener("disconnect",e=>{if(selectedPort&&e.target===selectedPort&&!isBusy){ui.portDot.classList.remove("good");ui.portText.textContent="Порт отключён";setStep(1);log("COM-порт отключён.");}});
-(async function init(){setStep(0);checkCompatibility();try{await loadManifest();}catch(e){ui.firmwareName.textContent="Ошибка конфигурации";showResult("error",e?.message||String(e));log(`ОШИБКА: ${e?.message||e}`);}})();
+(async function init(){trackAnalytics("firmware_page_view", "", "/");setStep(0);checkCompatibility();try{await loadManifest();}catch(e){ui.firmwareName.textContent="Ошибка конфигурации";showResult("error",e?.message||String(e));log(`ОШИБКА: ${e?.message||e}`);}})();
