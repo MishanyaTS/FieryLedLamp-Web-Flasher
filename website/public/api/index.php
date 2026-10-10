@@ -520,7 +520,6 @@ function admin_stats(PDO $pdo): never {
         $totals = [
             'pageViews' => analytics_sum($pdo, 'page_view'),
             'flasherViews' => analytics_sum($pdo, 'firmware_page_view'),
-            'firmwareDownloads' => analytics_sum($pdo, 'firmware_download'),
             'firmwareDownloadsN16R8' => analytics_sum_firmware_board($pdo, 'n16r8'),
             'firmwareDownloadsN8R8' => analytics_sum_firmware_board($pdo, 'n8r8'),
             'windowsDownloads' => analytics_sum($pdo, 'app_windows_download'),

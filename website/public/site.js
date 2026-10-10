@@ -614,7 +614,6 @@
     document.querySelector("#statRegistrations").textContent = num(data.totals.registrations);
     document.querySelector("#statVerified").textContent = num(data.totals.verifiedUsers);
     document.querySelector("#statSubscribers").textContent = num(data.totals.subscribers);
-    document.querySelector("#statFirmware").textContent = num(data.totals.firmwareDownloads);
     document.querySelector("#statFirmwareN16R8").textContent = num(data.totals.firmwareDownloadsN16R8);
     document.querySelector("#statFirmwareN8R8").textContent = num(data.totals.firmwareDownloadsN8R8);
     document.querySelector("#statWindows").textContent = num(data.totals.windowsDownloads);
