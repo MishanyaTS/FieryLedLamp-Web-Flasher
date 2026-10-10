@@ -1,0 +1,18 @@
+{
+  "name": "FieryLedLamp — ESP32-S3 N8R8",
+  "version": "ESP32-S3 N8R8",
+  "board": "ESP32-S3 N8R8",
+  "chip": "ESP32-S3",
+  "baudRate": 921600,
+  "eraseAll": false,
+  "compress": true,
+  "doNotChangeBin": true,
+  "toolSpiMode": "QIO",
+  "toolSpiSpeed": "80MHz",
+  "physicalFlashSize": "8MB",
+  "psramSize": "8MB",
+  "ready": false,
+  "unavailableMessage": "Для ESP32-S3 N8R8 нужно добавить отдельный update.zip и указать его адреса записи в manifest.json.",
+  "files": [],
+  "settingsBackupBaudRate": 115200
+}

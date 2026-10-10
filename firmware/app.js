@@ -46,12 +46,14 @@ const ui = {
   flashBtnText: $("flashBtnText"), portDot: $("portDot"), portText: $("portText"),
   firmwareName: $("firmwareName"), progressLabel: $("progressLabel"),
   progressPercent: $("progressPercent"), progressBar: $("progressBar"), resultBox: $("resultBox"),
-  eraseAll: $("eraseAll"), saveSettings: $("saveSettings"), cfgChip: $("cfgChip"), cfgFlash: $("cfgFlash"), cfgMode: $("cfgMode"),
+  eraseAll: $("eraseAll"), saveSettings: $("saveSettings"), boardSelect: $("boardSelect"), boardHint: $("boardHint"),
+  cfgChip: $("cfgChip"), cfgFlash: $("cfgFlash"), cfgPsram: $("cfgPsram"), cfgMode: $("cfgMode"),
   cfgFreq: $("cfgFreq"), cfgBaud: $("cfgBaud"), fileList: $("fileList"), log: $("log"),
   clearLogBtn: $("clearLogBtn"), steps: [$("step1"), $("step2"), $("step3")],
 };
 
 let manifest = null;
+let selectedBoard = null;
 let selectedPort = null;
 let isBusy = false;
 
@@ -89,9 +91,10 @@ function syncEraseAllState() {
 function setBusy(busy) {
   isBusy = busy;
   ui.selectPortBtn.disabled = busy;
+  if (ui.boardSelect) ui.boardSelect.disabled = busy;
   if (ui.saveSettings) ui.saveSettings.disabled = busy;
   syncEraseAllState();
-  ui.flashBtn.disabled = busy || !manifest || !("serial" in navigator);
+  ui.flashBtn.disabled = busy || !manifest || manifest.ready === false || !selectedBoard || !("serial" in navigator);
   ui.flashBtnText.textContent = busy ? "Прошивка…" : "Загрузить прошивку";
 }
 function portDescription(port) {
@@ -107,24 +110,71 @@ async function choosePort() {
   log("COM-порт выбран пользователем."); return selectedPort;
 }
 function validateManifest(m) {
-  if (!m || !Array.isArray(m.files) || !m.files.length) throw new Error("В firmware/manifest.json нет списка файлов.");
+  if (!m) throw new Error("Manifest платы пустой.");
+  if (m.ready === false) return;
+  if (!Array.isArray(m.files) || !m.files.length) throw new Error("В manifest.json выбранной платы нет списка файлов.");
   for (const f of m.files) {
     if (!f.name || f.address == null) throw new Error("Для каждого файла нужны name и address.");
     if (!Number.isFinite(Number.parseInt(f.address, 0))) throw new Error(`Некорректный адрес ${f.name}`);
   }
 }
-async function loadManifest() {
-  const response = await fetch("./manifest.json", { cache: "no-store" });
-  if (!response.ok) throw new Error(`Не удалось загрузить firmware/manifest.json (${response.status})`);
-  manifest = await response.json(); validateManifest(manifest);
-  ui.firmwareName.textContent = manifest.name || SITE_CONFIG.projectName;
-  ui.eraseAll.checked = Boolean(manifest.eraseAll);
-  ui.cfgChip.textContent = manifest.chip || "—";
-  ui.cfgFlash.textContent = `${manifest.physicalFlashSize || "16MB"} • KEEP`;
-  ui.cfgMode.textContent = `${(manifest.toolSpiMode || "QIO").toUpperCase()} • DoNotChgBin`;
-  ui.cfgFreq.textContent = `${manifest.toolSpiSpeed || "80MHz"} • KEEP`;
-  ui.cfgBaud.textContent = String(manifest.baudRate || SITE_CONFIG.baudRate || 921600);
-  renderFileList(manifest.files); setBusy(false); log("Конфигурация сайта загружена.");
+function initBoardSelector() {
+  const boards = Array.isArray(SITE_CONFIG.boards) ? SITE_CONFIG.boards : [];
+  if (!boards.length) throw new Error("В config.js не настроен список плат.");
+
+  ui.boardSelect.innerHTML = "";
+  boards.forEach(board => {
+    const option = document.createElement("option");
+    option.value = board.id;
+    option.textContent = board.label;
+    ui.boardSelect.appendChild(option);
+  });
+
+  const preferred = boards.find(board => board.id === SITE_CONFIG.defaultBoard) || boards[0];
+  ui.boardSelect.value = preferred.id;
+  selectedBoard = preferred;
+}
+
+async function loadManifest(board = selectedBoard) {
+  if (!board?.manifestUrl) throw new Error("Для выбранной платы не указан manifestUrl.");
+
+  selectedBoard = board;
+  manifest = null;
+  clearResult();
+  ui.firmwareName.textContent = "Загрузка конфигурации…";
+  ui.boardHint.textContent = "Загрузка параметров " + board.label + "…";
+  setBusy(true);
+
+  try {
+    const response = await fetch(board.manifestUrl, { cache: "no-store" });
+    if (!response.ok) throw new Error(`Не удалось загрузить manifest.json для ${board.label} (${response.status})`);
+
+    manifest = await response.json();
+    validateManifest(manifest);
+
+    ui.firmwareName.textContent = manifest.name || SITE_CONFIG.projectName;
+    ui.eraseAll.checked = Boolean(manifest.eraseAll);
+    ui.cfgChip.textContent = manifest.chip || "—";
+    ui.cfgFlash.textContent = `${manifest.physicalFlashSize || "—"} • KEEP`;
+    ui.cfgPsram.textContent = manifest.psramSize || "—";
+    ui.cfgMode.textContent = `${(manifest.toolSpiMode || "QIO").toUpperCase()} • DoNotChgBin`;
+    ui.cfgFreq.textContent = `${manifest.toolSpiSpeed || "80MHz"} • KEEP`;
+    ui.cfgBaud.textContent = String(manifest.baudRate || SITE_CONFIG.baudRate || 921600);
+
+    if (manifest.ready === false) {
+      renderFileList([]);
+      ui.boardHint.textContent = manifest.unavailableMessage || "Пакет прошивки для этой платы пока не загружен.";
+      showResult("error", ui.boardHint.textContent);
+      log(`Выбрана плата ${board.label}: пакет пока не готов.`);
+      return;
+    }
+
+    renderFileList(manifest.files);
+    ui.boardHint.textContent = `${board.label} • Flash ${manifest.physicalFlashSize || "—"} • PSRAM ${manifest.psramSize || "—"}`;
+    log(`Выбрана плата: ${board.label}. Конфигурация загружена.`);
+  } finally {
+    setBusy(false);
+  }
 }
 function renderFileList(files, sizes = new Map()) {
   ui.fileList.innerHTML = "";
@@ -147,11 +197,12 @@ function validateBootloader(data) {
 }
 async function loadFirmwareFiles() {
   if (!globalThis.JSZip) throw new Error("Не удалось загрузить библиотеку JSZip.");
-  if (!SITE_CONFIG.firmwareZipUrl) throw new Error("В config.js не указан firmwareZipUrl.");
-  log(`Загрузка update.zip: ${SITE_CONFIG.firmwareZipUrl}`); setProgress(3,"Загрузка update.zip…");
-  const response = await fetch(SITE_CONFIG.firmwareZipUrl, {cache:"no-store"});
+  const firmwareZipUrl = selectedBoard?.firmwareZipUrl;
+  if (!firmwareZipUrl) throw new Error("Для выбранной платы не указан firmwareZipUrl.");
+  log(`Загрузка update.zip для ${selectedBoard.label}: ${firmwareZipUrl}`); setProgress(3,"Загрузка update.zip…");
+  const response = await fetch(firmwareZipUrl, {cache:"no-store"});
   if (!response.ok) throw new Error(`Не удалось загрузить update.zip (${response.status}).`);
-  trackAnalytics("firmware_download", "update.zip", "/");
+  trackAnalytics("firmware_download", selectedBoard?.id || "update.zip", "/");
   const zipBytes = new Uint8Array(await response.arrayBuffer());
   if (!zipBytes.length) throw new Error("update.zip пустой.");
   log(`update.zip загружен: ${fmtBytes(zipBytes.length)}.`); setProgress(10,"Распаковка update.zip…");
@@ -319,5 +370,34 @@ function checkCompatibility(){
 ui.selectPortBtn.addEventListener("click",async()=>{if(isBusy)return;clearResult();try{await choosePort();ui.flashBtn.disabled=!manifest;}catch(e){if(e?.name==="NotFoundError"){log("Выбор COM-порта отменён.");return;}showResult("error",e?.message||String(e));log(`Ошибка выбора порта: ${e?.message||e}`);}});
 ui.flashBtn.addEventListener("click",flash);ui.clearLogBtn.addEventListener("click",()=>{ui.log.textContent="";});
 if(ui.saveSettings) ui.saveSettings.addEventListener("change",syncEraseAllState);
+if(ui.boardSelect) ui.boardSelect.addEventListener("change",async()=>{
+  if(isBusy)return;
+  const board=(SITE_CONFIG.boards||[]).find(item=>item.id===ui.boardSelect.value);
+  if(!board)return;
+  try{
+    await loadManifest(board);
+  }catch(e){
+    manifest=null;
+    ui.firmwareName.textContent="Ошибка конфигурации";
+    ui.boardHint.textContent=e?.message||String(e);
+    showResult("error",ui.boardHint.textContent);
+    log(`ОШИБКА: ${ui.boardHint.textContent}`);
+    setBusy(false);
+  }
+});
 if("serial"in navigator)navigator.serial.addEventListener("disconnect",e=>{if(selectedPort&&e.target===selectedPort&&!isBusy){ui.portDot.classList.remove("good");ui.portText.textContent="Порт отключён";setStep(1);log("COM-порт отключён.");}});
-(async function init(){trackAnalytics("firmware_page_view", "", "/");setStep(0);checkCompatibility();try{await loadManifest();}catch(e){ui.firmwareName.textContent="Ошибка конфигурации";showResult("error",e?.message||String(e));log(`ОШИБКА: ${e?.message||e}`);}})();
+(async function init(){
+  trackAnalytics("firmware_page_view", "", "/");
+  setStep(0);
+  checkCompatibility();
+  try{
+    initBoardSelector();
+    await loadManifest(selectedBoard);
+  }catch(e){
+    ui.firmwareName.textContent="Ошибка конфигурации";
+    if(ui.boardHint)ui.boardHint.textContent=e?.message||String(e);
+    showResult("error",e?.message||String(e));
+    log(`ОШИБКА: ${e?.message||e}`);
+    setBusy(false);
+  }
+})();

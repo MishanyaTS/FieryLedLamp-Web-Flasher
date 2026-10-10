@@ -28,7 +28,17 @@
     </section>
 
     <section class="card primary-card">
-      <div class="port-row">
+      <div class="board-picker">
+        <div>
+          <div class="label">Плата</div>
+          <div class="board-select-wrap">
+            <select id="boardSelect" aria-label="Выберите плату"></select>
+          </div>
+          <small id="boardHint" class="board-hint">Загрузка списка плат…</small>
+        </div>
+      </div>
+
+      <div class="port-row board-port-row">
         <div class="port-state">
           <div class="status-dot" id="portDot"></div>
           <div>
@@ -80,6 +90,7 @@
         <div class="info-grid">
           <div><span>Чип</span><b id="cfgChip">—</b></div>
           <div><span>Flash</span><b id="cfgFlash">—</b></div>
+          <div><span>PSRAM</span><b id="cfgPsram">—</b></div>
           <div><span>Режим</span><b id="cfgMode">—</b></div>
           <div><span>Частота</span><b id="cfgFreq">—</b></div>
           <div><span>Скорость</span><b id="cfgBaud">—</b></div>
@@ -101,6 +112,6 @@
     </section>
   </main> 
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-  <script type="module" src="./app.js?v=20261010-localstats"></script>
+  <script type="module" src="./app.js?v=20261010-boardselect1"></script>
 </body>
 </html>
