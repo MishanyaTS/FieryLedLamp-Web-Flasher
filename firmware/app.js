@@ -404,16 +404,27 @@ if("serial"in navigator)navigator.serial.addEventListener("disconnect",e=>{if(se
 
 
 (() => {
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "scroll-to-top-button";
-  button.setAttribute("aria-label", "Наверх");
-  button.setAttribute("title", "Наверх");
-  button.innerHTML = '<span aria-hidden="true">↑</span>';
-  document.body.appendChild(button);
+  let button = document.getElementById("scrollToTopButton");
+
+  if (!button) {
+    button = document.createElement("button");
+    button.id = "scrollToTopButton";
+    button.type = "button";
+    button.className = "scroll-to-top-button";
+    button.setAttribute("aria-label", "Наверх");
+    button.setAttribute("title", "Наверх");
+    button.innerHTML = '<span aria-hidden="true">↑</span>';
+    document.body.appendChild(button);
+  }
+
+  const getScrollTop = () => Math.max(
+    window.scrollY || 0,
+    document.documentElement?.scrollTop || 0,
+    document.body?.scrollTop || 0
+  );
 
   const updateVisibility = () => {
-    button.classList.toggle("visible", window.scrollY > 320);
+    button.classList.toggle("visible", getScrollTop() > 180);
   };
 
   button.addEventListener("click", () => {
@@ -421,5 +432,7 @@ if("serial"in navigator)navigator.serial.addEventListener("disconnect",e=>{if(se
   });
 
   window.addEventListener("scroll", updateVisibility, { passive: true });
+  window.addEventListener("resize", updateVisibility, { passive: true });
+  document.addEventListener("scroll", updateVisibility, { passive: true });
   updateVisibility();
 })();
