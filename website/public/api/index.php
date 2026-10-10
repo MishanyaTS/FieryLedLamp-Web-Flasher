@@ -384,6 +384,25 @@ function analytics_sum(PDO $pdo, string $eventType): int {
     return (int)$stmt->fetchColumn();
 }
 
+function analytics_sum_firmware_board(PDO $pdo, string $boardId): int {
+    if ($boardId === 'n16r8') {
+        // До появления выбора платы Web Flasher работал только с N16R8.
+        // Старые записи "update.zip" и пустой item считаем загрузками N16R8.
+        $stmt = $pdo->prepare("SELECT COALESCE(SUM(event_count),0)
+            FROM analytics_counters
+            WHERE event_type='firmware_download'
+              AND (item='n16r8' OR item='update.zip' OR item='')");
+        $stmt->execute();
+        return (int)$stmt->fetchColumn();
+    }
+
+    $stmt = $pdo->prepare("SELECT COALESCE(SUM(event_count),0)
+        FROM analytics_counters
+        WHERE event_type='firmware_download' AND item=?");
+    $stmt->execute([$boardId]);
+    return (int)$stmt->fetchColumn();
+}
+
 function admin_users(PDO $pdo): never {
     require_admin($pdo);
 
@@ -502,6 +521,8 @@ function admin_stats(PDO $pdo): never {
             'pageViews' => analytics_sum($pdo, 'page_view'),
             'flasherViews' => analytics_sum($pdo, 'firmware_page_view'),
             'firmwareDownloads' => analytics_sum($pdo, 'firmware_download'),
+            'firmwareDownloadsN16R8' => analytics_sum_firmware_board($pdo, 'n16r8'),
+            'firmwareDownloadsN8R8' => analytics_sum_firmware_board($pdo, 'n8r8'),
             'windowsDownloads' => analytics_sum($pdo, 'app_windows_download'),
             'iosDownloads' => analytics_sum($pdo, 'app_ios_download'),
             'androidClicks' => analytics_sum($pdo, 'app_android_click'),
@@ -511,17 +532,25 @@ function admin_stats(PDO $pdo): never {
             'uniqueVisitors' => (int)$pdo->query('SELECT COUNT(DISTINCT visitor_hash) FROM analytics_unique_visitors')->fetchColumn(),
         ];
 
-        $stmt = $pdo->prepare("SELECT stat_date,event_type,SUM(event_count) AS cnt
+        $stmt = $pdo->prepare("SELECT stat_date,event_type,item,SUM(event_count) AS cnt
             FROM analytics_counters
             WHERE stat_date>=? AND event_type IN ('page_view','firmware_page_view','registration','firmware_download','app_windows_download','app_ios_download','app_android_click')
-            GROUP BY stat_date,event_type ORDER BY stat_date");
+            GROUP BY stat_date,event_type,item ORDER BY stat_date");
         $stmt->execute([$from]);
         $rows = $stmt->fetchAll();
 
         $daily = [];
         for ($i = 0; $i < $days; $i++) {
             $date = date('Y-m-d', strtotime($from . ' +' . $i . ' days'));
-            $daily[$date] = ['date'=>$date,'visits'=>0,'registrations'=>0,'firmware'=>0,'apps'=>0];
+            $daily[$date] = [
+                'date'=>$date,
+                'visits'=>0,
+                'registrations'=>0,
+                'firmware'=>0,
+                'firmwareN16R8'=>0,
+                'firmwareN8R8'=>0,
+                'apps'=>0
+            ];
         }
         foreach ($rows as $row) {
             $date = (string)$row['stat_date'];
@@ -537,6 +566,12 @@ function admin_stats(PDO $pdo): never {
                     break;
                 case 'firmware_download':
                     $daily[$date]['firmware'] += $count;
+                    $item = (string)($row['item'] ?? '');
+                    if ($item === 'n8r8') {
+                        $daily[$date]['firmwareN8R8'] += $count;
+                    } elseif ($item === 'n16r8' || $item === 'update.zip' || $item === '') {
+                        $daily[$date]['firmwareN16R8'] += $count;
+                    }
                     break;
                 case 'app_windows_download':
                 case 'app_ios_download':
