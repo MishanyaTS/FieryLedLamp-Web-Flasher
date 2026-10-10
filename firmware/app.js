@@ -1,45 +1,6 @@
 import { ESPLoader, Transport } from "https://unpkg.com/esptool-js@0.6.1/bundle.js";
 import { SITE_CONFIG } from "./config.js";
 
-const ANALYTICS_URL = "https://fieryledlamp.ru/api/index.php";
-const ANALYTICS_STORAGE_KEY = "fiery_analytics_id";
-const ANALYTICS_BEACONS = [];
-
-function analyticsVisitorId() {
-  try {
-    let id = localStorage.getItem(ANALYTICS_STORAGE_KEY);
-    if (!id) {
-      id = globalThis.crypto?.randomUUID?.() || (Date.now().toString(36) + "-" + Math.random().toString(36).slice(2));
-      localStorage.setItem(ANALYTICS_STORAGE_KEY, id);
-    }
-    return id;
-  } catch (_) {
-    return "";
-  }
-}
-
-function trackAnalytics(event, item = "", path = "/") {
-  try {
-    const params = new URLSearchParams({
-      action: "track-pixel",
-      event,
-      item,
-      path,
-      visitorId: analyticsVisitorId(),
-      t: String(Date.now())
-    });
-    const image = new Image();
-    ANALYTICS_BEACONS.push(image);
-    const done = () => {
-      const index = ANALYTICS_BEACONS.indexOf(image);
-      if (index >= 0) ANALYTICS_BEACONS.splice(index, 1);
-    };
-    image.onload = done;
-    image.onerror = done;
-    image.src = ANALYTICS_URL + "?" + params.toString();
-  } catch (_) {}
-}
-
 const $ = (id) => document.getElementById(id);
 const ui = {
   compatBanner: $("compatBanner"), selectPortBtn: $("selectPortBtn"), flashBtn: $("flashBtn"),
@@ -151,7 +112,6 @@ async function loadFirmwareFiles() {
   log(`Загрузка update.zip: ${SITE_CONFIG.firmwareZipUrl}`); setProgress(3,"Загрузка update.zip…");
   const response = await fetch(SITE_CONFIG.firmwareZipUrl, {cache:"no-store"});
   if (!response.ok) throw new Error(`Не удалось загрузить update.zip (${response.status}).`);
-  trackAnalytics("firmware_download", "update.zip", "/");
   const zipBytes = new Uint8Array(await response.arrayBuffer());
   if (!zipBytes.length) throw new Error("update.zip пустой.");
   log(`update.zip загружен: ${fmtBytes(zipBytes.length)}.`); setProgress(10,"Распаковка update.zip…");
