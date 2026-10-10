@@ -49,7 +49,7 @@ const ui = {
   eraseAll: $("eraseAll"), saveSettings: $("saveSettings"), boardSelect: $("boardSelect"), boardHint: $("boardHint"),
   cfgChip: $("cfgChip"), cfgFlash: $("cfgFlash"), cfgPsram: $("cfgPsram"), cfgMode: $("cfgMode"),
   cfgFreq: $("cfgFreq"), cfgBaud: $("cfgBaud"), fileList: $("fileList"), log: $("log"),
-  clearLogBtn: $("clearLogBtn"), steps: [$("step1"), $("step2"), $("step3")],
+  clearLogBtn: $("clearLogBtn"), previewFlash: $("previewFlash"), steps: [$("step1"), $("step2"), $("step3")],
 };
 
 let manifest = null;
@@ -156,6 +156,7 @@ async function loadManifest(board = selectedBoard) {
     ui.eraseAll.checked = Boolean(manifest.eraseAll);
     ui.cfgChip.textContent = manifest.chip || "—";
     ui.cfgFlash.textContent = `${manifest.physicalFlashSize || "—"} • KEEP`;
+    if (ui.previewFlash) ui.previewFlash.textContent = manifest.physicalFlashSize || "—";
     ui.cfgPsram.textContent = manifest.psramSize || "—";
     ui.cfgMode.textContent = `${(manifest.toolSpiMode || "QIO").toUpperCase()} • DoNotChgBin`;
     ui.cfgFreq.textContent = `${manifest.toolSpiSpeed || "80MHz"} • KEEP`;
