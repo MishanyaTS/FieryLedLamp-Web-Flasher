@@ -401,3 +401,25 @@ if("serial"in navigator)navigator.serial.addEventListener("disconnect",e=>{if(se
     setBusy(false);
   }
 })();
+
+
+(() => {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "scroll-to-top-button";
+  button.setAttribute("aria-label", "Наверх");
+  button.setAttribute("title", "Наверх");
+  button.innerHTML = '<span aria-hidden="true">↑</span>';
+  document.body.appendChild(button);
+
+  const updateVisibility = () => {
+    button.classList.toggle("visible", window.scrollY > 320);
+  };
+
+  button.addEventListener("click", () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+
+  window.addEventListener("scroll", updateVisibility, { passive: true });
+  updateVisibility();
+})();
