@@ -3,120 +3,229 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="theme-color" content="#10131a" />
-  <title>Прошивка Fiery Led Lamp</title>
-  <link rel="stylesheet" href="./style.css?v=20261010-scrolltop2" />
+  <meta name="theme-color" content="#090b10" />
+  <meta name="description" content="Web Flasher FieryLedLamp — прошивка ESP32-S3 прямо из браузера." />
+  <title>Прошивка FieryLedLamp</title>
+  <link rel="stylesheet" href="./style.css?v=20261010-mainstyle1" />
 </head>
 <body>
-  <main class="page">
-    <section class="hero">
-      <div class="brand">
-        <div class="logo" aria-hidden="true">🔥</div>
-        <div>
-          <div class="eyebrow">Прошивка</div>
-          <h1>Fiery Led Lamp</h1>
+  <header class="site-header">
+    <div class="shell nav-wrap">
+      <a class="brand" href="https://fieryledlamp.ru/" aria-label="FieryLedLamp — главный сайт">
+        <span class="brand-mark" aria-hidden="true">🔥</span>
+        <span>FieryLedLamp</span>
+      </a>
+      <nav class="nav" aria-label="Основная навигация">
+        <a href="https://fieryledlamp.ru/">Главная</a>
+        <a href="https://fieryledlamp.ru/instruction.html">Инструкция</a>
+        <a href="https://fieryledlamp.ru/hardware.html">Подключение</a>
+        <a href="https://fieryledlamp.ru/downloads.html">Скачать</a>
+        <a class="nav-cta active" href="https://firmware.fieryledlamp.ru/">Прошивка</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="firmware-hero">
+      <div class="shell firmware-hero-grid">
+        <div class="firmware-hero-copy">
+          <span class="eyebrow">WEB FLASHER</span>
+          <h1>Прошейте <span>FieryLedLamp</span><br>прямо из браузера</h1>
+          <p>Подключите ESP32-S3 по USB, выберите вашу плату и COM-порт. Подготовленные файлы прошивки будут записаны автоматически.</p>
+          <div class="hero-chips" aria-label="Возможности Web Flasher">
+            <span>ESP32-S3</span>
+            <span>Web Serial</span>
+            <span>HTTPS</span>
+            <span>Без установки</span>
+          </div>
+          <div id="compatBanner" class="banner hidden" role="alert"></div>
         </div>
-      </div>
 
-      <div id="compatBanner" class="banner hidden" role="alert"></div>
-
-      <div class="steps" aria-label="Этапы прошивки">
-        <div class="step active" id="step1"><span>1</span><div><b>Подключите плату</b><small>USB‑кабелем к компьютеру</small></div></div>
-        <div class="step" id="step2"><span>2</span><div><b>Выберите COM‑порт</b><small>Браузер покажет список портов</small></div></div>
-        <div class="step" id="step3"><span>3</span><div><b>Загрузите прошивку</b><small>Остальное выполняется автоматически</small></div></div>
+        <div class="flasher-preview" aria-hidden="true">
+          <div class="preview-top">
+            <div class="preview-orb"><span></span></div>
+            <div>
+              <small>FIERY LED LAMP</small>
+              <strong>Web Flasher</strong>
+            </div>
+            <span class="preview-live">ONLINE</span>
+          </div>
+          <div class="preview-board">
+            <span class="board-chip">ESP32-S3</span>
+            <div class="board-lines">
+              <i></i><i></i><i></i><i></i><i></i>
+            </div>
+          </div>
+          <div class="preview-meta">
+            <div><small>Режим</small><b>QIO</b></div>
+            <div><small>Flash</small><b>8 / 16 MB</b></div>
+            <div><small>Скорость</small><b>921600</b></div>
+          </div>
+        </div>
       </div>
     </section>
 
-    <section class="card primary-card">
-      <div class="board-picker">
-        <div>
-          <div class="label">Плата</div>
-          <div class="board-select-wrap">
-            <select id="boardSelect" aria-label="Выберите плату"></select>
+    <section class="section shell flasher-section">
+      <div class="section-head">
+        <span class="eyebrow">ПРОШИВКА</span>
+        <h2>Три шага до готовой лампы</h2>
+        <p>Выберите конфигурацию платы, подключите COM-порт и запустите загрузку. Не отключайте USB-кабель до завершения процесса.</p>
+      </div>
+
+      <div class="flasher-layout">
+        <section class="card primary-card">
+          <div class="card-kicker">НАСТРОЙКА ПЛАТЫ</div>
+
+          <div class="board-picker">
+            <div>
+              <div class="label">Плата</div>
+              <div class="board-select-wrap">
+                <select id="boardSelect" aria-label="Выберите плату"></select>
+              </div>
+              <small id="boardHint" class="board-hint">Загрузка списка плат…</small>
+            </div>
           </div>
-          <small id="boardHint" class="board-hint">Загрузка списка плат…</small>
-        </div>
-      </div>
 
-      <div class="port-row board-port-row">
-        <div class="port-state">
-          <div class="status-dot" id="portDot"></div>
-          <div>
-            <div class="label">COM‑порт</div>
-            <div class="value" id="portText">Не выбран</div>
+          <div class="port-row board-port-row">
+            <div class="port-state">
+              <div class="status-dot" id="portDot"></div>
+              <div>
+                <div class="label">COM-порт</div>
+                <div class="value" id="portText">Не выбран</div>
+              </div>
+            </div>
+            <button class="btn secondary" id="selectPortBtn" type="button">Выбрать COM-порт</button>
           </div>
-        </div>
-        <button class="btn secondary" id="selectPortBtn" type="button">Выбрать COM‑порт</button>
+
+          <div class="firmware-summary">
+            <div>
+              <div class="label">Прошивка</div>
+              <div class="value" id="firmwareName">Загрузка конфигурации…</div>
+            </div>
+          </div>
+
+          <label class="check-row preserve-settings">
+            <input type="checkbox" id="saveSettings" />
+            <span>
+              <b>Сохранить настройки перед прошивкой</b>
+              <small>Настройки, Wi-Fi и параметры эффектов будут сохранены в резервный раздел и восстановлены после прошивки.</small>
+            </span>
+          </label>
+
+          <button class="btn flash" id="flashBtn" type="button" disabled>
+            <span class="flash-icon">↓</span>
+            <span id="flashBtnText">Загрузить прошивку</span>
+          </button>
+
+          <div class="progress-wrap" id="progressWrap" aria-live="polite">
+            <div class="progress-head">
+              <span id="progressLabel">Готово к работе</span>
+              <span id="progressPercent">0%</span>
+            </div>
+            <div class="progress-track"><div class="progress-bar" id="progressBar"></div></div>
+          </div>
+
+          <div class="result hidden" id="resultBox"></div>
+        </section>
+
+        <aside class="flasher-side">
+          <div class="steps-panel">
+            <div class="card-kicker">ПОРЯДОК ДЕЙСТВИЙ</div>
+            <div class="steps" aria-label="Этапы прошивки">
+              <div class="step active" id="step1">
+                <span>01</span>
+                <div><b>Подключите плату</b><small>USB-кабелем к компьютеру.</small></div>
+              </div>
+              <div class="step" id="step2">
+                <span>02</span>
+                <div><b>Выберите COM-порт</b><small>Браузер покажет доступные порты.</small></div>
+              </div>
+              <div class="step" id="step3">
+                <span>03</span>
+                <div><b>Загрузите прошивку</b><small>Остальное выполняется автоматически.</small></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="help-panel">
+            <span class="eyebrow">ЕСЛИ ПЛАТА НЕ ОПРЕДЕЛЯЕТСЯ</span>
+            <h3>Режим загрузчика</h3>
+            <p>Зажмите <b>BOOT</b>, кратко нажмите <b>RESET</b>, отпустите <b>BOOT</b> и повторите выбор COM-порта.</p>
+            <small>Web Serial работает в поддерживаемом браузере по HTTPS или через localhost.</small>
+          </div>
+        </aside>
       </div>
-
-      <div class="firmware-summary">
-        <div>
-          <div class="label">Прошивка</div>
-          <div class="value" id="firmwareName">Загрузка конфигурации…</div>
-        </div>
-      </div>
-
-      <label class="check-row preserve-settings">
-        <input type="checkbox" id="saveSettings" />
-        <span>
-          <b>Сохранить настройки перед прошивкой</b>
-          <small>Настройки, Wi‑Fi и параметры эффектов будут сохранены в резервный раздел и восстановлены после прошивки.</small>
-        </span>
-      </label>
-
-      <button class="btn flash" id="flashBtn" type="button" disabled>
-        <span class="flash-icon">⬇</span>
-        <span id="flashBtnText">Загрузить прошивку</span>
-      </button>
-
-      <div class="progress-wrap" id="progressWrap" aria-live="polite">
-        <div class="progress-head">
-          <span id="progressLabel">Готово к работе</span>
-          <span id="progressPercent">0%</span>
-        </div>
-        <div class="progress-track"><div class="progress-bar" id="progressBar"></div></div>
-      </div>
-
-      <div class="result hidden" id="resultBox"></div>
     </section>
 
-    <details class="card advanced">
-      <summary>Дополнительные параметры</summary>
-      <div class="advanced-body">
-        <label class="check-row">
-          <input type="checkbox" id="eraseAll" />
-          <span><b>Полностью очистить Flash перед прошивкой</b><small>Удалит Wi‑Fi, настройки и остальные сохранённые данные.</small></span>
-        </label>
-        <div class="info-grid">
-          <div><span>Чип</span><b id="cfgChip">—</b></div>
-          <div><span>Flash</span><b id="cfgFlash">—</b></div>
-          <div><span>PSRAM</span><b id="cfgPsram">—</b></div>
-          <div><span>Режим</span><b id="cfgMode">—</b></div>
-          <div><span>Частота</span><b id="cfgFreq">—</b></div>
-          <div><span>Скорость</span><b id="cfgBaud">—</b></div>
-        </div>
-        <div class="file-list" id="fileList"></div>
+    <section class="section shell details-section">
+      <div class="section-head compact">
+        <span class="eyebrow">ДЛЯ ПРОДВИНУТЫХ</span>
+        <h2>Дополнительная информация</h2>
       </div>
-    </details>
 
-    <details class="card log-card">
-      <summary>Журнал прошивки</summary>
-      <div class="log-toolbar"><button class="link-btn" id="clearLogBtn" type="button">Очистить</button></div>
-      <pre id="log"></pre>
-    </details>
+      <details class="card advanced">
+        <summary>Дополнительные параметры</summary>
+        <div class="advanced-body">
+          <label class="check-row">
+            <input type="checkbox" id="eraseAll" />
+            <span><b>Полностью очистить Flash перед прошивкой</b><small>Удалит Wi-Fi, настройки и остальные сохранённые данные.</small></span>
+          </label>
+          <div class="info-grid">
+            <div><span>Чип</span><b id="cfgChip">—</b></div>
+            <div><span>Flash</span><b id="cfgFlash">—</b></div>
+            <div><span>PSRAM</span><b id="cfgPsram">—</b></div>
+            <div><span>Режим</span><b id="cfgMode">—</b></div>
+            <div><span>Частота</span><b id="cfgFreq">—</b></div>
+            <div><span>Скорость</span><b id="cfgBaud">—</b></div>
+          </div>
+          <div class="file-list" id="fileList"></div>
+        </div>
+      </details>
 
-    <section class="help">
-      <h2>Если плата не определяется</h2>
-      <p>Зажмите <b>BOOT</b>, кратко нажмите <b>RESET</b>, отпустите <b>BOOT</b> и повторите подключение. Во время прошивки не отключайте USB‑кабель.</p>
-      <p class="muted">Web Serial работает только в поддерживаемом браузере и в безопасном контексте: сайт должен быть открыт по HTTPS либо через localhost.</p>
+      <details class="card log-card">
+        <summary>Журнал прошивки</summary>
+        <div class="log-toolbar"><button class="link-btn" id="clearLogBtn" type="button">Очистить</button></div>
+        <pre id="log"></pre>
+      </details>
+    </section>
+
+    <section class="shell cta-panel">
+      <div>
+        <span class="eyebrow">FIERYLEDLAMP</span>
+        <h2>Нужна инструкция по сборке?</h2>
+        <p>На основном сайте есть схема подключения, список компонентов и подробное описание функций лампы.</p>
+      </div>
+      <a class="btn primary-link" href="https://fieryledlamp.ru/instruction.html">Открыть инструкцию</a>
     </section>
   </main>
+
+  <footer class="footer">
+    <div class="shell footer-grid">
+      <div>
+        <a class="brand" href="https://fieryledlamp.ru/"><span class="brand-mark">🔥</span><span>FieryLedLamp</span></a>
+        <p>Web Flasher для быстрой прошивки ESP32-S3 прямо из браузера.</p>
+      </div>
+      <div>
+        <b>Проект</b>
+        <a href="https://fieryledlamp.ru/">Главная</a>
+        <a href="https://fieryledlamp.ru/instruction.html">Инструкция</a>
+        <a href="https://fieryledlamp.ru/hardware.html">Подключение</a>
+      </div>
+      <div>
+        <b>Ссылки</b>
+        <a href="https://fieryledlamp.ru/downloads.html">Скачать</a>
+        <a href="https://fieryledlamp.ru/versions.html">История версий</a>
+        <a href="https://github.com/MishanyaTS/FieryLedLamp" target="_blank" rel="noopener">GitHub</a>
+      </div>
+    </div>
+    <div class="shell footer-bottom">FieryLedLamp · 2026</div>
+  </footer>
 
   <button id="scrollToTopButton" class="scroll-to-top-button" type="button" aria-label="Наверх" title="Наверх">
     <span aria-hidden="true">↑</span>
   </button>
 
-<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <script type="module" src="./app.js?v=20261010-scrolltop2"></script>
 </body>
 </html>
