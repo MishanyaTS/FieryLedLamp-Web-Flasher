@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#090b10" />
   <meta name="description" content="Web Flasher FieryLedLamp — прошивка ESP32-S3 прямо из браузера." />
   <title>Прошивка FieryLedLamp</title>
-  <link rel="stylesheet" href="./style.css?v=20261010-mainstyle2" />
+  <link rel="stylesheet" href="./style.css?v=20261010-mainstyle3" />
 </head>
 <body>
   <header class="site-header">
@@ -48,7 +48,6 @@
               <small>FIERY LED LAMP</small>
               <strong>Web Flasher</strong>
             </div>
-            <span class="preview-live">ONLINE</span>
           </div>
           <div class="preview-board">
             <span class="board-chip">ESP32-S3</span>
@@ -58,7 +57,7 @@
           </div>
           <div class="preview-meta">
             <div><small>Режим</small><b>QIO</b></div>
-            <div><small>Flash</small><b>8 / 16 MB</b></div>
+            <div><small>Flash</small><b id="previewFlash">—</b></div>
             <div><small>Скорость</small><b>921600</b></div>
           </div>
         </div>
@@ -226,6 +225,6 @@
   </button>
 
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-  <script type="module" src="./app.js?v=20261010-scrolltop2"></script>
+  <script type="module" src="./app.js?v=20261010-previewflash1"></script>
 </body>
 </html>
