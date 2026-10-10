@@ -756,3 +756,140 @@ pre{
     font-size:25px
   }
 }
+
+/* Visual refinement 2026-10-10 */
+.firmware-hero-grid{
+  gap:58px;
+  padding-top:68px;
+  padding-bottom:62px
+}
+.firmware-hero-copy h1{
+  max-width:760px;
+  font-size:clamp(46px,5.9vw,70px);
+  line-height:1
+}
+.firmware-hero-copy>p{
+  max-width:650px;
+  font-size:17px
+}
+.hero-chips{
+  margin-top:22px
+}
+.hero-chips span{
+  padding:7px 10px;
+  background:#0c1016cc;
+  border-color:#29313d
+}
+.flasher-preview{
+  padding:22px;
+  border-radius:22px;
+  box-shadow:0 22px 65px #0007,inset 0 1px #ffffff0a
+}
+.preview-board{
+  min-height:178px;
+  margin:15px 0
+}
+.board-chip{
+  width:142px;
+  height:96px;
+  border-radius:14px
+}
+.board-lines i:nth-child(1){transform:translateY(-60px)}
+.board-lines i:nth-child(2){transform:translateY(-30px)}
+.board-lines i:nth-child(3){transform:translateY(0)}
+.board-lines i:nth-child(4){transform:translateY(30px)}
+.board-lines i:nth-child(5){transform:translateY(60px)}
+.section{
+  padding:68px 0
+}
+.flasher-section{
+  padding-top:62px
+}
+.flasher-layout{
+  gap:22px
+}
+.primary-card{
+  position:relative;
+  overflow:hidden;
+  border-color:#4b372d;
+  background:
+    radial-gradient(circle at 100% 0,#ff6b2c0d,transparent 34%),
+    linear-gradient(180deg,#151a24,#0f131b);
+  box-shadow:0 22px 58px #0004
+}
+.primary-card::before{
+  content:"";
+  position:absolute;
+  top:0;
+  left:24px;
+  right:24px;
+  height:1px;
+  background:linear-gradient(90deg,transparent,#ff8b554d,transparent)
+}
+.btn.secondary{
+  background:#171c26;
+  border-color:#3a4555
+}
+.btn.flash{
+  min-height:54px;
+  border-radius:12px;
+  box-shadow:0 12px 30px #ff6b2c26
+}
+.steps-panel,.help-panel{
+  border-radius:19px;
+  box-shadow:0 14px 38px #0002
+}
+.step{
+  padding:14px 0
+}
+.step>span{
+  width:34px;
+  height:34px;
+  border-radius:11px
+}
+.details-section{
+  padding-top:8px
+}
+details.card{
+  border-radius:18px
+}
+.cta-panel{
+  margin-bottom:72px;
+  padding:34px 36px;
+  border-radius:22px
+}
+.nav .nav-cta{
+  box-shadow:0 6px 18px #ff6b2c1a
+}
+@media(max-width:960px){
+  .firmware-hero-grid{
+    gap:30px;
+    padding-top:54px;
+    padding-bottom:54px
+  }
+  .flasher-preview{
+    max-width:560px
+  }
+}
+@media(max-width:680px){
+  .firmware-hero-grid{
+    padding-top:40px;
+    padding-bottom:44px
+  }
+  .firmware-hero-copy h1{
+    font-size:44px
+  }
+  .section{
+    padding:52px 0
+  }
+  .flasher-section{
+    padding-top:48px
+  }
+  .preview-board{
+    min-height:155px
+  }
+  .cta-panel{
+    padding:23px;
+    margin-bottom:48px
+  }
+}
