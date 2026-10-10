@@ -8,8 +8,9 @@ https://mishanyats.github.io/FieryLedLamp-Web-Flasher/
 
 ## Что где менять
 
-- `firmware/config.js` — название сайта, подписи, скорость 921600 и ссылка на пакет прошивки.
-- `firmware/manifest.json` — имена BIN-файлов и адреса записи.
+- `firmware/config.js` — список поддерживаемых плат и пути к их пакетам.
+- `firmware/ESP32-S3 N16R8/manifest.json` — параметры прошивки N16R8.
+- `firmware/ESP32-S3 N8R8/manifest.json` — параметры прошивки N8R8.
 - `firmware/index.html` — структура страницы и тексты.
 - `firmware/style.css` — внешний вид.
 - `firmware/app.js` — логика Web Serial и esptool-js. В рабочей конфигурации используется KEEP / KEEP / KEEP, аналог DoNotChgBin=ON.
@@ -17,15 +18,14 @@ https://mishanyats.github.io/FieryLedLamp-Web-Flasher/
 
 ## Откуда берётся прошивка
 
-Сайт автоматически получает рабочий пакет по адресу:
+На странице сначала выбирается модель платы.
 
-`https://raw.githubusercontent.com/MishanyaTS/FieryLedLamp/main/FieryLedLamp/update.zip`
+Для каждой платы используется отдельная папка:
 
-Пользователь сайта ничего не скачивает и не выбирает вручную.
+- `firmware/ESP32-S3 N16R8/update.zip`
+- `firmware/ESP32-S3 N8R8/update.zip`
 
-Репозиторий `MishanyaTS/FieryLedLamp` для сайта не изменялся: сайт только читает уже существующий `FieryLedLamp/update.zip`.
-
-Если позже захотите полностью отделить прошивку от основного репозитория, можно положить `update.zip` в этот репозиторий и заменить `firmwareZipUrl` в `firmware/config.js` на `./update.zip`.
+Рядом с архивом лежит свой `manifest.json`, поэтому адреса записи, размер Flash и другие параметры могут отличаться для каждой платы.
 
 ## Текущие адреса
 
@@ -35,7 +35,7 @@ https://mishanyats.github.io/FieryLedLamp-Web-Flasher/
 - `firmware.bin` → `0x00010000`
 - `littlefs.bin` → `0x00C90000`
 
-Адреса хранятся в `firmware/manifest.json`.
+Адреса хранятся в `manifest.json` внутри папки выбранной платы.
 
 ## Структура Web Flasher
 
