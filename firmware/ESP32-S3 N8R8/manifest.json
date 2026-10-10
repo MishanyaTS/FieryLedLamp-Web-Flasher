@@ -11,8 +11,28 @@
   "toolSpiSpeed": "80MHz",
   "physicalFlashSize": "8MB",
   "psramSize": "8MB",
-  "ready": false,
-  "unavailableMessage": "Для ESP32-S3 N8R8 нужно добавить отдельный update.zip и указать его адреса записи в manifest.json.",
-  "files": [],
+  "ready": true,
+  "files": [
+    {
+      "name": "bootloader.bin",
+      "address": "0x00000000"
+    },
+    {
+      "name": "partitions.bin",
+      "address": "0x00008000"
+    },
+    {
+      "name": "boot_app0.bin",
+      "address": "0x0000E000"
+    },
+    {
+      "name": "firmware.bin",
+      "address": "0x00010000"
+    },
+    {
+      "name": "littlefs.bin",
+      "address": "0x00670000"
+    }
+  ],
   "settingsBackupBaudRate": 115200
 }
