@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b0d12">
+  <meta name="description" content="Подключение FieryLedLamp к MQTT-брокеру: адрес, порт, логин, пароль, базовый топик, проверка соединения и тестовые команды.">
+  <title>Подключение брокера — FieryLedLamp</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="shell nav-wrap">
+    <a class="brand" href="/"><span class="brand-mark">🔥</span><span>FieryLedLamp</span></a>
+    <button class="menu-btn" type="button" aria-expanded="false" aria-controls="site-nav">Меню</button>
+    <nav class="nav" id="site-nav">
+      <a href="/">Главная</a>
+      <a href="/setup.html">Начало работы</a>
+      <a href="/instruction.html">Инструкция</a>
+      <a href="/hardware.html">Подключение</a>
+      <a class="active" href="/mqtt-broker.html">MQTT</a>
+      <a href="/components.html">Компоненты</a>
+      <a href="/downloads.html">Скачать</a>
+      <a href="/fiery-lamp-control.html">Fiery Lamp Control</a>
+      <a href="/account.html">Аккаунт</a>
+      <a href="/versions.html">История версий</a>
+      <a class="nav-cta" href="https://firmware.fieryledlamp.ru">Прошить</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="page-hero shell">
+    <span class="eyebrow">MQTT</span>
+    <h1>Подключение брокера</h1>
+    <p>Пошаговая настройка MQTT для FieryLedLamp: создайте брокер, перенесите параметры в Web-интерфейс лампы, сохраните настройки и проверьте обмен командами.</p>
+    <div class="manual-meta">
+      <span>ESP32-S3</span>
+      <span>MQTT</span>
+      <span>Управление из умного дома</span>
+      <span>Удалённые команды</span>
+    </div>
+  </section>
+
+  <div class="shell docs-layout">
+    <aside class="toc">
+      <b>На странице</b>
+      <a href="#before">Что понадобится</a>
+      <a href="#create">1. Создайте брокер</a>
+      <a href="#lamp">2. Настройте лампу</a>
+      <a href="#topics">3. Топики MQTT</a>
+      <a href="#test">4. Проверка</a>
+      <a href="#problems">Если не подключается</a>
+    </aside>
+
+    <article class="prose">
+      <section id="before">
+        <h2>Что понадобится</h2>
+        <p>Лампа должна быть подключена к домашней Wi-Fi сети и иметь доступ к MQTT-брокеру. Можно использовать брокер в локальной сети или внешний MQTT-сервис.</p>
+
+        <div class="credential-grid">
+          <div><span>Адрес</span><strong>IP или имя сервера</strong></div>
+          <div><span>Порт</span><strong>Порт MQTT TCP</strong></div>
+          <div><span>Доступ</span><strong>Логин и пароль</strong></div>
+        </div>
+
+        <div class="notice">
+          <b>Важно</b>
+          <p>Используйте именно адрес MQTT-сервера и его MQTT-порт. Не указывайте адрес Web-панели, HTTPS-порт или WebSocket-порт.</p>
+        </div>
+      </section>
+
+      <section id="create">
+        <h2>1. Создайте MQTT-брокер</h2>
+        <p>Если у вас уже есть брокер, этот шаг можно пропустить. Для внешнего подключения можно использовать любой сервис, который выдаёт обычный MQTT TCP endpoint. Например, WQTT или собственный Mosquitto.</p>
+        <p>В личном кабинете брокера создайте сервер или пользователя и сохраните четыре параметра:</p>
+
+        <div class="credential-grid">
+          <div><span>Host</span><strong>Например m4.wqtt.ru</strong></div>
+          <div><span>Port</span><strong>Порт из кабинета</strong></div>
+          <div><span>User</span><strong>Имя пользователя</strong></div>
+        </div>
+        <div class="credential-grid">
+          <div><span>Password</span><strong>Пароль MQTT</strong></div>
+          <div><span>Protocol</span><strong>MQTT TCP</strong></div>
+          <div><span>Topic</span><strong>Например Lamp</strong></div>
+        </div>
+
+        <div class="notice warning">
+          <b>Не копируйте чужой порт</b>
+          <p>Порт зависит от конкретного брокера. Введите тот номер, который указан именно в настройках вашего MQTT-сервера.</p>
+        </div>
+      </section>
+
+      <section id="lamp">
+        <h2>2. Введите параметры в FieryLedLamp</h2>
+        <p>Откройте Web-интерфейс лампы и перейдите в настройки MQTT. Заполните поля данными из кабинета брокера.</p>
+
+        <div class="manual-grid">
+          <div class="manual-item"><h3>Включить MQTT</h3><p>Включите MQTT-клиент лампы.</p></div>
+          <div class="manual-item"><h3>Адрес брокера</h3><p>Введите IP-адрес или доменное имя, например <code>m4.wqtt.ru</code>. Префикс <code>mqtt://</code> не нужен.</p></div>
+          <div class="manual-item"><h3>Порт</h3><p>Введите MQTT TCP-порт, выданный брокером.</p></div>
+          <div class="manual-item"><h3>Имя пользователя</h3><p>Введите MQTT-логин. Если ваш локальный брокер разрешает анонимный доступ, поле может быть пустым.</p></div>
+          <div class="manual-item"><h3>Пароль</h3><p>Введите пароль MQTT-пользователя.</p></div>
+          <div class="manual-item"><h3>Базовый топик</h3><p>Например <code>Lamp</code>. От него лампа автоматически построит полные топики.</p></div>
+          <div class="manual-item"><h3>Период публикации</h3><p><code>0</code> — публиковать состояние при событиях. Значения <code>1–60</code> задают периодическую публикацию в секундах.</p></div>
+        </div>
+
+        <p>Нажмите сохранение настроек, затем перезагрузите лампу. После перезапуска новые адрес, порт, логин и пароль будут использованы для подключения.</p>
+      </section>
+
+      <section id="topics">
+        <h2>3. Какие топики использует лампа</h2>
+        <p>FieryLedLamp автоматически добавляет к базовому топику идентификатор устройства вида <code>LedLamp_&lt;ID&gt;</code>.</p>
+
+        <div class="notice">
+          <b>Если базовый топик — Lamp</b>
+          <p>Команды отправляются в <code>Lamp/LedLamp_&lt;ID&gt;/cmnd</code>, а текущее состояние в JSON приходит в <code>Lamp/LedLamp_&lt;ID&gt;/snd</code>.</p>
+        </div>
+
+        <p>Полный идентификатор формируется самой лампой. В Web-интерфейсе MQTT отображаются топики подписки и публикации, поэтому вручную вычислять ID не требуется.</p>
+
+        <div class="credential-grid">
+          <div><span>Команды</span><strong>.../cmnd</strong></div>
+          <div><span>Ответ JSON</span><strong>.../snd</strong></div>
+          <div><span>QoS</span><strong>Команды принимаются брокером</strong></div>
+        </div>
+      </section>
+
+      <section id="test">
+        <h2>4. Проверьте подключение</h2>
+        <p>После перезагрузки откройте статус MQTT в Web-интерфейсе лампы. При успешном соединении должен отображаться статус <strong>«ПОДКЛЮЧЕНО»</strong>.</p>
+        <p>Для проверки откройте MQTT-клиент, подпишитесь на топик <code>.../snd</code> и отправьте одну из команд в <code>.../cmnd</code>:</p>
+
+        <div class="credential-grid">
+          <div><span>STATE</span><strong>Запросить состояние</strong></div>
+          <div><span>P_ON</span><strong>Включить лампу</strong></div>
+          <div><span>P_OFF</span><strong>Выключить лампу</strong></div>
+        </div>
+
+        <p>После команды <code>STATE</code> лампа должна опубликовать JSON со своим состоянием. В нём могут быть питание, текущий эффект, яркость, скорость, масштаб, звук, таймер и другие параметры.</p>
+      </section>
+
+      <section id="problems">
+        <h2>Если MQTT не подключается</h2>
+        <p>Проверьте параметры по порядку: доступ лампы к Wi-Fi, адрес брокера, MQTT-порт, логин и пароль, а затем базовый топик. После изменения адреса, порта или учётных данных обязательно сохраните настройки и перезагрузите лампу.</p>
+
+        <div class="notice warning">
+          <b>Частая ошибка</b>
+          <p>Не вводите <code>http://</code>, <code>https://</code> или адрес сайта брокера. Нужны hostname/IP MQTT-сервера и MQTT TCP-порт.</p>
+        </div>
+
+        <p>Если внешний сервис предлагает несколько вариантов подключения, выбирайте обычный MQTT TCP endpoint, совместимый с настройками FieryLedLamp.</p>
+      </section>
+    </article>
+  </div>
+
+  <section class="section shell cta-panel">
+    <div>
+      <span class="eyebrow">ГОТОВО</span>
+      <h2>MQTT можно использовать в автоматизации</h2>
+      <p>После подключения брокера лампой можно управлять из MQTT-клиента, Home Assistant или другой системы, которая умеет публиковать MQTT-команды.</p>
+    </div>
+    <a class="btn primary" href="/instruction.html">Открыть инструкцию лампы</a>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="shell footer-grid">
+    <div><a class="brand" href="/"><span class="brand-mark">🔥</span><span>FieryLedLamp</span></a><p>Открытый проект умной LED-лампы на ESP32-S3.</p></div>
+    <div>
+      <b>Проект</b>
+      <a href="/setup.html">Начало работы</a>
+      <a href="/instruction.html">Инструкция</a>
+      <a href="/hardware.html">Подключение</a>
+      <a href="/mqtt-broker.html">Подключение брокера</a>
+      <a href="/components.html">Компоненты</a>
+      <a href="/downloads.html">Скачать</a>
+    </div>
+    <div>
+      <b>Ссылки</b>
+      <a href="/fiery-lamp-control.html">Fiery Lamp Control</a>
+      <a href="/versions.html">История версий</a>
+      <a href="https://github.com/MishanyaTS/FieryLedLamp" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://firmware.fieryledlamp.ru">Web Flasher</a>
+    </div>
+  </div>
+  <div class="shell footer-bottom">FieryLedLamp · 2026</div>
+</footer>
+
+<script src="/site.js"></script>
+</body>
+</html>
