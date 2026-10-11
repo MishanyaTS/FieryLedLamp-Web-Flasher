@@ -103,6 +103,10 @@
           <div><span>JSON</span><strong>Состояние лампы</strong></div>
         </div>
         <p>Точный <code>LedLamp_&lt;ID&gt;</code> смотрите в Web-интерфейсе лампы в настройках MQTT.</p>
+        <div class="notice">
+          <b>Единое состояние для всех команд</b>
+          <p>Независимо от того, чем вы управляете — питанием, эффектом, яркостью, звуком, циклом или подсветкой — состояние отслеживается через общий JSON-топик <code>.../snd</code>. Для принудительного обновления отправьте <code>STATE</code> в <code>.../cmnd</code>.</p>
+        </div>
       </section>
 
       <section id="check">
@@ -124,9 +128,7 @@
           <div class="mqtt-command-row"><code>LUMOS_ON</code><span>Включить подсветку.</span></div>
           <div class="mqtt-command-row"><code>LUMOS_OFF</code><span>Выключить подсветку.</span></div>
         </div>
-        <p>Состояние подсветки находится в общем JSON <code>.../snd</code> в поле <code>lumos</code>. Для WQTT можно использовать путь:</p>
-        <div class="notice"><b>JSON Path</b><p><code>Lamp/LedLamp_&lt;ID&gt;/snd$.lumos</code></p></div>
-        <p>Значения состояния: <code>ON</code> и <code>OFF</code>.</p>
+        <p>Состояние после управления подсветкой, как и после остальных MQTT-команд, отслеживается через общий JSON-топик <code>.../snd</code>.</p>
       </section>
     </article>
   </div>
