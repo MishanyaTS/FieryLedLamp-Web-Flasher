@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b0d12">
+  <meta name="description" content="Подключение FieryLedLamp к WQTT: регистрация, параметры MQTT брокера, настройка лампы, топики и проверка управления.">
+  <title>Настройка WQTT — FieryLedLamp</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="shell nav-wrap">
+    <a class="brand" href="/"><span class="brand-mark">🔥</span><span>FieryLedLamp</span></a>
+    <button class="menu-btn" type="button" aria-expanded="false" aria-controls="site-nav">Меню</button>
+    <nav class="nav" id="site-nav">
+      <a href="/">Главная</a>
+      <a href="/setup.html">Начало работы</a>
+      <a href="/instruction.html">Инструкция</a>
+      <a href="/hardware.html">Подключение</a>
+      <a class="active" href="/mqtt-broker.html">MQTT</a>
+      <a href="/components.html">Компоненты</a>
+      <a href="/downloads.html">Скачать</a>
+      <a href="/fiery-lamp-control.html">Fiery Lamp Control</a>
+      <a href="/account.html">Аккаунт</a>
+      <a href="/versions.html">История версий</a>
+      <a class="nav-cta" href="https://firmware.fieryledlamp.ru">Прошить</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="page-hero shell">
+    <span class="eyebrow">MQTT · WQTT.RU</span>
+    <h1>Подключение и настройка WQTT</h1>
+    <p>Пошаговая настройка облачного брокера WQTT для FieryLedLamp: создаём аккаунт, получаем параметры брокера, переносим их в лампу и проверяем управление.</p>
+    <div class="hero-actions">
+      <a class="btn primary" href="https://dash.wqtt.ru/" target="_blank" rel="noopener">Открыть WQTT</a>
+      <a class="btn ghost" href="/mqtt-broker.html">Все MQTT-команды</a>
+    </div>
+  </section>
+
+  <div class="shell docs-layout">
+    <aside class="toc">
+      <b>Настройка WQTT</b>
+      <a href="#account">1. Аккаунт</a>
+      <a href="#broker">2. Данные брокера</a>
+      <a href="#lamp">3. FieryLedLamp</a>
+      <a href="#topics">4. Топики</a>
+      <a href="#check">5. Проверка</a>
+      <a href="#lumos">6. Подсветка</a>
+    </aside>
+
+    <article class="prose">
+      <section id="account">
+        <h2>1. Создайте аккаунт WQTT</h2>
+        <p>Откройте панель WQTT, зарегистрируйтесь или войдите в существующий аккаунт. После активации брокера в кабинете появятся параметры подключения.</p>
+        <div class="center-action mqtt-left-action">
+          <a class="btn primary" href="https://dash.wqtt.ru/" target="_blank" rel="noopener">Перейти в панель WQTT</a>
+        </div>
+      </section>
+
+      <section id="broker">
+        <h2>2. Найдите параметры MQTT-брокера</h2>
+        <p>В кабинете WQTT откройте информацию для подключения к брокеру. Для FieryLedLamp нужны следующие значения:</p>
+        <div class="credential-grid">
+          <div><span>Server</span><strong>Например m4.wqtt.ru</strong></div>
+          <div><span>Port</span><strong>Обычный MQTT-порт</strong></div>
+          <div><span>User</span><strong>Логин MQTT</strong></div>
+        </div>
+        <div class="credential-grid">
+          <div><span>Password</span><strong>Пароль MQTT</strong></div>
+          <div><span>Port TLS</span><strong>Не использовать</strong></div>
+          <div><span>WebSocket</span><strong>Не использовать</strong></div>
+        </div>
+        <div class="notice warning">
+          <b>Выбирайте поле Port</b>
+          <p>Текущая настройка FieryLedLamp использует обычное MQTT TCP-соединение. Не вводите <code>port_tls</code> и WebSocket-порт.</p>
+        </div>
+      </section>
+
+      <section id="lamp">
+        <h2>3. Перенесите данные в FieryLedLamp</h2>
+        <p>Откройте Web-интерфейс лампы → MQTT и заполните поля:</p>
+        <div class="manual-grid">
+          <div class="manual-item"><h3>MQTT</h3><p>Включите MQTT-клиент.</p></div>
+          <div class="manual-item"><h3>Адрес брокера</h3><p>Скопируйте значение <b>Server</b> из WQTT, например <code>m4.wqtt.ru</code>.</p></div>
+          <div class="manual-item"><h3>Порт</h3><p>Скопируйте обычный <b>Port</b>.</p></div>
+          <div class="manual-item"><h3>Имя пользователя</h3><p>Скопируйте <b>User</b>.</p></div>
+          <div class="manual-item"><h3>Пароль</h3><p>Скопируйте <b>Password</b>.</p></div>
+          <div class="manual-item"><h3>Базовый топик</h3><p>Укажите, например, <code>Lamp</code>.</p></div>
+        </div>
+        <p>Сохраните настройки и перезагрузите лампу. После запуска статус MQTT должен перейти в <strong>«ПОДКЛЮЧЕНО»</strong>.</p>
+      </section>
+
+      <section id="topics">
+        <h2>4. Топики FieryLedLamp в WQTT</h2>
+        <p>При базовом топике <code>Lamp</code> лампа формирует:</p>
+        <div class="credential-grid">
+          <div><span>Команды</span><strong>Lamp/LedLamp_&lt;ID&gt;/cmnd</strong></div>
+          <div><span>Состояние</span><strong>Lamp/LedLamp_&lt;ID&gt;/snd</strong></div>
+          <div><span>JSON</span><strong>Состояние лампы</strong></div>
+        </div>
+        <p>Точный <code>LedLamp_&lt;ID&gt;</code> смотрите в Web-интерфейсе лампы в настройках MQTT.</p>
+      </section>
+
+      <section id="check">
+        <h2>5. Проверьте управление</h2>
+        <p>Опубликуйте сообщение в командный топик <code>.../cmnd</code>:</p>
+        <div class="mqtt-command-table">
+          <div class="mqtt-command-row"><code>STATE</code><span>Запрос состояния.</span></div>
+          <div class="mqtt-command-row"><code>P_ON</code><span>Включить лампу.</span></div>
+          <div class="mqtt-command-row"><code>P_OFF</code><span>Выключить лампу.</span></div>
+          <div class="mqtt-command-row"><code>BRI50</code><span>Установить яркость 50%.</span></div>
+        </div>
+        <p>Подпишитесь на <code>.../snd</code>. После команды <code>STATE</code> должен прийти JSON с текущим состоянием лампы.</p>
+      </section>
+
+      <section id="lumos">
+        <h2>6. Настройка «Подсветки» в WQTT</h2>
+        <p>Для управления подсветкой используйте тот же командный топик <code>.../cmnd</code>:</p>
+        <div class="mqtt-command-table">
+          <div class="mqtt-command-row"><code>LUMOS_ON</code><span>Включить подсветку.</span></div>
+          <div class="mqtt-command-row"><code>LUMOS_OFF</code><span>Выключить подсветку.</span></div>
+        </div>
+        <p>Состояние подсветки находится в общем JSON <code>.../snd</code> в поле <code>lumos</code>. Для WQTT можно использовать путь:</p>
+        <div class="notice"><b>JSON Path</b><p><code>Lamp/LedLamp_&lt;ID&gt;/snd$.lumos</code></p></div>
+        <p>Значения состояния: <code>ON</code> и <code>OFF</code>.</p>
+      </section>
+    </article>
+  </div>
+
+  <section class="section shell cta-panel">
+    <div>
+      <span class="eyebrow">MQTT</span>
+      <h2>Нужны остальные команды?</h2>
+      <p>На основной MQTT-странице собран полный список команд FieryLedLamp для эффектов, яркости, звука, цикла, бегущей строки, будильников, таймеров и подсветки.</p>
+    </div>
+    <a class="btn primary" href="/mqtt-broker.html#commands">Открыть все команды</a>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="shell footer-grid">
+    <div><a class="brand" href="/"><span class="brand-mark">🔥</span><span>FieryLedLamp</span></a><p>Открытый проект умной LED-лампы на ESP32-S3.</p></div>
+    <div><b>Проект</b><a href="/instruction.html">Инструкция</a><a href="/hardware.html">Подключение</a><a href="/mqtt-broker.html">MQTT</a><a href="/components.html">Компоненты</a></div>
+    <div><b>Ссылки</b><a href="https://dash.wqtt.ru/" target="_blank" rel="noopener">WQTT</a><a href="https://firmware.fieryledlamp.ru">Web Flasher</a><a href="https://github.com/MishanyaTS/FieryLedLamp" target="_blank" rel="noopener">GitHub</a></div>
+  </div>
+  <div class="shell footer-bottom">FieryLedLamp · 2026</div>
+</footer>
+<script src="/site.js"></script>
+</body>
+</html>
