@@ -139,7 +139,7 @@
         <div class="mqtt-command-table">
           <div class="mqtt-command-row"><code>Тип управления</code><span>Числовой регулятор / ползунок</span></div>
           <div class="mqtt-command-row"><code>Топик управления</code><span><code>Lamp/LedLamp_&lt;ID&gt;/cmnd</code></span></div>
-          <div class="mqtt-command-row"><code>Формат команды</code><span><code>BRI{значение}</code> — например <code>BRI50</code></span></div>
+          <div class="mqtt-command-row"><code>Формат команды</code><span><code>BRI{value}</code> — например <code>BRI50</code></span></div>
           <div class="mqtt-command-row"><code>Топик состояния</code><span><code>Lamp/LedLamp_&lt;ID&gt;/snd$.bri</code></span></div>
           <div class="mqtt-command-row"><code>Диапазон</code><span><code>1–100</code>, шаг <code>1</code></span></div>
         </div>
@@ -148,7 +148,7 @@
         <div class="mqtt-command-table">
           <div class="mqtt-command-row"><code>Тип управления</code><span>Числовой регулятор / ползунок</span></div>
           <div class="mqtt-command-row"><code>Топик управления</code><span><code>Lamp/LedLamp_&lt;ID&gt;/cmnd</code></span></div>
-          <div class="mqtt-command-row"><code>Формат команды</code><span><code>SPD{значение}</code> — например <code>SPD120</code></span></div>
+          <div class="mqtt-command-row"><code>Формат команды</code><span><code>SPD{value}</code> — например <code>SPD120</code></span></div>
           <div class="mqtt-command-row"><code>Топик состояния</code><span><code>Lamp/LedLamp_&lt;ID&gt;/snd$.spd</code></span></div>
           <div class="mqtt-command-row"><code>Диапазон</code><span><code>1–255</code>, шаг <code>1</code></span></div>
         </div>
@@ -157,7 +157,7 @@
         <div class="mqtt-command-table">
           <div class="mqtt-command-row"><code>Тип управления</code><span>Числовой регулятор / ползунок</span></div>
           <div class="mqtt-command-row"><code>Топик управления</code><span><code>Lamp/LedLamp_&lt;ID&gt;/cmnd</code></span></div>
-          <div class="mqtt-command-row"><code>Формат команды</code><span><code>SCA{значение}</code> — например <code>SCA50</code></span></div>
+          <div class="mqtt-command-row"><code>Формат команды</code><span><code>SCA{value}</code> — например <code>SCA50</code></span></div>
           <div class="mqtt-command-row"><code>Топик состояния</code><span><code>Lamp/LedLamp_&lt;ID&gt;/snd$.sca</code></span></div>
           <div class="mqtt-command-row"><code>Диапазон</code><span><code>1–100</code>, шаг <code>1</code></span></div>
         </div>
@@ -166,14 +166,14 @@
         <div class="mqtt-command-table">
           <div class="mqtt-command-row"><code>Тип управления</code><span>Числовой регулятор / ползунок</span></div>
           <div class="mqtt-command-row"><code>Топик управления</code><span><code>Lamp/LedLamp_&lt;ID&gt;/cmnd</code></span></div>
-          <div class="mqtt-command-row"><code>Формат команды</code><span><code>EFF{значение}</code> — например <code>EFF10</code></span></div>
+          <div class="mqtt-command-row"><code>Формат команды</code><span><code>EFF{value}</code> — например <code>EFF10</code></span></div>
           <div class="mqtt-command-row"><code>Топик состояния</code><span><code>Lamp/LedLamp_&lt;ID&gt;/snd$.effect</code></span></div>
           <div class="mqtt-command-row"><code>Диапазон</code><span><code>0–133</code>, шаг <code>1</code> — всего 134 эффекта</span></div>
         </div>
 
         <div class="notice">
           <b>Как должен работать ползунок</b>
-          <p>При перемещении ползунка WQTT подставляет выбранное число в команду. Например значение <code>75</code> у яркости отправляется как <code>BRI75</code>, а значение <code>180</code> у скорости — как <code>SPD180</code>. Текущее положение ползунка берётся из соответствующего поля <code>.../snd$.bri</code>, <code>.../snd$.spd</code>, <code>.../snd$.sca</code> или <code>.../snd$.effect</code>.</p>
+          <p>При перемещении ползунка WQTT подставляет выбранное число в шаблон команды через <code>{value}</code>. Например значение <code>75</code> у яркости отправляется как <code>BRI75</code>, а при значении <code>180</code> шаблон <code>SPD{value}</code> отправит <code>SPD180</code>. Текущее положение ползунка берётся из соответствующего поля <code>.../snd$.bri</code>, <code>.../snd$.spd</code>, <code>.../snd$.sca</code> или <code>.../snd$.effect</code>.</p>
         </div>
       </section>
 
