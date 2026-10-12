@@ -49,7 +49,7 @@
       <a href="#lamp">3. FieryLedLamp</a>
       <a href="#topics">4. Топики</a>
       <a href="#check">5. Проверка</a>
-      <a href="#lumos">6. Подсветка</a>
+      <a href="#devices">6. Топики устройств</a>
     </aside>
 
     <article class="prose">
@@ -96,17 +96,23 @@
 
       <section id="topics">
         <h2>4. Топики FieryLedLamp в WQTT</h2>
-        <p>При базовом топике <code>Lamp</code> лампа формирует:</p>
+        <p>В самой лампе используется обычный MQTT-топик команд и общий JSON-топик состояния. Но в настройках устройства WQTT для поля <b>«Топик состояния»</b> к топику <code>.../snd</code> нужно дописать JSON-путь нужного параметра.</p>
+
         <div class="credential-grid">
-          <div><span>Команды</span><strong>Lamp/LedLamp_&lt;ID&gt;/cmnd</strong></div>
-          <div><span>Состояние</span><strong>Lamp/LedLamp_&lt;ID&gt;/snd</strong></div>
-          <div><span>JSON</span><strong>Состояние лампы</strong></div>
+          <div><span>Топик управления</span><strong>Lamp/LedLamp_&lt;ID&gt;/cmnd</strong></div>
+          <div><span>Общий JSON</span><strong>Lamp/LedLamp_&lt;ID&gt;/snd</strong></div>
+          <div><span>Состояние в WQTT</span><strong>.../snd$.поле</strong></div>
         </div>
-        <p>Точный <code>LedLamp_&lt;ID&gt;</code> смотрите в Web-интерфейсе лампы в настройках MQTT.</p>
+
         <div class="notice">
-          <b>Состояние для всех команд одинаковое</b>
-          <p>Для любой функции FieryLedLamp команда отправляется в <code>.../cmnd</code>, а актуальное состояние после выполнения команды читается из общего JSON-топика <code>.../snd</code>. Это одинаково для питания, эффектов, яркости, звука, цикла, подсветки и остальных функций. Для принудительного обновления состояния отправьте <code>STATE</code> в <code>.../cmnd</code>.</p>
+          <b>Пример для питания</b>
+          <p>Топик управления: <code>Lamp/LedLamp_&lt;ID&gt;/cmnd</code><br>
+          Команда ВКЛ: <code>P_ON</code><br>
+          Команда ВЫКЛ: <code>P_OFF</code><br>
+          Топик состояния: <code>Lamp/LedLamp_&lt;ID&gt;/snd$.power</code></p>
         </div>
+
+        <p>То есть топик управления остаётся командным <code>.../cmnd</code>, а WQTT берёт состояние нужной функции из JSON через суффикс <code>$.поле</code>. Точный <code>LedLamp_&lt;ID&gt;</code> смотрите в Web-интерфейсе лампы в настройках MQTT.</p>
       </section>
 
       <section id="check">
@@ -118,17 +124,39 @@
           <div class="mqtt-command-row"><code>P_OFF</code><span>Выключить лампу.</span></div>
           <div class="mqtt-command-row"><code>BRI50</code><span>Установить яркость 50%.</span></div>
         </div>
-        <p>Для любой из этих команд состояние проверяется одинаково: подпишитесь на общий топик <code>.../snd</code>. После выполнения команды лампа публикует там актуальное JSON-состояние; при необходимости отправьте <code>STATE</code> в <code>.../cmnd</code>.</p>
+        <p>В WQTT состояние для каждого элемента управления задаётся через нужное поле общего JSON. Например: питание — <code>.../snd$.power</code>, яркость — <code>.../snd$.bri</code>, эффект — <code>.../snd$.effect</code>. Для принудительного обновления лампы можно отправить <code>STATE</code> в <code>.../cmnd</code>.</p>
       </section>
 
-      <section id="lumos">
-        <h2>6. Настройка «Подсветки» в WQTT</h2>
-        <p>Для управления подсветкой используйте тот же командный топик <code>.../cmnd</code>:</p>
+      <section id="devices">
+        <h2>6. Топики управления и состояния в WQTT</h2>
+        <p>Для всех элементов WQTT используется один и тот же командный топик <code>Lamp/LedLamp_&lt;ID&gt;/cmnd</code>. Отличаются команды и поле состояния после <code>$. </code></p>
+
         <div class="mqtt-command-table">
-          <div class="mqtt-command-row"><code>LUMOS_ON</code><span>Включить подсветку.</span></div>
-          <div class="mqtt-command-row"><code>LUMOS_OFF</code><span>Выключить подсветку.</span></div>
+          <div class="mqtt-command-row"><code>Питание</code><span><b>Управление:</b> <code>.../cmnd</code> · <b>ВКЛ:</b> <code>P_ON</code> · <b>ВЫКЛ:</b> <code>P_OFF</code><br><b>Состояние:</b> <code>.../snd$.power</code> → <code>ON / OFF</code></span></div>
+
+          <div class="mqtt-command-row"><code>Цикл</code><span><b>Управление:</b> <code>.../cmnd</code> · <b>ВКЛ:</b> <code>FAV_ON</code> · <b>ВЫКЛ:</b> <code>FAV_OFF</code><br><b>Состояние:</b> <code>.../snd$.cycle</code> → <code>ON / OFF</code></span></div>
+
+          <div class="mqtt-command-row"><code>Звук</code><span><b>Управление:</b> <code>.../cmnd</code> · <b>ВКЛ:</b> <code>SO_ON</code> · <b>ВЫКЛ:</b> <code>SO_OFF</code><br><b>Состояние:</b> <code>.../snd$.sound</code> → <code>ON / OFF</code></span></div>
+
+          <div class="mqtt-command-row"><code>Подсветка</code><span><b>Управление:</b> <code>.../cmnd</code> · <b>ВКЛ:</b> <code>LUMOS_ON</code> · <b>ВЫКЛ:</b> <code>LUMOS_OFF</code><br><b>Состояние:</b> <code>.../snd$.lumos</code> → <code>ON / OFF</code></span></div>
+
+          <div class="mqtt-command-row"><code>Эффект</code><span><b>Управление:</b> <code>.../cmnd</code> · команда <code>EFF&lt;N&gt;</code><br><b>Состояние:</b> <code>.../snd$.effect</code></span></div>
+
+          <div class="mqtt-command-row"><code>Яркость</code><span><b>Управление:</b> <code>.../cmnd</code> · команда <code>BRI&lt;1–100&gt;</code><br><b>Состояние:</b> <code>.../snd$.bri</code></span></div>
+
+          <div class="mqtt-command-row"><code>Скорость</code><span><b>Управление:</b> <code>.../cmnd</code> · команда <code>SPD&lt;1–255&gt;</code><br><b>Состояние:</b> <code>.../snd$.spd</code></span></div>
+
+          <div class="mqtt-command-row"><code>Масштаб</code><span><b>Управление:</b> <code>.../cmnd</code> · команда <code>SCA&lt;1–100&gt;</code><br><b>Состояние:</b> <code>.../snd$.sca</code></span></div>
+
+          <div class="mqtt-command-row"><code>Громкость</code><span><b>Управление:</b> <code>.../cmnd</code> · команда <code>VOL&lt;1–30&gt;</code><br><b>Состояние:</b> <code>.../snd$.vol</code></span></div>
+
+          <div class="mqtt-command-row"><code>Таймер</code><span><b>Управление:</b> <code>.../cmnd</code> · команда <code>TMR_SET ...</code><br><b>Состояние:</b> <code>.../snd$.tmr</code></span></div>
         </div>
-        
+
+        <div class="notice">
+          <b>Важно для WQTT</b>
+          <p>В поле <b>«Топик состояния»</b> указывайте не просто <code>.../snd</code>, а конкретное поле JSON: например <code>.../snd$.power</code> или <code>.../snd$.lumos</code>. WQTT извлекает из общего JSON только нужное значение.</p>
+        </div>
       </section>
     </article>
   </div>
