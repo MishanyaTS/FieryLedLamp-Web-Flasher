@@ -651,3 +651,87 @@ background:linear-gradient(180deg,#131821,#0e1219);border-color:#283141;box-shad
   }
   .mqtt-wqtt-cta .btn{width:100%}
 }
+
+
+/* MQTT guide refresh */
+.mqtt-flow{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+  margin:18px 0 24px
+}
+.mqtt-flow>div,.mqtt-topic-cards>div{
+  padding:16px;
+  border:1px solid #2b3442;
+  border-radius:14px;
+  background:#0e1219
+}
+.mqtt-flow span{
+  display:grid;
+  place-items:center;
+  width:30px;
+  height:30px;
+  margin-bottom:12px;
+  border-radius:9px;
+  background:#231710;
+  color:#ff8b52;
+  font-weight:800
+}
+.mqtt-flow b,.mqtt-topic-cards span{
+  display:block;
+  margin-bottom:7px
+}
+.mqtt-flow code,.mqtt-topic-cards code{
+  display:block;
+  margin-top:6px;
+  overflow-wrap:anywhere
+}
+.mqtt-flow small,.mqtt-topic-cards small{
+  display:block;
+  margin-top:7px;
+  color:#8d98a8
+}
+.mqtt-settings-list,.mqtt-checklist{
+  display:grid;
+  gap:10px;
+  margin:16px 0 22px
+}
+.mqtt-settings-list>div,.mqtt-checklist>div{
+  display:grid;
+  grid-template-columns:180px 1fr;
+  gap:16px;
+  padding:13px 15px;
+  border:1px solid #293240;
+  border-radius:12px;
+  background:#0e1218
+}
+.mqtt-settings-list span,.mqtt-checklist span{color:#a4afbd}
+.mqtt-topic-cards{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+  margin:16px 0 20px
+}
+.mqtt-state-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:9px;
+  margin:16px 0 22px
+}
+.mqtt-state-grid>div{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  padding:11px 13px;
+  border:1px solid #293240;
+  border-radius:11px;
+  background:#0e1218
+}
+.mqtt-state-grid span{color:#a4afbd}
+.mqtt-command-table.compact .mqtt-command-row{padding:12px 14px}
+@media(max-width:760px){
+  .mqtt-flow,.mqtt-topic-cards{grid-template-columns:1fr}
+  .mqtt-settings-list>div,.mqtt-checklist>div{grid-template-columns:1fr;gap:5px}
+  .mqtt-state-grid{grid-template-columns:1fr}
+}
