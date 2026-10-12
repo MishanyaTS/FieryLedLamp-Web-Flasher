@@ -50,7 +50,8 @@
       <a href="#lamp">3. FieryLedLamp</a>
       <a href="#topics">4. Топики</a>
       <a href="#check">5. Проверка</a>
-      <a href="#devices">6. Топики устройств</a>
+      <a href="#ranges">6. Ползунки</a>
+      <a href="#devices">7. Топики устройств</a>
     </aside>
 
     <article class="prose">
@@ -128,8 +129,19 @@
         <p>В WQTT состояние для каждого элемента управления задаётся через нужное поле общего JSON. Например: питание — <code>.../snd$.power</code>, яркость — <code>.../snd$.bri</code>, эффект — <code>.../snd$.effect</code>. Для принудительного обновления лампы можно отправить <code>STATE</code> в <code>.../cmnd</code>.</p>
       </section>
 
+      <section id="ranges">
+        <h2>6. Ползунки яркости, скорости, масштаба и эффектов</h2>
+        <p>Для этих параметров используйте числовые регуляторы WQTT. Командный топик один — <code>Lamp/LedLamp_&lt;ID&gt;/cmnd</code>, а состояние читается из отдельных полей JSON.</p>
+        <div class="mqtt-command-table">
+          <div class="mqtt-command-row"><code>Яркость</code><span><b>Команда:</b> <code>BRI{value}</code> · <b>Состояние:</b> <code>.../snd$.bri</code> · <b>Диапазон:</b> <code>1–100</code></span></div>
+          <div class="mqtt-command-row"><code>Скорость</code><span><b>Команда:</b> <code>SPD{value}</code> · <b>Состояние:</b> <code>.../snd$.spd</code> · <b>Диапазон:</b> <code>1–255</code></span></div>
+          <div class="mqtt-command-row"><code>Масштаб</code><span><b>Команда:</b> <code>SCA{value}</code> · <b>Состояние:</b> <code>.../snd$.sca</code> · <b>Диапазон:</b> <code>1–100</code></span></div>
+          <div class="mqtt-command-row"><code>Эффект</code><span><b>Команда:</b> <code>EFF{value}</code> · <b>Состояние:</b> <code>.../snd$.effect</code> · <b>Диапазон:</b> <code>0–133</code></span></div>
+        </div>
+      </section>
+
       <section id="devices">
-        <h2>6. Топики управления и состояния в WQTT</h2>
+        <h2>7. Топики управления и состояния в WQTT</h2>
         <p>Для всех элементов WQTT используется один и тот же командный топик <code>Lamp/LedLamp_&lt;ID&gt;/cmnd</code>. Отличаются команды и поле состояния после <code>$.</code></p>
 
         <div class="mqtt-command-table">
