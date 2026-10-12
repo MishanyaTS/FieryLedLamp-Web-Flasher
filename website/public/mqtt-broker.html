@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#0b0d12">
-  <meta name="description" content="Полная инструкция MQTT для FieryLedLamp: подключение брокера, настройка лампы, топики, состояние, проверка и переход к справочнику команд.">
-  <title>MQTT — подключение и настройка FieryLedLamp</title>
+  <meta name="description" content="MQTT для FieryLedLamp: команды управления и подключение к Умному дому.">
+  <title>MQTT — FieryLedLamp</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/styles.css">
 </head>
@@ -32,174 +32,36 @@
 <main>
   <section class="page-hero shell">
     <span class="eyebrow">FIERYLEDLAMP · MQTT</span>
-    <h1>MQTT: подключение и управление</h1>
-    <p>Короткая последовательная инструкция: подключить брокер, заполнить настройки в лампе, проверить соединение и перейти к командам управления.</p>
+    <h1>MQTT</h1>
+    <p>MQTT позволяет управлять FieryLedLamp удалённо через брокер и подключать лампу к системам Умного дома.</p>
     <div class="hero-actions">
-      <a class="btn primary" href="#connect">Настроить MQTT</a>
-      <a class="btn ghost" href="/mqtt-commands.html">Все команды</a>
-      <a class="btn ghost" href="/mqtt-wqtt.html">WQTT</a>
-      <a class="btn ghost" href="/mqtt-smart-home.html">Умный дом</a>
+      <a class="btn primary" href="/mqtt-commands.html">Все MQTT-команды</a>
+      <a class="btn ghost" href="/mqtt-smart-home.html">Подключение к Умному дому</a>
     </div>
   </section>
 
-  <div class="shell docs-layout">
-    <aside class="toc">
-      <b>MQTT</b>
-      <a href="#how">Как это работает</a>
-      <a href="#connect">1. Данные брокера</a>
-      <a href="#lamp">2. Настройка лампы</a>
-      <a href="#topics">3. Топики</a>
-      <a href="#state">4. Состояние</a>
-      <a href="#test">5. Проверка</a>
-      <a href="#commands">6. Команды</a>
-      <a href="#wqtt">7. WQTT</a>
-      <a href="#smart-home">8. Умный дом</a>
-      <a href="#errors">Если не работает</a>
-    </aside>
+  <section class="section shell">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow">КАК ЭТО РАБОТАЕТ</span>
+        <h2>Управление FieryLedLamp через MQTT</h2>
+      </div>
+    </div>
 
-    <article class="prose">
-      <section id="how">
-        <h2>Как работает MQTT в FieryLedLamp</h2>
-        <p>Лампа сама подключается к MQTT-брокеру по Wi-Fi. Управляющее устройство публикует команду в командный топик, лампа выполняет её и отправляет актуальное состояние в JSON.</p>
-        <div class="mqtt-flow">
-          <div><span>1</span><b>Команда</b><code>.../cmnd</code></div>
-          <div><span>2</span><b>FieryLedLamp</b><small>выполняет команду</small></div>
-          <div><span>3</span><b>Состояние</b><code>.../snd</code></div>
-        </div>
-        <div class="notice">
-          <b>Главное</b>
-          <p>Отдельные топики для включения, яркости, эффектов и других функций не создаются. Команды идут через один <code>.../cmnd</code>, а состояние — через один <code>.../snd</code>.</p>
-        </div>
-      </section>
+    <div class="manual-grid">
+      <div class="manual-item">
+        <h3>Команды</h3>
+        <p>Лампа принимает команды включения, эффектов, яркости, скорости, масштаба, звука, Подсветки и других функций.</p>
+        <a class="btn ghost" href="/mqtt-commands.html">Открыть все команды</a>
+      </div>
 
-      <section id="connect">
-        <h2>1. Получите данные MQTT-брокера</h2>
-        <p>Можно использовать локальный Mosquitto или внешний сервис. Для подключения лампе нужны четыре основных параметра:</p>
-        <div class="credential-grid">
-          <div><span>Server / Host</span><strong>IP или имя сервера</strong></div>
-          <div><span>Port</span><strong>MQTT TCP-порт</strong></div>
-          <div><span>User</span><strong>Логин MQTT</strong></div>
-        </div>
-        <div class="credential-grid">
-          <div><span>Password</span><strong>Пароль MQTT</strong></div>
-          <div><span>Base topic</span><strong>Например Lamp</strong></div>
-          <div><span>Protocol</span><strong>Обычный MQTT TCP</strong></div>
-        </div>
-        <div class="notice warning">
-          <b>Не путайте порты</b>
-          <p>Нужен обычный MQTT TCP-порт. HTTPS, WebSocket и TLS-порт не подходят, если отдельно не настроена соответствующая поддержка в прошивке.</p>
-        </div>
-      </section>
-
-      <section id="lamp">
-        <h2>2. Заполните MQTT в Web-интерфейсе лампы</h2>
-        <p>Откройте Web-интерфейс FieryLedLamp → настройки MQTT и заполните поля:</p>
-        <div class="mqtt-settings-list">
-          <div><b>MQTT</b><span>Включить.</span></div>
-          <div><b>Адрес брокера</b><span>IP или hostname без <code>http://</code> и <code>https://</code>.</span></div>
-          <div><b>Порт</b><span>Порт MQTT TCP из настроек брокера.</span></div>
-          <div><b>Имя пользователя</b><span>Логин брокера.</span></div>
-          <div><b>Пароль</b><span>Пароль брокера.</span></div>
-          <div><b>Базовый топик</b><span>Например <code>Lamp</code>.</span></div>
-          <div><b>Период публикации</b><span><code>0</code> — отправлять состояние при событиях; <code>1–60</code> — дополнительно публиковать через указанное число секунд.</span></div>
-        </div>
-        <p>Сохраните настройки и перезагрузите лампу. После запуска статус MQTT должен стать <strong>«ПОДКЛЮЧЕНО»</strong>.</p>
-      </section>
-
-      <section id="topics">
-        <h2>3. Топики FieryLedLamp</h2>
-        <p>Полный путь строится из базового топика и уникального ID лампы. Если базовый топик — <code>Lamp</code>:</p>
-        <div class="mqtt-topic-cards">
-          <div><span>Команды</span><code>Lamp/LedLamp_&lt;ID&gt;/cmnd</code><small>Сюда отправляются команды.</small></div>
-          <div><span>Состояние JSON</span><code>Lamp/LedLamp_&lt;ID&gt;/snd</code><small>Отсюда читается состояние.</small></div>
-          <div><span>Старый формат</span><code>Lamp/LedLamp_&lt;ID&gt;/state</code><small>Legacy-топик; в текущей сборке может быть отключён.</small></div>
-        </div>
-        <p>Точный <code>LedLamp_&lt;ID&gt;</code> лампа формирует автоматически. Используйте топики, показанные в её Web-интерфейсе.</p>
-      </section>
-
-      <section id="state">
-        <h2>4. Состояние лампы</h2>
-        <p>Основное состояние публикуется в <code>.../snd</code> как JSON. В нём используются поля вроде:</p>
-        <div class="mqtt-state-grid">
-          <div><code>power</code><span>ON / OFF</span></div>
-          <div><code>cycle</code><span>ON / OFF</span></div>
-          <div><code>effect</code><span>номер эффекта</span></div>
-          <div><code>bri</code><span>яркость</span></div>
-          <div><code>spd</code><span>скорость</span></div>
-          <div><code>sca</code><span>масштаб</span></div>
-          <div><code>sound</code><span>ON / OFF</span></div>
-          <div><code>vol</code><span>громкость</span></div>
-          <div><code>tmr</code><span>таймер, секунды</span></div>
-          <div><code>lumos</code><span>ON / OFF</span></div>
-        </div>
-        <div class="notice">
-          <b>Принудительное обновление</b>
-          <p>Отправьте <code>STATE</code> в <code>.../cmnd</code>, чтобы лампа повторно опубликовала актуальное состояние.</p>
-        </div>
-      </section>
-
-      <section id="test">
-        <h2>5. Быстрая проверка подключения</h2>
-        <p>Подпишитесь на <code>.../snd</code> и отправьте в <code>.../cmnd</code> по очереди:</p>
-        <div class="mqtt-command-table compact">
-          <div class="mqtt-command-row"><code>STATE</code><span>Должен прийти JSON состояния.</span></div>
-          <div class="mqtt-command-row"><code>P_ON</code><span>Лампа включается, <code>power</code> становится <code>ON</code>.</span></div>
-          <div class="mqtt-command-row"><code>P_OFF</code><span>Лампа выключается, <code>power</code> становится <code>OFF</code>.</span></div>
-          <div class="mqtt-command-row"><code>BRI50</code><span>Яркость текущего эффекта устанавливается на 50%.</span></div>
-        </div>
-      </section>
-
-      <section id="commands">
-        <h2>6. Все команды управления</h2>
-        <p>Полный список вынесен на отдельную страницу, чтобы инструкция подключения оставалась удобной. Команды сгруппированы по питанию, эффектам, циклу, звуку, подсветке, бегущей строке, будильникам, таймерам и сервисным функциям.</p>
-        <div class="mqtt-wqtt-cta">
-          <div>
-            <span class="eyebrow">СПРАВОЧНИК</span>
-            <h3>Все MQTT-команды FieryLedLamp</h3>
-            <p>Формат команды, диапазон значений и короткий пример.</p>
-          </div>
-          <a class="btn primary" href="/mqtt-commands.html">Открыть команды</a>
-        </div>
-      </section>
-
-      <section id="wqtt">
-        <h2>7. Если используете WQTT</h2>
-        <p>В WQTT топик управления остаётся <code>.../cmnd</code>, а для отображения состояния конкретного элемента используется JSON-путь, например <code>.../snd$.power</code>, <code>.../snd$.bri</code> или <code>.../snd$.lumos</code>.</p>
-        <div class="mqtt-wqtt-cta">
-          <div>
-            <span class="eyebrow">WQTT.RU</span>
-            <h3>Пошаговая настройка WQTT</h3>
-            <p>Server, Port, User, Password, команды и топики состояния.</p>
-          </div>
-          <a class="btn primary" href="/mqtt-wqtt.html">Открыть WQTT-инструкцию</a>
-        </div>
-      </section>
-
-      <section id="smart-home">
-        <h2>8. Подключение к Умному дому</h2>
-        <p>Через WQTT FieryLedLamp можно добавить в Умный дом как несколько отдельных устройств: основная лампа, Подсветка, Цикл и Звук. Для каждого устройства используются свои команды и поле состояния.</p>
-        <div class="mqtt-wqtt-cta">
-          <div>
-            <span class="eyebrow">АЛИСА · МАРУСЯ</span>
-            <h3>Добавить FieryLedLamp в Умный дом</h3>
-            <p>Готовые топики, команды ВКЛ/ВЫКЛ и подключение голосовых помощников.</p>
-          </div>
-          <a class="btn primary" href="/mqtt-smart-home.html">Открыть инструкцию</a>
-        </div>
-      </section>
-
-      <section id="errors">
-        <h2>Если MQTT не подключается</h2>
-        <div class="mqtt-checklist">
-          <div><b>1.</b><span>Проверьте, что лампа подключена к Wi-Fi и имеет доступ к брокеру.</span></div>
-          <div><b>2.</b><span>Сверьте Server, Port, User и Password без лишних пробелов.</span></div>
-          <div><b>3.</b><span>Не добавляйте <code>http://</code> или <code>https://</code> к адресу.</span></div>
-          <div><b>4.</b><span>После изменения параметров сохраните настройки и перезагрузите лампу.</span></div>
-          <div><b>5.</b><span>Проверьте точные топики, которые показывает Web-интерфейс лампы.</span></div>
-        </div>
-      </section>
-    </article>
-  </div>
+      <div class="manual-item">
+        <h3>Умный дом</h3>
+        <p>FieryLedLamp можно подключить к Умному дому через WQTT и использовать управление из Алисы или Маруси.</p>
+        <a class="btn ghost" href="/mqtt-smart-home.html">Открыть инструкцию</a>
+      </div>
+    </div>
+  </section>
 </main>
 
 <footer class="footer">
