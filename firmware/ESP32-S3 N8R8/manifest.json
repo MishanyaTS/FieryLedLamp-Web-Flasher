@@ -31,7 +31,7 @@
     },
     {
       "name": "littlefs.bin",
-      "address": "0x00670000"
+      "address": "0x00510000"
     }
   ],
   "settingsBackupBaudRate": 115200
