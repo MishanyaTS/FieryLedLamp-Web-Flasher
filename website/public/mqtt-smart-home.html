@@ -133,13 +133,11 @@
 
       <section id="advanced">
         <h2>3. Ползунки: яркость, скорость, масштаб и эффекты</h2>
-        <p>Эти четыре параметра добавляются в WQTT как числовые регуляторы (Range / ползунки). Для каждого ползунка используется общий командный топик <code>Lamp/LedLamp_&lt;ID&gt;/cmnd</code>, но свой формат команды и своё поле состояния.</p>
+        <p>В WQTT для этих регуляторов есть только <b>«Топик управления»</b> и <b>«Топик состояния»</b>. Команда FieryLedLamp прописывается прямо внутри топика управления через <code>&amp;&amp;</code>, а значение ползунка подставляется через <code>%VALUE%</code>.</p>
 
         <h3>Яркость</h3>
         <div class="mqtt-command-table">
-          <div class="mqtt-command-row"><code>Тип управления</code><span>Числовой регулятор / ползунок</span></div>
-          <div class="mqtt-command-row"><code>Топик управления</code><span><code>Lamp/LedLamp_&lt;ID&gt;/cmnd</code></span></div>
-          <div class="mqtt-command-row"><code>Команда</code><span>В поле команды WQTT пропишите точно: <code>BRI{value}</code></span></div>
+          <div class="mqtt-command-row"><code>Топик управления</code><span><code>Lamp/LedLamp_&lt;ID&gt;/cmnd&amp;&amp;BRI%VALUE%</code></span></div>
           <div class="mqtt-command-row"><code>Топик состояния</code><span><code>Lamp/LedLamp_&lt;ID&gt;/snd$.bri</code></span></div>
           <div class="mqtt-command-row"><code>Минимум</code><span><code>1</code></span></div>
           <div class="mqtt-command-row"><code>Максимум</code><span><code>100</code></span></div>
@@ -148,9 +146,7 @@
 
         <h3>Скорость</h3>
         <div class="mqtt-command-table">
-          <div class="mqtt-command-row"><code>Тип управления</code><span>Числовой регулятор / ползунок</span></div>
-          <div class="mqtt-command-row"><code>Топик управления</code><span><code>Lamp/LedLamp_&lt;ID&gt;/cmnd</code></span></div>
-          <div class="mqtt-command-row"><code>Команда</code><span>В поле команды WQTT пропишите точно: <code>SPD{value}</code></span></div>
+          <div class="mqtt-command-row"><code>Топик управления</code><span><code>Lamp/LedLamp_&lt;ID&gt;/cmnd&amp;&amp;SPD%VALUE%</code></span></div>
           <div class="mqtt-command-row"><code>Топик состояния</code><span><code>Lamp/LedLamp_&lt;ID&gt;/snd$.spd</code></span></div>
           <div class="mqtt-command-row"><code>Минимум</code><span><code>1</code></span></div>
           <div class="mqtt-command-row"><code>Максимум</code><span><code>255</code></span></div>
@@ -159,9 +155,7 @@
 
         <h3>Масштаб</h3>
         <div class="mqtt-command-table">
-          <div class="mqtt-command-row"><code>Тип управления</code><span>Числовой регулятор / ползунок</span></div>
-          <div class="mqtt-command-row"><code>Топик управления</code><span><code>Lamp/LedLamp_&lt;ID&gt;/cmnd</code></span></div>
-          <div class="mqtt-command-row"><code>Команда</code><span>В поле команды WQTT пропишите точно: <code>SCA{value}</code></span></div>
+          <div class="mqtt-command-row"><code>Топик управления</code><span><code>Lamp/LedLamp_&lt;ID&gt;/cmnd&amp;&amp;SCA%VALUE%</code></span></div>
           <div class="mqtt-command-row"><code>Топик состояния</code><span><code>Lamp/LedLamp_&lt;ID&gt;/snd$.sca</code></span></div>
           <div class="mqtt-command-row"><code>Минимум</code><span><code>1</code></span></div>
           <div class="mqtt-command-row"><code>Максимум</code><span><code>100</code></span></div>
@@ -170,9 +164,7 @@
 
         <h3>Эффект</h3>
         <div class="mqtt-command-table">
-          <div class="mqtt-command-row"><code>Тип управления</code><span>Числовой регулятор / ползунок</span></div>
-          <div class="mqtt-command-row"><code>Топик управления</code><span><code>Lamp/LedLamp_&lt;ID&gt;/cmnd</code></span></div>
-          <div class="mqtt-command-row"><code>Команда</code><span>В поле команды WQTT пропишите точно: <code>EFF{value}</code></span></div>
+          <div class="mqtt-command-row"><code>Топик управления</code><span><code>Lamp/LedLamp_&lt;ID&gt;/cmnd&amp;&amp;EFF%VALUE%</code></span></div>
           <div class="mqtt-command-row"><code>Топик состояния</code><span><code>Lamp/LedLamp_&lt;ID&gt;/snd$.effect</code></span></div>
           <div class="mqtt-command-row"><code>Минимум</code><span><code>0</code></span></div>
           <div class="mqtt-command-row"><code>Максимум</code><span><code>133</code></span></div>
@@ -180,8 +172,8 @@
         </div>
 
         <div class="notice">
-          <b>Как должен работать ползунок</b>
-          <p>При перемещении ползунка WQTT подставляет выбранное число в шаблон команды через <code>{value}</code>. Например значение <code>75</code> у яркости отправляется как <code>BRI75</code>, а при значении <code>180</code> шаблон <code>SPD{value}</code> отправит <code>SPD180</code>. Текущее положение ползунка берётся из соответствующего поля <code>.../snd$.bri</code>, <code>.../snd$.spd</code>, <code>.../snd$.sca</code> или <code>.../snd$.effect</code>.</p>
+          <b>Как работает %VALUE%</b>
+          <p>WQTT подставляет значение ползунка вместо <code>%VALUE%</code>. Например топик управления <code>.../cmnd&amp;&amp;BRI%VALUE%</code> при значении <code>75</code> отправит в лампу команду <code>BRI75</code>.</p>
         </div>
       </section>
 
