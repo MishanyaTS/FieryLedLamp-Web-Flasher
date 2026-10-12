@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#0b0d12">
-  <meta name="description" content="MQTT для FieryLedLamp: команды управления и подключение к Умному дому.">
+  <meta name="description" content="MQTT для FieryLedLamp: подключение к WQTT, команды управления и интеграция с Умным домом.">
   <title>MQTT — FieryLedLamp</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/styles.css">
@@ -28,24 +28,63 @@
     </nav>
   </div>
 </header>
-
 <main>
   <section class="page-hero shell">
     <span class="eyebrow">FIERYLEDLAMP · MQTT</span>
     <h1>MQTT</h1>
-    <p>MQTT используется для удалённого управления FieryLedLamp и подключения лампы к системам Умного дома.</p>
+    <p>MQTT позволяет управлять FieryLedLamp через интернет, отправлять команды из WQTT и подключать лампу к Умному дому.</p>
     <div class="hero-actions">
-      <a class="btn primary" href="/mqtt-commands.html">Все MQTT-команды</a>
+      <a class="btn primary" href="/mqtt-wqtt.html">Подключить WQTT</a>
+      <a class="btn ghost" href="/mqtt-commands.html">Все MQTT-команды</a>
       <a class="btn ghost" href="/mqtt-smart-home.html">Подключение к Умному дому</a>
     </div>
   </section>
-</main>
 
+  <section class="section shell">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow">КРАТКО</span>
+        <h2>Как работает MQTT в лампе</h2>
+      </div>
+    </div>
+    <div class="manual-grid">
+      <div class="manual-item"><h3>1. Брокер</h3><p>Лампа подключается к MQTT-брокеру по адресу, порту, логину и паролю.</p></div>
+      <div class="manual-item"><h3>2. Команды</h3><p>Управление идёт через топик <code>Lamp/LedLamp_&lt;ID&gt;/cmnd</code>.</p></div>
+      <div class="manual-item"><h3>3. Управление</h3><p>Можно включать лампу, менять эффекты, яркость, скорость, масштаб, звук, Подсветку и другие функции.</p></div>
+    </div>
+  </section>
+
+  <section class="section shell">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow">С ЧЕГО НАЧАТЬ</span>
+        <h2>Выберите нужную инструкцию</h2>
+      </div>
+    </div>
+    <div class="manual-grid">
+      <div class="manual-item">
+        <h3>Подключение WQTT</h3>
+        <p>Регистрация, параметры брокера, настройка MQTT в лампе и первая проверка.</p>
+        <a class="btn primary" href="/mqtt-wqtt.html">Открыть инструкцию</a>
+      </div>
+      <div class="manual-item">
+        <h3>Все MQTT-команды</h3>
+        <p>Полный список команд по группам с диапазонами и короткими примерами.</p>
+        <a class="btn ghost" href="/mqtt-commands.html">Открыть команды</a>
+      </div>
+      <div class="manual-item">
+        <h3>Умный дом</h3>
+        <p>Добавление устройств, переключателей и ползунков, затем подключение Алисы или Маруси.</p>
+        <a class="btn ghost" href="/mqtt-smart-home.html">Открыть инструкцию</a>
+      </div>
+    </div>
+  </section>
+</main>
 <footer class="footer">
   <div class="shell footer-grid">
     <div><a class="brand" href="/"><span class="brand-mark">🔥</span><span>FieryLedLamp</span></a><p>Открытый проект умной LED-лампы на ESP32-S3.</p></div>
-    <div><b>MQTT</b><a href="/mqtt-broker.html">Подключение брокера</a><a href="/mqtt-commands.html">Все MQTT-команды</a><a href="/mqtt-wqtt.html">Настройка WQTT</a></div>
-    <div><b>Проект</b><a href="/instruction.html">Инструкция</a><a href="/hardware.html">Подключение</a><a href="/components.html">Компоненты</a><a href="/fiery-lamp-control.html">Fiery Lamp Control</a></div>
+    <div><b>MQTT</b><a href="/mqtt-broker.html">MQTT</a><a href="/mqtt-wqtt.html">Подключение WQTT</a><a href="/mqtt-commands.html">Все команды</a><a href="/mqtt-smart-home.html">Умный дом</a></div>
+    <div><b>Проект</b><a href="/instruction.html">Инструкция</a><a href="/hardware.html">Подключение</a><a href="/components.html">Компоненты</a></div>
   </div>
   <div class="shell footer-bottom">FieryLedLamp · 2026</div>
 </footer>
