@@ -131,12 +131,21 @@
 
       <section id="ranges">
         <h2>6. Ползунки яркости, скорости, масштаба и эффектов</h2>
-        <p>Для этих параметров используйте числовые регуляторы WQTT. Командный топик один — <code>Lamp/LedLamp_&lt;ID&gt;/cmnd</code>, а состояние читается из отдельных полей JSON.</p>
+        <p>Для ползунков WQTT заполняются только два MQTT-поля: <b>«Топик управления»</b> и <b>«Топик состояния»</b>. Команда задаётся прямо в топике управления через <code>&amp;&amp;</code>, а значение ползунка — через <code>%VALUE%</code>.</p>
+
         <div class="mqtt-command-table">
-          <div class="mqtt-command-row"><code>Яркость</code><span><b>Топик управления:</b> <code>.../cmnd</code><br><b>В поле «Команда»:</b> <code>BRI{value}</code><br><b>Топик состояния:</b> <code>.../snd$.bri</code><br><b>Мин / Макс / Шаг:</b> <code>1 / 100 / 1</code></span></div>
-          <div class="mqtt-command-row"><code>Скорость</code><span><b>Топик управления:</b> <code>.../cmnd</code><br><b>В поле «Команда»:</b> <code>SPD{value}</code><br><b>Топик состояния:</b> <code>.../snd$.spd</code><br><b>Мин / Макс / Шаг:</b> <code>1 / 255 / 1</code></span></div>
-          <div class="mqtt-command-row"><code>Масштаб</code><span><b>Топик управления:</b> <code>.../cmnd</code><br><b>В поле «Команда»:</b> <code>SCA{value}</code><br><b>Топик состояния:</b> <code>.../snd$.sca</code><br><b>Мин / Макс / Шаг:</b> <code>1 / 100 / 1</code></span></div>
-          <div class="mqtt-command-row"><code>Эффект</code><span><b>Топик управления:</b> <code>.../cmnd</code><br><b>В поле «Команда»:</b> <code>EFF{value}</code><br><b>Топик состояния:</b> <code>.../snd$.effect</code><br><b>Мин / Макс / Шаг:</b> <code>0 / 133 / 1</code></span></div>
+          <div class="mqtt-command-row"><code>Яркость</code><span><b>Топик управления:</b> <code>Lamp/LedLamp_&lt;ID&gt;/cmnd&amp;&amp;BRI%VALUE%</code><br><b>Топик состояния:</b> <code>Lamp/LedLamp_&lt;ID&gt;/snd$.bri</code><br><b>Мин / Макс / Шаг:</b> <code>1 / 100 / 1</code></span></div>
+
+          <div class="mqtt-command-row"><code>Скорость</code><span><b>Топик управления:</b> <code>Lamp/LedLamp_&lt;ID&gt;/cmnd&amp;&amp;SPD%VALUE%</code><br><b>Топик состояния:</b> <code>Lamp/LedLamp_&lt;ID&gt;/snd$.spd</code><br><b>Мин / Макс / Шаг:</b> <code>1 / 255 / 1</code></span></div>
+
+          <div class="mqtt-command-row"><code>Масштаб</code><span><b>Топик управления:</b> <code>Lamp/LedLamp_&lt;ID&gt;/cmnd&amp;&amp;SCA%VALUE%</code><br><b>Топик состояния:</b> <code>Lamp/LedLamp_&lt;ID&gt;/snd$.sca</code><br><b>Мин / Макс / Шаг:</b> <code>1 / 100 / 1</code></span></div>
+
+          <div class="mqtt-command-row"><code>Эффект</code><span><b>Топик управления:</b> <code>Lamp/LedLamp_&lt;ID&gt;/cmnd&amp;&amp;EFF%VALUE%</code><br><b>Топик состояния:</b> <code>Lamp/LedLamp_&lt;ID&gt;/snd$.effect</code><br><b>Мин / Макс / Шаг:</b> <code>0 / 133 / 1</code></span></div>
+        </div>
+
+        <div class="notice">
+          <b>Пример</b>
+          <p>Если для яркости указан <code>.../cmnd&amp;&amp;BRI%VALUE%</code>, то при положении ползунка <code>50</code> WQTT отправит команду <code>BRI50</code>.</p>
         </div>
       </section>
 
