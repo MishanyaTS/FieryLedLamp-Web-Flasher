@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#0b0d12">
-  <meta name="description" content="Полный справочник MQTT-команд FieryLedLamp с примерами и диапазонами значений.">
+  <meta name="description" content="Все MQTT-команды FieryLedLamp: питание, эффекты, яркость, скорость, масштаб, цикл, звук, Подсветка, строка, будильники и таймеры.">
   <title>Все MQTT-команды — FieryLedLamp</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/styles.css">
@@ -28,15 +28,13 @@
     </nav>
   </div>
 </header>
-
 <main>
   <section class="page-hero shell">
     <span class="eyebrow">MQTT · КОМАНДЫ</span>
-    <h1>Все MQTT-команды FieryLedLamp</h1>
-    <p>Все команды отправляются в <code>.../cmnd</code>. Ниже — только рабочий формат команды, диапазон и короткое назначение.</p>
+    <h1>Все MQTT-команды</h1>
+    <p>Команды отправляются в <code>Lamp/LedLamp_&lt;ID&gt;/cmnd</code>. Регистр букв важен.</p>
     <div class="hero-actions">
-      <a class="btn ghost" href="/mqtt-broker.html">Подключение MQTT</a>
-      <a class="btn ghost" href="/mqtt-wqtt.html">Настройка WQTT</a>
+      <a class="btn ghost" href="/mqtt-wqtt.html">Подключение WQTT</a>
       <a class="btn ghost" href="/mqtt-smart-home.html">Умный дом</a>
     </div>
   </section>
@@ -44,7 +42,6 @@
   <div class="shell docs-layout">
     <aside class="toc">
       <b>Команды</b>
-      <a href="#rules">Как использовать</a>
       <a href="#power">Питание</a>
       <a href="#effects">Эффекты</a>
       <a href="#cycle">Цикл</a>
@@ -58,44 +55,35 @@
     </aside>
 
     <article class="prose">
-      <section id="rules">
-        <h2>Как использовать команды</h2>
-        <p>Отправляйте payload точно как в таблице — регистр букв важен. Число в <code>&lt;...&gt;</code> заменяется нужным значением.</p>
-        <div class="notice">
-          <b>Пример</b>
-          <p>Топик: <code>Lamp/LedLamp_&lt;ID&gt;/cmnd</code><br>Payload: <code>BRI50</code><br>Результат: яркость текущего эффекта 50%.</p>
-        </div>
-      </section>
-
       <section id="power">
         <h2>Питание и состояние</h2>
         <div class="mqtt-command-table">
           <div class="mqtt-command-row"><code>P_ON</code><span>Включить лампу.</span></div>
           <div class="mqtt-command-row"><code>P_OFF</code><span>Выключить лампу.</span></div>
-          <div class="mqtt-command-row"><code>STATE</code><span>Принудительно опубликовать текущее состояние в <code>.../snd</code>.</span></div>
+          <div class="mqtt-command-row"><code>STATE</code><span>Запросить актуальное состояние лампы.</span></div>
         </div>
       </section>
 
       <section id="effects">
-        <h2>Эффекты</h2>
+        <h2>Эффекты и параметры</h2>
         <div class="mqtt-command-table">
-          <div class="mqtt-command-row"><code>EFF&lt;N&gt;</code><span>Выбрать эффект по номеру. Нумерация начинается с 0. Пример: <code>EFF10</code>.</span></div>
+          <div class="mqtt-command-row"><code>EFF&lt;N&gt;</code><span>Выбрать эффект по номеру, от <code>0</code> до <code>133</code>. Пример: <code>EFF10</code>.</span></div>
           <div class="mqtt-command-row"><code>EFF_N</code><span>Следующий эффект.</span></div>
           <div class="mqtt-command-row"><code>EFF_P</code><span>Предыдущий эффект.</span></div>
-          <div class="mqtt-command-row"><code>BRI&lt;1–100&gt;</code><span>Яркость текущего эффекта в процентах. Пример: <code>BRI44</code>.</span></div>
-          <div class="mqtt-command-row"><code>SPD&lt;1–255&gt;</code><span>Скорость эффекта. Пример: <code>SPD120</code>.</span></div>
-          <div class="mqtt-command-row"><code>SCA&lt;1–100&gt;</code><span>Масштаб эффекта. Пример: <code>SCA50</code>.</span></div>
-          <div class="mqtt-command-row"><code>GBR&lt;1–100&gt;</code><span>Задать общую яркость для всех эффектов без немедленного сохранения настроек.</span></div>
+          <div class="mqtt-command-row"><code>BRI&lt;1–100&gt;</code><span>Яркость. Пример: <code>BRI50</code>.</span></div>
+          <div class="mqtt-command-row"><code>SPD&lt;1–255&gt;</code><span>Скорость. Пример: <code>SPD120</code>.</span></div>
+          <div class="mqtt-command-row"><code>SCA&lt;1–100&gt;</code><span>Масштаб. Пример: <code>SCA50</code>.</span></div>
+          <div class="mqtt-command-row"><code>GBR&lt;1–100&gt;</code><span>Установить общую яркость эффектов.</span></div>
         </div>
       </section>
 
       <section id="cycle">
         <h2>Режим «Цикл»</h2>
         <div class="mqtt-command-table">
-          <div class="mqtt-command-row"><code>FAV_ON</code><span>Включить цикл избранных эффектов.</span></div>
+          <div class="mqtt-command-row"><code>FAV_ON</code><span>Включить цикл.</span></div>
           <div class="mqtt-command-row"><code>FAV_OFF</code><span>Выключить цикл.</span></div>
-          <div class="mqtt-command-row"><code>FAV_GET</code><span>Запросить текущие настройки цикла.</span></div>
-          <div class="mqtt-command-row"><code>FAV_SET ...</code><span>Передать полную конфигурацию цикла: состояние, интервал, разброс, сохранение и список выбранных эффектов.</span></div>
+          <div class="mqtt-command-row"><code>FAV_GET</code><span>Получить настройки цикла.</span></div>
+          <div class="mqtt-command-row"><code>FAV_SET ...</code><span>Передать полную конфигурацию цикла.</span></div>
         </div>
       </section>
 
@@ -111,8 +99,8 @@
       <section id="lumos">
         <h2>Подсветка</h2>
         <div class="mqtt-command-table">
-          <div class="mqtt-command-row"><code>LUMOS_ON</code><span>Включить «Подсветку».</span></div>
-          <div class="mqtt-command-row"><code>LUMOS_OFF</code><span>Выключить «Подсветку».</span></div>
+          <div class="mqtt-command-row"><code>LUMOS_ON</code><span>Включить Подсветку.</span></div>
+          <div class="mqtt-command-row"><code>LUMOS_OFF</code><span>Выключить Подсветку.</span></div>
         </div>
       </section>
 
@@ -120,75 +108,72 @@
         <h2>Случайные настройки</h2>
         <div class="mqtt-command-table">
           <div class="mqtt-command-row"><code>RND_0</code><span>Вернуть настройки текущего эффекта по умолчанию.</span></div>
-          <div class="mqtt-command-row"><code>RND_1</code><span>Применить случайные настройки к текущему эффекту.</span></div>
-          <div class="mqtt-command-row"><code>RND_Z</code><span>Вернуть настройки по умолчанию всем эффектам.</span></div>
+          <div class="mqtt-command-row"><code>RND_1</code><span>Случайные настройки текущего эффекта.</span></div>
+          <div class="mqtt-command-row"><code>RND_Z</code><span>Сбросить настройки всех эффектов к значениям по умолчанию.</span></div>
           <div class="mqtt-command-row"><code>RND_C1</code><span>Включить случайный выбор эффектов в цикле.</span></div>
           <div class="mqtt-command-row"><code>RND_C0</code><span>Выключить случайный выбор эффектов в цикле.</span></div>
-          <div class="mqtt-command-row"><code>RND_ON</code><span>Включить случайные настройки эффектов в цикле.</span></div>
-          <div class="mqtt-command-row"><code>RND_OFF</code><span>Выключить случайные настройки эффектов в цикле.</span></div>
+          <div class="mqtt-command-row"><code>RND_ON</code><span>Включить случайные параметры эффектов в цикле.</span></div>
+          <div class="mqtt-command-row"><code>RND_OFF</code><span>Выключить случайные параметры эффектов в цикле.</span></div>
         </div>
       </section>
 
       <section id="ticker">
         <h2>Бегущая строка</h2>
         <div class="mqtt-command-table">
-          <div class="mqtt-command-row"><code>TXT_Текст</code><span>Показать произвольный текст бегущей строкой.</span></div>
-          <div class="mqtt-command-row"><code>RUN_T&lt;0–99&gt;</code><span>Периодичность показа в минутах. <code>0</code> — не показывать; больше 60 — показывать постоянно.</span></div>
-          <div class="mqtt-command-row"><code>RUN_C&lt;0–255&gt;</code><span>Цвет бегущей строки.</span></div>
-          <div class="mqtt-command-row"><code>RUN_F0</code><span>Чёрный фон строки.</span></div>
-          <div class="mqtt-command-row"><code>RUN_F1</code><span>Цветной фон строки.</span></div>
-          <div class="mqtt-command-row"><code>RUN_S&lt;0–255&gt;</code><span>Скорость бегущей строки.</span></div>
+          <div class="mqtt-command-row"><code>TXT_Текст</code><span>Показать текст.</span></div>
+          <div class="mqtt-command-row"><code>RUN_T&lt;0–99&gt;</code><span>Периодичность показа. <code>0</code> — не показывать, больше <code>60</code> — постоянно.</span></div>
+          <div class="mqtt-command-row"><code>RUN_C&lt;0–255&gt;</code><span>Цвет строки.</span></div>
+          <div class="mqtt-command-row"><code>RUN_F0</code><span>Чёрный фон.</span></div>
+          <div class="mqtt-command-row"><code>RUN_F1</code><span>Цветной фон.</span></div>
+          <div class="mqtt-command-row"><code>RUN_S&lt;0–255&gt;</code><span>Скорость строки.</span></div>
         </div>
       </section>
 
       <section id="alarm">
         <h2>Будильники, рассвет и закат</h2>
         <div class="mqtt-command-table">
-          <div class="mqtt-command-row"><code>ALM_SET&lt;1–7&gt; ON</code><span>Включить будильник выбранного дня недели.</span></div>
-          <div class="mqtt-command-row"><code>ALM_SET&lt;1–7&gt; OFF</code><span>Выключить будильник выбранного дня недели.</span></div>
+          <div class="mqtt-command-row"><code>ALM_SET&lt;1–7&gt; ON</code><span>Включить будильник выбранного дня.</span></div>
+          <div class="mqtt-command-row"><code>ALM_SET&lt;1–7&gt; OFF</code><span>Выключить будильник выбранного дня.</span></div>
           <div class="mqtt-command-row"><code>ALM_SET&lt;1–7&gt; &lt;минуты&gt;</code><span>Время будильника в минутах от начала суток. <code>ALM_SET1 390</code> = 06:30.</span></div>
-          <div class="mqtt-command-row"><code>DAWN&lt;N&gt;</code><span>Выбрать вариант рассвета перед будильником.</span></div>
+          <div class="mqtt-command-row"><code>DAWN&lt;N&gt;</code><span>Выбрать вариант рассвета.</span></div>
           <div class="mqtt-command-row"><code>SUN_SET&lt;1–7&gt; ON</code><span>Включить закат выбранного дня.</span></div>
           <div class="mqtt-command-row"><code>SUN_SET&lt;1–7&gt; OFF</code><span>Выключить закат выбранного дня.</span></div>
-          <div class="mqtt-command-row"><code>SUN_SET&lt;1–7&gt; &lt;минуты&gt;</code><span>Время запуска заката в минутах от начала суток.</span></div>
+          <div class="mqtt-command-row"><code>SUN_SET&lt;1–7&gt; &lt;минуты&gt;</code><span>Задать время заката.</span></div>
           <div class="mqtt-command-row"><code>SUNS&lt;N&gt;</code><span>Выбрать вариант заката.</span></div>
         </div>
       </section>
 
       <section id="timer">
-        <h2>Таймер и физическая кнопка</h2>
+        <h2>Таймер и кнопка</h2>
         <div class="mqtt-command-table">
-          <div class="mqtt-command-row"><code>TMR_SET 1 3 300</code><span>Установить таймер. Последнее число — время до срабатывания в секундах.</span></div>
-          <div class="mqtt-command-row"><code>SLEEP1</code><span>Первый предустановленный таймер сна.</span></div>
-          <div class="mqtt-command-row"><code>SLEEP2</code><span>Второй предустановленный таймер сна.</span></div>
-          <div class="mqtt-command-row"><code>BTN_ON</code><span>Разблокировать физическую кнопку лампы.</span></div>
-          <div class="mqtt-command-row"><code>BTN_OFF</code><span>Заблокировать физическую кнопку лампы.</span></div>
+          <div class="mqtt-command-row"><code>TMR_SET 1 3 300</code><span>Установить таймер; последнее число — секунды до срабатывания.</span></div>
+          <div class="mqtt-command-row"><code>SLEEP1</code><span>Таймер сна 5 минут.</span></div>
+          <div class="mqtt-command-row"><code>SLEEP2</code><span>Таймер сна 10 минут.</span></div>
+          <div class="mqtt-command-row"><code>BTN_ON</code><span>Разблокировать физическую кнопку.</span></div>
+          <div class="mqtt-command-row"><code>BTN_OFF</code><span>Заблокировать физическую кнопку.</span></div>
         </div>
       </section>
 
       <section id="service">
         <h2>Сервисные команды</h2>
         <div class="mqtt-command-table">
-          <div class="mqtt-command-row"><code>GET</code><span>Запросить состояние в протокольном формате приложения. Для обычной MQTT-автоматизации удобнее использовать <code>STATE</code>.</span></div>
-          <div class="mqtt-command-row danger"><code>RESET_ALL</code><span>Сбросить настройки лампы к значениям по умолчанию. Используйте только если это действительно нужно.</span></div>
+          <div class="mqtt-command-row"><code>GET</code><span>Запросить данные в протокольном формате приложения.</span></div>
+          <div class="mqtt-command-row"><code>STATE</code><span>Повторно запросить актуальное MQTT-состояние.</span></div>
+          <div class="mqtt-command-row danger"><code>RESET_ALL</code><span>Полный сброс настроек лампы к значениям по умолчанию.</span></div>
         </div>
       </section>
 
       <section>
-        <div class="notice">
-          <b>Состояние команд</b>
-          <p>После управления читайте актуальное состояние из <code>.../snd</code>. В WQTT для конкретного параметра используйте JSON-путь, например <code>.../snd$.power</code> или <code>.../snd$.bri</code>.</p>
-        </div>
+        <div class="notice"><b>Для WQTT</b><p>Если создаёте ползунок в WQTT, используйте команды <code>BRI{value}</code>, <code>SPD{value}</code>, <code>SCA{value}</code> и <code>EFF{value}</code>.</p></div>
       </section>
     </article>
   </div>
 </main>
-
 <footer class="footer">
   <div class="shell footer-grid">
     <div><a class="brand" href="/"><span class="brand-mark">🔥</span><span>FieryLedLamp</span></a><p>Открытый проект умной LED-лампы на ESP32-S3.</p></div>
-    <div><b>MQTT</b><a href="/mqtt-broker.html">Подключение брокера</a><a href="/mqtt-commands.html">Все MQTT-команды</a><a href="/mqtt-wqtt.html">Настройка WQTT</a></div>
-    <div><b>Проект</b><a href="/instruction.html">Инструкция</a><a href="/hardware.html">Подключение</a><a href="/components.html">Компоненты</a><a href="/fiery-lamp-control.html">Fiery Lamp Control</a></div>
+    <div><b>MQTT</b><a href="/mqtt-broker.html">MQTT</a><a href="/mqtt-wqtt.html">Подключение WQTT</a><a href="/mqtt-commands.html">Все команды</a><a href="/mqtt-smart-home.html">Умный дом</a></div>
+    <div><b>Проект</b><a href="/instruction.html">Инструкция</a><a href="/hardware.html">Подключение</a><a href="/components.html">Компоненты</a></div>
   </div>
   <div class="shell footer-bottom">FieryLedLamp · 2026</div>
 </footer>
