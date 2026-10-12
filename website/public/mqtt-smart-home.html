@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b0d12">
+  <meta name="description" content="Подключение FieryLedLamp к Умному дому через WQTT: добавление устройств, MQTT-топики, команды управления, состояния, Алиса и Маруся.">
+  <title>Умный дом — FieryLedLamp</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="shell nav-wrap">
+    <a class="brand" href="/"><span class="brand-mark">🔥</span><span>FieryLedLamp</span></a>
+    <button class="menu-btn" type="button" aria-expanded="false" aria-controls="site-nav">Меню</button>
+    <nav class="nav" id="site-nav">
+      <a href="/">Главная</a>
+      <a href="/setup.html">Начало работы</a>
+      <a href="/instruction.html">Инструкция</a>
+      <a href="/hardware.html">Подключение</a>
+      <a class="active" href="/mqtt-broker.html">MQTT</a>
+      <a href="/components.html">Компоненты</a>
+      <a href="/fiery-lamp-control.html">Fiery Lamp Control</a>
+      <a href="/account.html">Аккаунт</a>
+      <a href="/versions.html">История версий</a>
+      <a class="nav-cta" href="https://firmware.fieryledlamp.ru">Прошить</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="page-hero shell">
+    <span class="eyebrow">MQTT · УМНЫЙ ДОМ</span>
+    <h1>Подключение FieryLedLamp к Умному дому</h1>
+    <p>Настройка через WQTT: сначала создаём устройства в панели WQTT, затем связываем аккаунт с Алисой или Марусей.</p>
+    <div class="hero-actions">
+      <a class="btn primary" href="#devices">Добавить устройства</a>
+      <a class="btn ghost" href="/mqtt-wqtt.html">Настройка WQTT</a>
+      <a class="btn ghost" href="/mqtt-commands.html">Все MQTT-команды</a>
+    </div>
+  </section>
+
+  <div class="shell docs-layout">
+    <aside class="toc">
+      <b>Умный дом</b>
+      <a href="#before">Перед началом</a>
+      <a href="#add">1. Добавить устройство</a>
+      <a href="#devices">2. Что прописывать</a>
+      <a href="#check">3. Проверить</a>
+      <a href="#alice">4. Алиса</a>
+      <a href="#marusia">5. Маруся</a>
+      <a href="#limits">Что поддерживается</a>
+    </aside>
+
+    <article class="prose">
+      <section id="before">
+        <h2>Перед началом</h2>
+        <p>Сначала FieryLedLamp должна быть подключена к брокеру WQTT и иметь статус MQTT <strong>«ПОДКЛЮЧЕНО»</strong>. Если WQTT ещё не настроен, сначала пройдите отдельную инструкцию.</p>
+        <div class="mqtt-wqtt-cta">
+          <div>
+            <span class="eyebrow">ШАГ 0</span>
+            <h3>Подключите лампу к WQTT</h3>
+            <p>Server, Port, User, Password и базовый топик.</p>
+          </div>
+          <a class="btn primary" href="/mqtt-wqtt.html">Открыть настройку WQTT</a>
+        </div>
+      </section>
+
+      <section id="add">
+        <h2>1. Как добавить устройство в WQTT</h2>
+        <p>Откройте панель WQTT → раздел <strong>«Устройства»</strong> → добавьте новое устройство. Для основной лампы выбирайте тип, соответствующий осветительному прибору; для дополнительных функций удобно создавать отдельные переключатели.</p>
+        <div class="mqtt-settings-list">
+          <div><b>Название</b><span>Например <code>FieryLedLamp</code>, <code>Подсветка</code>, <code>Звук лампы</code>.</span></div>
+          <div><b>Комната</b><span>Выберите комнату, в которой находится лампа.</span></div>
+          <div><b>Топик управления</b><span>Всегда <code>Lamp/LedLamp_&lt;ID&gt;/cmnd</code>.</span></div>
+          <div><b>Топик состояния</b><span><code>Lamp/LedLamp_&lt;ID&gt;/snd$.поле</code>.</span></div>
+          <div><b>Команда ВКЛ</b><span>Команда FieryLedLamp для включения нужной функции.</span></div>
+          <div><b>Команда ВЫКЛ</b><span>Команда FieryLedLamp для выключения нужной функции.</span></div>
+        </div>
+        <div class="notice">
+          <b>Где взять ID</b>
+          <p>Используйте точный <code>LedLamp_&lt;ID&gt;</code>, который показывает Web-интерфейс FieryLedLamp в настройках MQTT.</p>
+        </div>
+      </section>
+
+      <section id="devices">
+        <h2>2. Какие устройства добавить и что прописывать</h2>
+        <p>Ниже — готовые настройки для функций, которые удобно использовать как обычные устройства ВКЛ/ВЫКЛ в Умном доме.</p>
+
+        <h3>Основная лампа</h3>
+        <div class="mqtt-command-table">
+          <div class="mqtt-command-row"><code>Тип</code><span>Осветительный прибор / лампа</span></div>
+          <div class="mqtt-command-row"><code>Топик управления</code><span><code>Lamp/LedLamp_&lt;ID&gt;/cmnd</code></span></div>
+          <div class="mqtt-command-row"><code>Топик состояния</code><span><code>Lamp/LedLamp_&lt;ID&gt;/snd$.power</code></span></div>
+          <div class="mqtt-command-row"><code>ВКЛ</code><span><code>P_ON</code></span></div>
+          <div class="mqtt-command-row"><code>ВЫКЛ</code><span><code>P_OFF</code></span></div>
+        </div>
+
+        <h3>Подсветка</h3>
+        <div class="mqtt-command-table">
+          <div class="mqtt-command-row"><code>Тип</code><span>Переключатель или отдельный осветительный прибор</span></div>
+          <div class="mqtt-command-row"><code>Топик управления</code><span><code>Lamp/LedLamp_&lt;ID&gt;/cmnd</code></span></div>
+          <div class="mqtt-command-row"><code>Топик состояния</code><span><code>Lamp/LedLamp_&lt;ID&gt;/snd$.lumos</code></span></div>
+          <div class="mqtt-command-row"><code>ВКЛ</code><span><code>LUMOS_ON</code></span></div>
+          <div class="mqtt-command-row"><code>ВЫКЛ</code><span><code>LUMOS_OFF</code></span></div>
+        </div>
+
+        <h3>Режим «Цикл»</h3>
+        <div class="mqtt-command-table">
+          <div class="mqtt-command-row"><code>Тип</code><span>Переключатель</span></div>
+          <div class="mqtt-command-row"><code>Топик управления</code><span><code>Lamp/LedLamp_&lt;ID&gt;/cmnd</code></span></div>
+          <div class="mqtt-command-row"><code>Топик состояния</code><span><code>Lamp/LedLamp_&lt;ID&gt;/snd$.cycle</code></span></div>
+          <div class="mqtt-command-row"><code>ВКЛ</code><span><code>FAV_ON</code></span></div>
+          <div class="mqtt-command-row"><code>ВЫКЛ</code><span><code>FAV_OFF</code></span></div>
+        </div>
+
+        <h3>Звук</h3>
+        <div class="mqtt-command-table">
+          <div class="mqtt-command-row"><code>Тип</code><span>Переключатель</span></div>
+          <div class="mqtt-command-row"><code>Топик управления</code><span><code>Lamp/LedLamp_&lt;ID&gt;/cmnd</code></span></div>
+          <div class="mqtt-command-row"><code>Топик состояния</code><span><code>Lamp/LedLamp_&lt;ID&gt;/snd$.sound</code></span></div>
+          <div class="mqtt-command-row"><code>ВКЛ</code><span><code>SO_ON</code></span></div>
+          <div class="mqtt-command-row"><code>ВЫКЛ</code><span><code>SO_OFF</code></span></div>
+        </div>
+
+        <div class="notice">
+          <b>Почему топик управления одинаковый</b>
+          <p>FieryLedLamp принимает все команды через один <code>.../cmnd</code>. WQTT различает функции по командам <code>P_ON</code>, <code>FAV_ON</code>, <code>SO_ON</code>, <code>LUMOS_ON</code> и соответствующим полям состояния.</p>
+        </div>
+      </section>
+
+      <section id="check">
+        <h2>3. Проверьте устройство до подключения голосового помощника</h2>
+        <p>Сохраните устройство в WQTT и переключите его из панели. Если всё настроено правильно, лампа выполнит команду, а состояние элемента обновится из <code>.../snd$.поле</code>.</p>
+        <div class="mqtt-checklist">
+          <div><b>1.</b><span>Нажмите ВКЛ — нужная функция должна включиться.</span></div>
+          <div><b>2.</b><span>Нажмите ВЫКЛ — функция должна выключиться.</span></div>
+          <div><b>3.</b><span>Измените состояние из Web-интерфейса лампы и убедитесь, что WQTT показывает новое состояние.</span></div>
+          <div><b>4.</b><span>Если состояние не обновилось, проверьте JSON-путь: <code>$.power</code>, <code>$.cycle</code>, <code>$.sound</code> или <code>$.lumos</code>.</span></div>
+        </div>
+      </section>
+
+      <section id="alice">
+        <h2>4. Подключение к Яндекс Алисе</h2>
+        <p>После создания и проверки устройств откройте в панели WQTT раздел <strong>«Яндекс.Алиса»</strong> и выполните связывание аккаунта или обновление списка устройств.</p>
+        <div class="mqtt-checklist">
+          <div><b>1.</b><span>Устройства должны быть заранее добавлены и работать в панели WQTT.</span></div>
+          <div><b>2.</b><span>Откройте раздел <strong>«Яндекс.Алиса»</strong> в WQTT.</span></div>
+          <div><b>3.</b><span>Нажмите <strong>«Связать аккаунт и/или обновить список устройств»</strong>.</span></div>
+          <div><b>4.</b><span>Завершите авторизацию и обновление устройств.</span></div>
+          <div><b>5.</b><span>После появления устройств назначьте им нужные комнаты и понятные названия.</span></div>
+        </div>
+        <div class="notice">
+          <b>Примеры голосовых команд</b>
+          <p>«Алиса, включи лампу», «Алиса, выключи подсветку», «Алиса, включи цикл», «Алиса, выключи звук лампы».</p>
+        </div>
+      </section>
+
+      <section id="marusia">
+        <h2>5. Подключение к Марусе</h2>
+        <p>WQTT также поддерживает подключение устройств к Марусе.</p>
+        <div class="mqtt-checklist">
+          <div><b>1.</b><span>Откройте приложение Маруся → <strong>«Умный дом»</strong>.</span></div>
+          <div><b>2.</b><span>Нажмите <strong>«+»</strong> → <strong>«Подключить устройство»</strong>.</span></div>
+          <div><b>3.</b><span>Найдите производителя <strong>WQTT.RU</strong>.</span></div>
+          <div><b>4.</b><span>Авторизуйтесь под учётной записью WQTT.</span></div>
+          <div><b>5.</b><span>После синхронизации назначьте устройства комнатам.</span></div>
+        </div>
+      </section>
+
+      <section id="limits">
+        <h2>Что лучше добавлять в Умный дом</h2>
+        <p>Надёжнее всего использовать функции ВКЛ/ВЫКЛ: питание лампы, Подсветку, Цикл и Звук. Они имеют отдельные команды и понятные поля состояния.</p>
+        <div class="notice warning">
+          <b>Яркость и номер эффекта</b>
+          <p>FieryLedLamp принимает яркость и эффект командами вида <code>BRI50</code> и <code>EFF10</code>. Обычный регулятор WQTT передаёт числовое значение, поэтому без преобразования команды такой регулятор напрямую не подходит. Для яркости и выбора эффектов используйте MQTT-команды или отдельную автоматизацию.</p>
+        </div>
+      </section>
+    </article>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="shell footer-grid">
+    <div><a class="brand" href="/"><span class="brand-mark">🔥</span><span>FieryLedLamp</span></a><p>Открытый проект умной LED-лампы на ESP32-S3.</p></div>
+    <div><b>MQTT</b><a href="/mqtt-broker.html">Подключение брокера</a><a href="/mqtt-commands.html">Все MQTT-команды</a><a href="/mqtt-wqtt.html">Настройка WQTT</a><a href="/mqtt-smart-home.html">Умный дом</a></div>
+    <div><b>Проект</b><a href="/instruction.html">Инструкция</a><a href="/hardware.html">Подключение</a><a href="/components.html">Компоненты</a></div>
+  </div>
+  <div class="shell footer-bottom">FieryLedLamp · 2026</div>
+</footer>
+<script src="/site.js"></script>
+</body>
+</html>
