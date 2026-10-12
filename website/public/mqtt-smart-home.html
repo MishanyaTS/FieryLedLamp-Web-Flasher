@@ -47,9 +47,10 @@
       <a href="#before">Перед началом</a>
       <a href="#add">1. Добавить устройство</a>
       <a href="#devices">2. Что прописывать</a>
-      <a href="#check">3. Проверить</a>
-      <a href="#alice">4. Алиса</a>
-      <a href="#marusia">5. Маруся</a>
+      <a href="#advanced">3. Яркость, скорость, масштаб, эффекты</a>
+      <a href="#check">4. Проверить</a>
+      <a href="#alice">5. Алиса</a>
+      <a href="#marusia">6. Маруся</a>
       <a href="#limits">Что поддерживается</a>
     </aside>
 
@@ -130,8 +131,45 @@
         </div>
       </section>
 
+      <section id="advanced">
+        <h2>3. Яркость, скорость, масштаб и эффекты</h2>
+        <p>FieryLedLamp принимает эти параметры в виде команд с числом внутри payload. Топик управления остаётся тем же: <code>Lamp/LedLamp_&lt;ID&gt;/cmnd</code>.</p>
+
+        <div class="mqtt-command-table">
+          <div class="mqtt-command-row"><code>Яркость</code><span><b>Команда:</b> <code>BRI&lt;1–100&gt;</code><br><b>Примеры:</b> <code>BRI25</code>, <code>BRI50</code>, <code>BRI75</code>, <code>BRI100</code><br><b>Состояние:</b> <code>.../snd$.bri</code></span></div>
+
+          <div class="mqtt-command-row"><code>Скорость</code><span><b>Команда:</b> <code>SPD&lt;1–255&gt;</code><br><b>Примеры:</b> <code>SPD50</code>, <code>SPD100</code>, <code>SPD180</code>, <code>SPD255</code><br><b>Состояние:</b> <code>.../snd$.spd</code></span></div>
+
+          <div class="mqtt-command-row"><code>Масштаб</code><span><b>Команда:</b> <code>SCA&lt;1–100&gt;</code><br><b>Примеры:</b> <code>SCA25</code>, <code>SCA50</code>, <code>SCA75</code>, <code>SCA100</code><br><b>Состояние:</b> <code>.../snd$.sca</code></span></div>
+
+          <div class="mqtt-command-row"><code>Эффект</code><span><b>Команда:</b> <code>EFF&lt;N&gt;</code><br><b>Примеры:</b> <code>EFF0</code>, <code>EFF1</code>, <code>EFF10</code><br><b>Состояние:</b> <code>.../snd$.effect</code></span></div>
+        </div>
+
+        <h3>Как добавить в Умный дом</h3>
+        <p>Самый простой рабочий вариант — сделать несколько готовых кнопок или сценариев с фиксированными значениями. Например:</p>
+
+        <div class="mqtt-command-table">
+          <div class="mqtt-command-row"><code>Яркость 25%</code><span>Топик: <code>.../cmnd</code> · команда: <code>BRI25</code></span></div>
+          <div class="mqtt-command-row"><code>Яркость 50%</code><span>Топик: <code>.../cmnd</code> · команда: <code>BRI50</code></span></div>
+          <div class="mqtt-command-row"><code>Яркость 100%</code><span>Топик: <code>.../cmnd</code> · команда: <code>BRI100</code></span></div>
+          <div class="mqtt-command-row"><code>Скорость 100</code><span>Топик: <code>.../cmnd</code> · команда: <code>SPD100</code></span></div>
+          <div class="mqtt-command-row"><code>Масштаб 50</code><span>Топик: <code>.../cmnd</code> · команда: <code>SCA50</code></span></div>
+          <div class="mqtt-command-row"><code>Эффект №10</code><span>Топик: <code>.../cmnd</code> · команда: <code>EFF10</code></span></div>
+        </div>
+
+        <div class="notice warning">
+          <b>Ползунки WQTT</b>
+          <p>Стандартный числовой регулятор WQTT передаёт в MQTT числовое значение, например <code>50</code>. FieryLedLamp сейчас ожидает строку с префиксом — <code>BRI50</code>, <code>SPD50</code>, <code>SCA50</code> или <code>EFF10</code>. Поэтому для прямого ползунка без промежуточного преобразования такой вариант не подходит.</p>
+        </div>
+
+        <div class="notice">
+          <b>Если нужны настоящие ползунки в Алисе/Марусе</b>
+          <p>В прошивку можно добавить отдельные MQTT-топики, которые будут принимать чистые числа, например <code>.../bri/set</code>, <code>.../spd/set</code>, <code>.../sca/set</code> и <code>.../effect/set</code>. Тогда WQTT сможет напрямую отправлять значения из регуляторов.</p>
+        </div>
+      </section>
+
       <section id="check">
-        <h2>3. Проверьте устройство до подключения голосового помощника</h2>
+        <h2>4. Проверьте устройство до подключения голосового помощника</h2>
         <p>Сохраните устройство в WQTT и переключите его из панели. Если всё настроено правильно, лампа выполнит команду, а состояние элемента обновится из <code>.../snd$.поле</code>.</p>
         <div class="mqtt-checklist">
           <div><b>1.</b><span>Нажмите ВКЛ — нужная функция должна включиться.</span></div>
@@ -142,7 +180,7 @@
       </section>
 
       <section id="alice">
-        <h2>4. Подключение к Яндекс Алисе</h2>
+        <h2>5. Подключение к Яндекс Алисе</h2>
         <p>После создания и проверки устройств откройте в панели WQTT раздел <strong>«Яндекс.Алиса»</strong> и выполните связывание аккаунта или обновление списка устройств.</p>
         <div class="mqtt-checklist">
           <div><b>1.</b><span>Устройства должны быть заранее добавлены и работать в панели WQTT.</span></div>
@@ -158,7 +196,7 @@
       </section>
 
       <section id="marusia">
-        <h2>5. Подключение к Марусе</h2>
+        <h2>6. Подключение к Марусе</h2>
         <p>WQTT также поддерживает подключение устройств к Марусе.</p>
         <div class="mqtt-checklist">
           <div><b>1.</b><span>Откройте приложение Маруся → <strong>«Умный дом»</strong>.</span></div>
@@ -171,11 +209,7 @@
 
       <section id="limits">
         <h2>Что лучше добавлять в Умный дом</h2>
-        <p>Надёжнее всего использовать функции ВКЛ/ВЫКЛ: питание лампы, Подсветку, Цикл и Звук. Они имеют отдельные команды и понятные поля состояния.</p>
-        <div class="notice warning">
-          <b>Яркость и номер эффекта</b>
-          <p>FieryLedLamp принимает яркость и эффект командами вида <code>BRI50</code> и <code>EFF10</code>. Обычный регулятор WQTT передаёт числовое значение, поэтому без преобразования команды такой регулятор напрямую не подходит. Для яркости и выбора эффектов используйте MQTT-команды или отдельную автоматизацию.</p>
-        </div>
+        <p>Функции ВКЛ/ВЫКЛ можно использовать напрямую как устройства. Яркость, скорость, масштаб и эффекты можно использовать как фиксированные команды/сценарии. Для полноценных числовых ползунков потребуется преобразование значения или отдельные числовые MQTT-топики в прошивке.</p>
       </section>
     </article>
   </div>
