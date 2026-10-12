@@ -132,39 +132,48 @@
       </section>
 
       <section id="advanced">
-        <h2>3. Яркость, скорость, масштаб и эффекты</h2>
-        <p>FieryLedLamp принимает эти параметры в виде команд с числом внутри payload. Топик управления остаётся тем же: <code>Lamp/LedLamp_&lt;ID&gt;/cmnd</code>.</p>
+        <h2>3. Ползунки: яркость, скорость, масштаб и эффекты</h2>
+        <p>Эти четыре параметра добавляются в WQTT как числовые регуляторы (Range / ползунки). Для каждого ползунка используется общий командный топик <code>Lamp/LedLamp_&lt;ID&gt;/cmnd</code>, но свой формат команды и своё поле состояния.</p>
 
+        <h3>Яркость</h3>
         <div class="mqtt-command-table">
-          <div class="mqtt-command-row"><code>Яркость</code><span><b>Команда:</b> <code>BRI&lt;1–100&gt;</code><br><b>Примеры:</b> <code>BRI25</code>, <code>BRI50</code>, <code>BRI75</code>, <code>BRI100</code><br><b>Состояние:</b> <code>.../snd$.bri</code></span></div>
-
-          <div class="mqtt-command-row"><code>Скорость</code><span><b>Команда:</b> <code>SPD&lt;1–255&gt;</code><br><b>Примеры:</b> <code>SPD50</code>, <code>SPD100</code>, <code>SPD180</code>, <code>SPD255</code><br><b>Состояние:</b> <code>.../snd$.spd</code></span></div>
-
-          <div class="mqtt-command-row"><code>Масштаб</code><span><b>Команда:</b> <code>SCA&lt;1–100&gt;</code><br><b>Примеры:</b> <code>SCA25</code>, <code>SCA50</code>, <code>SCA75</code>, <code>SCA100</code><br><b>Состояние:</b> <code>.../snd$.sca</code></span></div>
-
-          <div class="mqtt-command-row"><code>Эффект</code><span><b>Команда:</b> <code>EFF&lt;N&gt;</code><br><b>Примеры:</b> <code>EFF0</code>, <code>EFF1</code>, <code>EFF10</code><br><b>Состояние:</b> <code>.../snd$.effect</code></span></div>
+          <div class="mqtt-command-row"><code>Тип управления</code><span>Числовой регулятор / ползунок</span></div>
+          <div class="mqtt-command-row"><code>Топик управления</code><span><code>Lamp/LedLamp_&lt;ID&gt;/cmnd</code></span></div>
+          <div class="mqtt-command-row"><code>Формат команды</code><span><code>BRI{значение}</code> — например <code>BRI50</code></span></div>
+          <div class="mqtt-command-row"><code>Топик состояния</code><span><code>Lamp/LedLamp_&lt;ID&gt;/snd$.bri</code></span></div>
+          <div class="mqtt-command-row"><code>Диапазон</code><span><code>1–100</code>, шаг <code>1</code></span></div>
         </div>
 
-        <h3>Как добавить в Умный дом</h3>
-        <p>Самый простой рабочий вариант — сделать несколько готовых кнопок или сценариев с фиксированными значениями. Например:</p>
-
+        <h3>Скорость</h3>
         <div class="mqtt-command-table">
-          <div class="mqtt-command-row"><code>Яркость 25%</code><span>Топик: <code>.../cmnd</code> · команда: <code>BRI25</code></span></div>
-          <div class="mqtt-command-row"><code>Яркость 50%</code><span>Топик: <code>.../cmnd</code> · команда: <code>BRI50</code></span></div>
-          <div class="mqtt-command-row"><code>Яркость 100%</code><span>Топик: <code>.../cmnd</code> · команда: <code>BRI100</code></span></div>
-          <div class="mqtt-command-row"><code>Скорость 100</code><span>Топик: <code>.../cmnd</code> · команда: <code>SPD100</code></span></div>
-          <div class="mqtt-command-row"><code>Масштаб 50</code><span>Топик: <code>.../cmnd</code> · команда: <code>SCA50</code></span></div>
-          <div class="mqtt-command-row"><code>Эффект №10</code><span>Топик: <code>.../cmnd</code> · команда: <code>EFF10</code></span></div>
+          <div class="mqtt-command-row"><code>Тип управления</code><span>Числовой регулятор / ползунок</span></div>
+          <div class="mqtt-command-row"><code>Топик управления</code><span><code>Lamp/LedLamp_&lt;ID&gt;/cmnd</code></span></div>
+          <div class="mqtt-command-row"><code>Формат команды</code><span><code>SPD{значение}</code> — например <code>SPD120</code></span></div>
+          <div class="mqtt-command-row"><code>Топик состояния</code><span><code>Lamp/LedLamp_&lt;ID&gt;/snd$.spd</code></span></div>
+          <div class="mqtt-command-row"><code>Диапазон</code><span><code>1–255</code>, шаг <code>1</code></span></div>
         </div>
 
-        <div class="notice warning">
-          <b>Ползунки WQTT</b>
-          <p>Стандартный числовой регулятор WQTT передаёт в MQTT числовое значение, например <code>50</code>. FieryLedLamp сейчас ожидает строку с префиксом — <code>BRI50</code>, <code>SPD50</code>, <code>SCA50</code> или <code>EFF10</code>. Поэтому для прямого ползунка без промежуточного преобразования такой вариант не подходит.</p>
+        <h3>Масштаб</h3>
+        <div class="mqtt-command-table">
+          <div class="mqtt-command-row"><code>Тип управления</code><span>Числовой регулятор / ползунок</span></div>
+          <div class="mqtt-command-row"><code>Топик управления</code><span><code>Lamp/LedLamp_&lt;ID&gt;/cmnd</code></span></div>
+          <div class="mqtt-command-row"><code>Формат команды</code><span><code>SCA{значение}</code> — например <code>SCA50</code></span></div>
+          <div class="mqtt-command-row"><code>Топик состояния</code><span><code>Lamp/LedLamp_&lt;ID&gt;/snd$.sca</code></span></div>
+          <div class="mqtt-command-row"><code>Диапазон</code><span><code>1–100</code>, шаг <code>1</code></span></div>
+        </div>
+
+        <h3>Эффект</h3>
+        <div class="mqtt-command-table">
+          <div class="mqtt-command-row"><code>Тип управления</code><span>Числовой регулятор / ползунок</span></div>
+          <div class="mqtt-command-row"><code>Топик управления</code><span><code>Lamp/LedLamp_&lt;ID&gt;/cmnd</code></span></div>
+          <div class="mqtt-command-row"><code>Формат команды</code><span><code>EFF{значение}</code> — например <code>EFF10</code></span></div>
+          <div class="mqtt-command-row"><code>Топик состояния</code><span><code>Lamp/LedLamp_&lt;ID&gt;/snd$.effect</code></span></div>
+          <div class="mqtt-command-row"><code>Диапазон</code><span><code>0–133</code>, шаг <code>1</code> — всего 134 эффекта</span></div>
         </div>
 
         <div class="notice">
-          <b>Если нужны настоящие ползунки в Алисе/Марусе</b>
-          <p>В прошивку можно добавить отдельные MQTT-топики, которые будут принимать чистые числа, например <code>.../bri/set</code>, <code>.../spd/set</code>, <code>.../sca/set</code> и <code>.../effect/set</code>. Тогда WQTT сможет напрямую отправлять значения из регуляторов.</p>
+          <b>Как должен работать ползунок</b>
+          <p>При перемещении ползунка WQTT подставляет выбранное число в команду. Например значение <code>75</code> у яркости отправляется как <code>BRI75</code>, а значение <code>180</code> у скорости — как <code>SPD180</code>. Текущее положение ползунка берётся из соответствующего поля <code>.../snd$.bri</code>, <code>.../snd$.spd</code>, <code>.../snd$.sca</code> или <code>.../snd$.effect</code>.</p>
         </div>
       </section>
 
@@ -209,7 +218,7 @@
 
       <section id="limits">
         <h2>Что лучше добавлять в Умный дом</h2>
-        <p>Функции ВКЛ/ВЫКЛ можно использовать напрямую как устройства. Яркость, скорость, масштаб и эффекты можно использовать как фиксированные команды/сценарии. Для полноценных числовых ползунков потребуется преобразование значения или отдельные числовые MQTT-топики в прошивке.</p>
+        <p>Функции ВКЛ/ВЫКЛ используются как переключатели, а яркость, скорость, масштаб и выбор эффекта — как числовые ползунки WQTT. Состояние каждого ползунка берётся из соответствующего поля общего JSON-топика <code>.../snd</code>.</p>
       </section>
     </article>
   </div>
