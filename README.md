@@ -8,9 +8,8 @@ https://mishanyats.github.io/FieryLedLamp-Web-Flasher/
 
 ## Что где менять
 
-- `firmware/config.js` — список поддерживаемых плат и пути к их пакетам.
+- `firmware/config.js` — настройки Web Flasher для ESP32-S3 N16R8.
 - `firmware/ESP32-S3 N16R8/manifest.json` — параметры прошивки N16R8.
-- `firmware/ESP32-S3 N8R8/manifest.json` — параметры прошивки N8R8.
 - `firmware/index.html` — структура страницы и тексты.
 - `firmware/style.css` — внешний вид.
 - `firmware/app.js` — логика Web Serial и esptool-js. В рабочей конфигурации используется KEEP / KEEP / KEEP, аналог DoNotChgBin=ON.
@@ -18,14 +17,9 @@ https://mishanyats.github.io/FieryLedLamp-Web-Flasher/
 
 ## Откуда берётся прошивка
 
-На странице сначала выбирается модель платы.
+Web Flasher настроен только для платы ESP32-S3 N16R8.
 
-Для каждой платы используется отдельная папка:
-
-- `firmware/ESP32-S3 N16R8/update.zip`
-- `firmware/ESP32-S3 N8R8/update.zip`
-
-Рядом с архивом лежит свой `manifest.json`, поэтому адреса записи, размер Flash и другие параметры могут отличаться для каждой платы.
+Файл прошивки находится в `firmware/ESP32-S3 N16R8/update.zip`, а параметры записи — в `firmware/ESP32-S3 N16R8/manifest.json`.
 
 ## Текущие адреса
 
@@ -35,7 +29,7 @@ https://mishanyats.github.io/FieryLedLamp-Web-Flasher/
 - `firmware.bin` → `0x00010000`
 - `littlefs.bin` → `0x00C90000`
 
-Адреса хранятся в `manifest.json` внутри папки выбранной платы.
+Адреса хранятся в `firmware/ESP32-S3 N16R8/manifest.json`.
 
 ## Структура Web Flasher
 
