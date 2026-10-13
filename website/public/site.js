@@ -616,7 +616,6 @@
     document.querySelector("#statVerified").textContent = num(data.totals.verifiedUsers);
     document.querySelector("#statSubscribers").textContent = num(data.totals.subscribers);
     document.querySelector("#statFirmwareN16R8").textContent = num(data.totals.firmwareDownloadsN16R8);
-    document.querySelector("#statFirmwareN8R8").textContent = num(data.totals.firmwareDownloadsN8R8);
     document.querySelector("#statWindows").textContent = num(data.totals.windowsDownloads);
     document.querySelector("#statIos").textContent = num(data.totals.iosDownloads);
     document.querySelector("#statAndroid").textContent = num(data.totals.androidClicks);
@@ -636,10 +635,8 @@
       const label = String(row.date).slice(5).split("-").reverse().join(".");
       let markers = "";
       if (row.registrations) markers += '<i class="stats-marker registrations" title="Регистрации: ' + num(row.registrations) + '"></i>';
-      if (row.firmware) {
-        const firmwareTitle = 'Прошивки: ' + num(row.firmware) +
-          ' · N16R8: ' + num(row.firmwareN16R8) +
-          ' · N8R8: ' + num(row.firmwareN8R8);
+      if (row.firmwareN16R8) {
+        const firmwareTitle = 'ESP32-S3 N16R8: ' + num(row.firmwareN16R8);
         markers += '<i class="stats-marker firmware" title="' + esc(firmwareTitle) + '"></i>';
       }
       if (row.apps) markers += '<i class="stats-marker apps" title="Приложения: ' + num(row.apps) + '"></i>';
