@@ -21,8 +21,9 @@ if (!is_array($config)) {
 }
 
 session_name('fieryledlamp_session');
+ini_set('session.gc_maxlifetime', (string)(60 * 60 * 24 * 30));
 session_set_cookie_params([
-    'lifetime' => 60 * 60 * 24 * 30,
+    'lifetime' => 0,
     'path' => '/',
     'secure' => true,
     'httponly' => true,
@@ -783,6 +784,7 @@ function login_user(PDO $pdo): never {
     $d = input_json();
     $email = strtolower(trim((string)($d['email'] ?? '')));
     $password = (string)($d['password'] ?? '');
+    $remember = !empty($d['remember']);
 
     $stmt = $pdo->prepare('SELECT id,password_hash FROM users WHERE email=? LIMIT 1');
     $stmt->execute([$email]);
@@ -794,6 +796,17 @@ function login_user(PDO $pdo): never {
 
     $_SESSION['user_id'] = (int)$row['id'];
     session_regenerate_id(true);
+
+    if ($remember) {
+        setcookie(session_name(), session_id(), [
+            'expires' => time() + 60 * 60 * 24 * 30,
+            'path' => '/',
+            'secure' => true,
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
+    }
+
     json_response(['ok' => true, 'csrf' => $_SESSION['csrf']]);
 }
 
