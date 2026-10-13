@@ -594,6 +594,10 @@
     .replaceAll("'", "&#039;");
 
   const num = value => new Intl.NumberFormat("ru-RU").format(Number(value) || 0);
+  const setText = (selector, value) => {
+    const el = document.querySelector(selector);
+    if (el) el.textContent = value;
+  };
   let statsCsrf = "";
 
   function renderRows(targetId, rows, nameKey) {
@@ -609,20 +613,20 @@
   }
 
   function renderStats(data) {
-    document.querySelector("#statPageViews").textContent = num(data.totals.pageViews);
-    document.querySelector("#statFlasherViews").textContent = num(data.totals.flasherViews);
-    document.querySelector("#statUnique").textContent = num(data.totals.uniqueVisitors);
-    document.querySelector("#statRegistrations").textContent = num(data.totals.registrations);
-    document.querySelector("#statVerified").textContent = num(data.totals.verifiedUsers);
-    document.querySelector("#statSubscribers").textContent = num(data.totals.subscribers);
-    document.querySelector("#statFirmwareN16R8").textContent = num(data.totals.firmwareDownloadsN16R8);
-    document.querySelector("#statWindows").textContent = num(data.totals.windowsDownloads);
-    document.querySelector("#statIos").textContent = num(data.totals.iosDownloads);
-    document.querySelector("#statAndroid").textContent = num(data.totals.androidClicks);
+    setText("#statPageViews", num(data.totals.pageViews));
+    setText("#statFlasherViews", num(data.totals.flasherViews));
+    setText("#statUnique", num(data.totals.uniqueVisitors));
+    setText("#statRegistrations", num(data.totals.registrations));
+    setText("#statVerified", num(data.totals.verifiedUsers));
+    setText("#statSubscribers", num(data.totals.subscribers));
+    setText("#statFirmwareN16R8", num(data.totals.firmwareDownloadsN16R8));
+    setText("#statWindows", num(data.totals.windowsDownloads));
+    setText("#statIos", num(data.totals.iosDownloads));
+    setText("#statAndroid", num(data.totals.androidClicks));
 
-    document.querySelector("#periodVisits").textContent = num(data.period.visits);
-    document.querySelector("#periodUnique").textContent = num(data.period.uniqueVisitors);
-    document.querySelector("#periodRegistrations").textContent = num(data.period.registrations);
+    setText("#periodVisits", num(data.period.visits));
+    setText("#periodUnique", num(data.period.uniqueVisitors));
+    setText("#periodRegistrations", num(data.period.registrations));
 
     renderRows("#countryRows", data.countries, "country_name");
     renderRows("#registrationCountryRows", data.registrationCountries, "country_name");
@@ -630,7 +634,7 @@
 
     const chart = document.querySelector("#statsChart");
     const max = Math.max(1, ...data.daily.map(row => Number(row.visits) || 0));
-    chart.innerHTML = data.daily.map(row => {
+    if (chart) chart.innerHTML = data.daily.map(row => {
       const height = Math.max(2, Math.round(((Number(row.visits) || 0) / max) * 100));
       const label = String(row.date).slice(5).split("-").reverse().join(".");
       let markers = "";
@@ -645,7 +649,7 @@
         '<span>' + esc(label) + '</span></div>';
     }).join("");
 
-    document.querySelector("#statsPrivacy").textContent = data.privacy || "";
+    setText("#statsPrivacy", data.privacy || "");
     document.querySelector("#statsContent").hidden = false;
     document.querySelector("#statsLoading").hidden = true;
   }
@@ -662,14 +666,14 @@
       const data = await parse(await api("admin-stats&days=" + encodeURIComponent(days)));
       renderStats(data);
     } catch (error) {
-      document.querySelector("#statsLoading").textContent = error.message;
+      setText("#statsLoading", error.message);
     }
   }
 
   document.querySelector("#statsDays")?.addEventListener("change", () => {
     document.querySelector("#statsContent").hidden = true;
     document.querySelector("#statsLoading").hidden = false;
-    document.querySelector("#statsLoading").textContent = "Загрузка статистики…";
+    setText("#statsLoading", "Загрузка статистики…");
     loadStats();
   });
 
