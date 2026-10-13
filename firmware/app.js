@@ -46,14 +46,14 @@ const ui = {
   flashBtnText: $("flashBtnText"), portDot: $("portDot"), portText: $("portText"),
   firmwareName: $("firmwareName"), progressLabel: $("progressLabel"),
   progressPercent: $("progressPercent"), progressBar: $("progressBar"), resultBox: $("resultBox"),
-  eraseAll: $("eraseAll"), saveSettings: $("saveSettings"), boardSelect: $("boardSelect"), boardHint: $("boardHint"),
+  eraseAll: $("eraseAll"), saveSettings: $("saveSettings"),
   cfgChip: $("cfgChip"), cfgFlash: $("cfgFlash"), cfgPsram: $("cfgPsram"), cfgMode: $("cfgMode"),
   cfgFreq: $("cfgFreq"), cfgBaud: $("cfgBaud"), fileList: $("fileList"), log: $("log"),
   clearLogBtn: $("clearLogBtn"), previewFlash: $("previewFlash"), steps: [$("step1"), $("step2"), $("step3")],
 };
 
 let manifest = null;
-let selectedBoard = null;
+let selectedBoard = SITE_CONFIG.board || null;
 let selectedPort = null;
 let isBusy = false;
 
@@ -91,7 +91,6 @@ function syncEraseAllState() {
 function setBusy(busy) {
   isBusy = busy;
   ui.selectPortBtn.disabled = busy;
-  if (ui.boardSelect) ui.boardSelect.disabled = busy;
   if (ui.saveSettings) ui.saveSettings.disabled = busy;
   syncEraseAllState();
   ui.flashBtn.disabled = busy || !manifest || manifest.ready === false || !selectedBoard || !("serial" in navigator);
@@ -118,23 +117,6 @@ function validateManifest(m) {
     if (!Number.isFinite(Number.parseInt(f.address, 0))) throw new Error(`Некорректный адрес ${f.name}`);
   }
 }
-function initBoardSelector() {
-  const boards = Array.isArray(SITE_CONFIG.boards) ? SITE_CONFIG.boards : [];
-  if (!boards.length) throw new Error("В config.js не настроен список плат.");
-
-  ui.boardSelect.innerHTML = "";
-  boards.forEach(board => {
-    const option = document.createElement("option");
-    option.value = board.id;
-    option.textContent = board.label;
-    ui.boardSelect.appendChild(option);
-  });
-
-  const preferred = boards.find(board => board.id === SITE_CONFIG.defaultBoard) || boards[0];
-  ui.boardSelect.value = preferred.id;
-  selectedBoard = preferred;
-}
-
 async function loadManifest(board = selectedBoard) {
   if (!board?.manifestUrl) throw new Error("Для выбранной платы не указан manifestUrl.");
 
@@ -142,7 +124,6 @@ async function loadManifest(board = selectedBoard) {
   manifest = null;
   clearResult();
   ui.firmwareName.textContent = "Загрузка конфигурации…";
-  ui.boardHint.textContent = "Загрузка параметров " + board.label + "…";
   setBusy(true);
 
   try {
@@ -164,14 +145,13 @@ async function loadManifest(board = selectedBoard) {
 
     if (manifest.ready === false) {
       renderFileList([]);
-      ui.boardHint.textContent = manifest.unavailableMessage || "Пакет прошивки для этой платы пока не загружен.";
-      showResult("error", ui.boardHint.textContent);
+      const unavailableMessage = manifest.unavailableMessage || "Пакет прошивки пока не загружен.";
+      showResult("error", unavailableMessage);
       log(`Выбрана плата ${board.label}: пакет пока не готов.`);
       return;
     }
 
     renderFileList(manifest.files);
-    ui.boardHint.textContent = `${board.label} • Flash ${manifest.physicalFlashSize || "—"} • PSRAM ${manifest.psramSize || "—"}`;
     log(`Выбрана плата: ${board.label}. Конфигурация загружена.`);
   } finally {
     setBusy(false);
@@ -371,32 +351,16 @@ function checkCompatibility(){
 ui.selectPortBtn.addEventListener("click",async()=>{if(isBusy)return;clearResult();try{await choosePort();ui.flashBtn.disabled=!manifest;}catch(e){if(e?.name==="NotFoundError"){log("Выбор COM-порта отменён.");return;}showResult("error",e?.message||String(e));log(`Ошибка выбора порта: ${e?.message||e}`);}});
 ui.flashBtn.addEventListener("click",flash);ui.clearLogBtn.addEventListener("click",()=>{ui.log.textContent="";});
 if(ui.saveSettings) ui.saveSettings.addEventListener("change",syncEraseAllState);
-if(ui.boardSelect) ui.boardSelect.addEventListener("change",async()=>{
-  if(isBusy)return;
-  const board=(SITE_CONFIG.boards||[]).find(item=>item.id===ui.boardSelect.value);
-  if(!board)return;
-  try{
-    await loadManifest(board);
-  }catch(e){
-    manifest=null;
-    ui.firmwareName.textContent="Ошибка конфигурации";
-    ui.boardHint.textContent=e?.message||String(e);
-    showResult("error",ui.boardHint.textContent);
-    log(`ОШИБКА: ${ui.boardHint.textContent}`);
-    setBusy(false);
-  }
-});
 if("serial"in navigator)navigator.serial.addEventListener("disconnect",e=>{if(selectedPort&&e.target===selectedPort&&!isBusy){ui.portDot.classList.remove("good");ui.portText.textContent="Порт отключён";setStep(1);log("COM-порт отключён.");}});
 (async function init(){
   trackAnalytics("firmware_page_view", "", "/");
   setStep(0);
   checkCompatibility();
   try{
-    initBoardSelector();
+    if (!selectedBoard) throw new Error("В config.js не настроена ESP32-S3 N16R8.");
     await loadManifest(selectedBoard);
   }catch(e){
     ui.firmwareName.textContent="Ошибка конфигурации";
-    if(ui.boardHint)ui.boardHint.textContent=e?.message||String(e);
     showResult("error",e?.message||String(e));
     log(`ОШИБКА: ${e?.message||e}`);
     setBusy(false);
