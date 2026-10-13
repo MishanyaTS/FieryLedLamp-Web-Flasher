@@ -362,7 +362,8 @@
           method: "POST",
           body: JSON.stringify({
             email: loginForm.email.value.trim(),
-            password: loginForm.password.value
+            password: loginForm.password.value,
+            remember: loginForm.remember?.checked === true
           })
         }));
         location.href = "/account.html";
