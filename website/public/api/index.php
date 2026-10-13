@@ -522,7 +522,6 @@ function admin_stats(PDO $pdo): never {
             'pageViews' => analytics_sum($pdo, 'page_view'),
             'flasherViews' => analytics_sum($pdo, 'firmware_page_view'),
             'firmwareDownloadsN16R8' => analytics_sum_firmware_board($pdo, 'n16r8'),
-            'firmwareDownloadsN8R8' => analytics_sum_firmware_board($pdo, 'n8r8'),
             'windowsDownloads' => analytics_sum($pdo, 'app_windows_download'),
             'iosDownloads' => analytics_sum($pdo, 'app_ios_download'),
             'androidClicks' => analytics_sum($pdo, 'app_android_click'),
@@ -548,7 +547,6 @@ function admin_stats(PDO $pdo): never {
                 'registrations'=>0,
                 'firmware'=>0,
                 'firmwareN16R8'=>0,
-                'firmwareN8R8'=>0,
                 'apps'=>0
             ];
         }
@@ -565,11 +563,9 @@ function admin_stats(PDO $pdo): never {
                     $daily[$date]['registrations'] += $count;
                     break;
                 case 'firmware_download':
-                    $daily[$date]['firmware'] += $count;
                     $item = (string)($row['item'] ?? '');
-                    if ($item === 'n8r8') {
-                        $daily[$date]['firmwareN8R8'] += $count;
-                    } elseif ($item === 'n16r8' || $item === 'update.zip' || $item === '') {
+                    if ($item === 'n16r8' || $item === 'update.zip' || $item === '') {
+                        $daily[$date]['firmware'] += $count;
                         $daily[$date]['firmwareN16R8'] += $count;
                     }
                     break;
