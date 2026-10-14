@@ -1,0 +1,87 @@
+name: Normalize Web Menu Icons
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - ".github/workflows/normalize-web-menu-icons.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  normalize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Pillow
+        run: python -m pip install --disable-pip-version-check pillow
+
+      - name: Normalize icons to 64x64
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+          from PIL import Image
+
+          folder = Path("website/public/icons/web-menu")
+          raster = [p for p in folder.iterdir() if p.suffix.lower() in {".png", ".jpg", ".jpeg", ".ico"}]
+
+          for path in raster:
+              with Image.open(path) as src:
+                  src.load()
+
+                  if path.suffix.lower() in {".jpg", ".jpeg"}:
+                      img = src.convert("RGB")
+                      img.thumbnail((64, 64), Image.Resampling.LANCZOS)
+                      canvas = Image.new("RGB", (64, 64), (0, 0, 0))
+                  else:
+                      img = src.convert("RGBA")
+                      img.thumbnail((64, 64), Image.Resampling.LANCZOS)
+                      canvas = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+
+                  x = (64 - img.width) // 2
+                  y = (64 - img.height) // 2
+                  if canvas.mode == "RGBA":
+                      canvas.alpha_composite(img, (x, y))
+                  else:
+                      canvas.paste(img, (x, y))
+
+                  if path.suffix.lower() == ".ico":
+                      canvas.save(path, format="ICO", sizes=[(64, 64)])
+                  elif path.suffix.lower() in {".jpg", ".jpeg"}:
+                      canvas.save(path, format="JPEG", quality=95, optimize=True)
+                  else:
+                      canvas.save(path, format="PNG", optimize=True)
+
+          svg = folder / "status.svg"
+          if svg.exists():
+              text = svg.read_text(encoding="utf-8")
+              text = re.sub(r'\swidth="[^"]*"', "", text, count=1)
+              text = re.sub(r'\sheight="[^"]*"', "", text, count=1)
+              text = text.replace("<svg ", '<svg width="64" height="64" ', 1)
+              svg.write_text(text, encoding="utf-8")
+
+          # Verification
+          for path in raster:
+              with Image.open(path) as img:
+                  if img.size != (64, 64):
+                      raise SystemExit(f"{path}: {img.size}, expected 64x64")
+          if svg.exists():
+              text = svg.read_text(encoding="utf-8")
+              if 'width="64"' not in text or 'height="64"' not in text:
+                  raise SystemExit("status.svg is not 64x64")
+
+      - name: Commit normalized icons
+        run: |
+          if git diff --quiet -- website/public/icons/web-menu; then
+            echo "Icons already normalized."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add website/public/icons/web-menu
+          git commit -m "Normalize web menu icons to 64x64"
+          git push
