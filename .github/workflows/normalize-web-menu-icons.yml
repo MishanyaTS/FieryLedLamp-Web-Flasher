@@ -24,7 +24,8 @@ jobs:
         run: |
           from pathlib import Path
           import re
-          from PIL import Image
+          from PIL import Image, ImageFile
+          ImageFile.LOAD_TRUNCATED_IMAGES = True
 
           folder = Path("website/public/icons/web-menu")
           raster = [p for p in folder.iterdir() if p.suffix.lower() in {".png", ".jpg", ".jpeg", ".ico"}]
