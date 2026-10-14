@@ -7,7 +7,7 @@
   <meta name="description" content="MQTT для FieryLedLamp: подключение к WQTT, команды управления и интеграция с Умным домом.">
   <title>MQTT — FieryLedLamp</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/styles.css?v=20261014-mqtt-detail">
 </head>
 <body>
 <header class="site-header">
@@ -48,9 +48,103 @@
       </div>
     </div>
     <div class="manual-grid">
-      <div class="manual-item"><h3>1. Брокер</h3><p>Лампа подключается к MQTT-брокеру по адресу, порту, логину и паролю.</p></div>
-      <div class="manual-item"><h3>2. Команды</h3><p>Управление идёт через топик <code>Lamp/LedLamp_&lt;ID&gt;/cmnd</code>.</p></div>
-      <div class="manual-item"><h3>3. Управление</h3><p>Можно включать лампу, менять эффекты, яркость, скорость, масштаб, звук, Подсветку и другие функции.</p></div>
+      <div class="manual-item"><h3>1. Лампа подключается к брокеру</h3><p>В настройках MQTT указываются адрес брокера, порт, логин, пароль и базовый топик. После подключения брокер становится промежуточным сервером между лампой и приложениями или Умным домом.</p></div>
+      <div class="manual-item"><h3>2. Команды приходят в один топик</h3><p>FieryLedLamp слушает общий топик команд <code>Lamp/LedLamp_&lt;ID&gt;/cmnd</code>. Внутри него передаётся сама команда: например <code>P_ON</code>, <code>BRI50</code> или <code>EFF10</code>.</p></div>
+      <div class="manual-item"><h3>3. Лампа публикует состояние</h3><p>Текущее состояние отправляется в <code>Lamp/LedLamp_&lt;ID&gt;/snd</code> в формате JSON. Из него можно получить питание, эффект, яркость, скорость, масштаб, звук, Подсветку и другие доступные параметры.</p></div>
+      <div class="manual-item"><h3>4. Управлять можно из разных систем</h3><p>Один и тот же MQTT можно использовать для WQTT, панелей управления, сценариев автоматизации и интеграции с Умным домом. Все они отправляют команды в лампу через брокер.</p></div>
+    </div>
+  </section>
+
+  <section class="section shell">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow">НАСТРОЙКИ ЛАМПЫ</span>
+        <h2>Что нужно указать в разделе MQTT</h2>
+      </div>
+    </div>
+    <div class="manual-grid">
+      <div class="manual-item"><h3>MQTT</h3><p>Включает или отключает MQTT-клиент лампы. Если MQTT выключен, лампа не подключается к брокеру и не принимает команды через него.</p></div>
+      <div class="manual-item"><h3>Адрес брокера</h3><p>IP-адрес или доменное имя MQTT-брокера, например локальный сервер в домашней сети или внешний MQTT-сервис.</p></div>
+      <div class="manual-item"><h3>Порт</h3><p>Порт обычного MQTT-подключения. Используйте именно тот порт, который указан вашим брокером. WebSocket-порт сюда вводить не нужно.</p></div>
+      <div class="manual-item"><h3>Логин и пароль</h3><p>Учётные данные MQTT-брокера. Если брокер разрешает подключение без авторизации, эти поля могут не использоваться.</p></div>
+      <div class="manual-item"><h3>Базовый топик</h3><p>Начальная часть MQTT-топика. По умолчанию в примерах используется <code>Lamp</code>, поэтому полный топик начинается с <code>Lamp/...</code>.</p></div>
+      <div class="manual-item"><h3>После сохранения</h3><p>Проверьте статус MQTT на странице «Статусы устройств». При успешном соединении должно отображаться состояние «ПОДКЛЮЧЕНО».</p></div>
+    </div>
+  </section>
+
+  <section class="section shell">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow">ТОПИКИ</span>
+        <h2>Как формируется адрес MQTT</h2>
+      </div>
+    </div>
+    <div class="code-card">
+      <div class="code-title"><span></span><span></span><span></span>Топики FieryLedLamp</div>
+      <div class="code-line"><code>Lamp/LedLamp_&lt;ID&gt;/cmnd</code><span>приём команд лампой</span></div>
+      <div class="code-line"><code>Lamp/LedLamp_&lt;ID&gt;/snd</code><span>публикация текущего состояния</span></div>
+      <p><code>&lt;ID&gt;</code> — уникальный идентификатор конкретной лампы. Если базовый топик в настройках изменён с <code>Lamp</code> на другой, первая часть адреса тоже изменится.</p>
+    </div>
+    <div class="notice">
+      <b>Важно</b>
+      <p>Яркость, скорость, масштаб и эффект не используют отдельные топики вида <code>bri/set</code> или <code>effect/set</code>. Все команды отправляются в общий топик <code>/cmnd</code>, а нужное действие задаётся содержимым сообщения.</p>
+    </div>
+  </section>
+
+  <section class="section shell">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow">ПРИМЕРЫ</span>
+        <h2>Несколько команд для быстрой проверки</h2>
+      </div>
+    </div>
+    <div class="mqtt-command-table compact">
+      <div class="mqtt-command-row"><code>P_ON</code><span>Включить лампу.</span></div>
+      <div class="mqtt-command-row"><code>P_OFF</code><span>Выключить лампу.</span></div>
+      <div class="mqtt-command-row"><code>BRI50</code><span>Установить яркость 50%.</span></div>
+      <div class="mqtt-command-row"><code>EFF10</code><span>Включить эффект с номером 10.</span></div>
+      <div class="mqtt-command-row"><code>SPD120</code><span>Установить скорость эффекта 120.</span></div>
+      <div class="mqtt-command-row"><code>SCA50</code><span>Установить масштаб эффекта 50.</span></div>
+      <div class="mqtt-command-row"><code>SO_ON</code><span>Включить звук, если MP3-плеер используется в прошивке.</span></div>
+      <div class="mqtt-command-row"><code>LUMOS_ON</code><span>Включить отдельную Подсветку.</span></div>
+      <div class="mqtt-command-row"><code>STATE</code><span>Запросить актуальную публикацию состояния лампы.</span></div>
+    </div>
+    <p class="muted-doc">Полный список команд, диапазоны значений и дополнительные функции находятся на отдельной странице «Все MQTT-команды».</p>
+    <a class="btn ghost" href="/mqtt-commands.html">Открыть полный список команд</a>
+  </section>
+
+  <section class="section shell">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow">СОСТОЯНИЕ</span>
+        <h2>Что приходит в топик <code>/snd</code></h2>
+      </div>
+    </div>
+    <div class="code-card">
+      <div class="code-title"><span></span><span></span><span></span>Пример состояния</div>
+      <div class="code-line"><code>"power": "ON"</code><span>питание лампы</span></div>
+      <div class="code-line"><code>"effect": 10</code><span>номер текущего эффекта</span></div>
+      <div class="code-line"><code>"bri": 50</code><span>яркость</span></div>
+      <div class="code-line"><code>"spd": 120</code><span>скорость эффекта</span></div>
+      <div class="code-line"><code>"sca": 50</code><span>масштаб эффекта</span></div>
+      <div class="code-line"><code>"sound": "ON"</code><span>состояние звука, если функция доступна</span></div>
+      <div class="code-line"><code>"lumos": "ON"</code><span>состояние Подсветки</span></div>
+      <p>Набор полей зависит от включённых возможностей прошивки. Для Умного дома можно использовать отдельные значения из JSON, например <code>$.power</code>, <code>$.bri</code> или <code>$.lumos</code>.</p>
+    </div>
+  </section>
+
+  <section class="section shell">
+    <div class="section-head">
+      <div>
+        <span class="eyebrow">ПРОВЕРКА</span>
+        <h2>Если MQTT не подключается</h2>
+      </div>
+    </div>
+    <div class="manual-grid">
+      <div class="manual-item"><h3>Проверьте адрес и порт</h3><p>Ошибка в адресе брокера или использование WebSocket/TLS-порта вместо обычного MQTT-порта — одна из самых частых причин отсутствия соединения.</p></div>
+      <div class="manual-item"><h3>Проверьте логин и пароль</h3><p>Убедитесь, что учётные данные совпадают с настройками брокера и у пользователя есть разрешение на публикацию и подписку на нужные топики.</p></div>
+      <div class="manual-item"><h3>Проверьте базовый топик</h3><p>Если вместо <code>Lamp</code> указан другой базовый топик, используйте его во всех командах и настройках внешних устройств.</p></div>
+      <div class="manual-item"><h3>Посмотрите статус лампы</h3><p>Откройте «Статусы устройств» и убедитесь, что MQTT показывает «ПОДКЛЮЧЕНО». При временном обрыве лампа автоматически пытается восстановить соединение.</p></div>
     </div>
   </section>
 
