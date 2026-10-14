@@ -775,12 +775,3 @@ background:linear-gradient(180deg,#131821,#0e1219);border-color:#283141;box-shad
   .mqtt-overview>.section{padding:30px 0}
   .mqtt-overview>.section .section-head{margin-bottom:18px}
 }
-
-
-/* MQTT primary buttons inside cards */
-.mqtt-overview .manual-item .btn.primary{
-  color:var(--text);
-  background:linear-gradient(135deg,var(--accent),#ff8e2f);
-  box-shadow:0 14px 34px #ff6b2c2d;
-  border-color:transparent;
-}
