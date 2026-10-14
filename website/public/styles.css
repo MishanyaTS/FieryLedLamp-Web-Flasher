@@ -761,17 +761,3 @@ background:linear-gradient(180deg,#131821,#0e1219);border-color:#283141;box-shad
 .web-icon-info{background-image:url("/icons/web-menu/info.png")}
 .web-icon-lumos{background-image:url("/icons/web-menu/lumos.png")}
 @media(max-width:680px){.manual-section-head h2 .web-menu-icon{width:24px;height:24px}.manual-toc a .web-menu-icon{width:18px;height:18px}}
-
-
-/* Compact spacing for MQTT overview */
-.mqtt-overview .page-hero{padding-bottom:42px}
-.mqtt-overview>.section{padding:38px 0}
-.mqtt-overview>.section .section-head{margin-bottom:22px}
-.mqtt-overview>.section .manual-grid{margin-top:0}
-.mqtt-overview>.section .mqtt-command-table{margin-top:10px;margin-bottom:20px}
-.mqtt-overview>.section .notice{margin:18px 0}
-@media(max-width:680px){
-  .mqtt-overview .page-hero{padding-bottom:32px}
-  .mqtt-overview>.section{padding:30px 0}
-  .mqtt-overview>.section .section-head{margin-bottom:18px}
-}
