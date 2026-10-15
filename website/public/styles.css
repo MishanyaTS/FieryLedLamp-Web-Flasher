@@ -761,3 +761,14 @@ background:linear-gradient(180deg,#131821,#0e1219);border-color:#283141;box-shad
 .web-icon-info{background-image:url("/icons/web-menu/info.png")}
 .web-icon-lumos{background-image:url("/icons/web-menu/lumos.png")}
 @media(max-width:680px){.manual-section-head h2 .web-menu-icon{width:24px;height:24px}.manual-toc a .web-menu-icon{width:18px;height:18px}}
+
+/* Homepage without glowing LED panel */
+.home-hero{
+  grid-template-columns:minmax(0,900px);
+  justify-content:start;
+  min-height:520px;
+}
+.home-hero .hero-copy{max-width:900px}
+@media(max-width:900px){
+  .home-hero{min-height:auto}
+}
