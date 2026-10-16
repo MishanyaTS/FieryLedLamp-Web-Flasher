@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#0b0d12">
+  <title>Редактор сайта — FieryLedLamp</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css?v=20261016-site-editor">
+</head>
+<body>
+<header class="site-header">
+  <div class="shell nav-wrap">
+    <a class="brand" href="/"><span class="brand-mark">🔥</span><span>FieryLedLamp</span></a>
+    <button class="menu-btn" type="button" aria-expanded="false" aria-controls="site-nav">Меню</button>
+    <nav class="nav" id="site-nav">
+      <a href="/">Главная</a>
+      <a href="/setup.html">Начало работы</a>
+      <a href="/instruction.html">Инструкция</a>
+      <a href="/hardware.html">Подключение</a>
+      <a href="/mqtt-broker.html">MQTT</a>
+      <a href="/components.html">Компоненты</a>
+      <a href="/fiery-lamp-control.html">Fiery Lamp Control</a>
+      <a class="active" href="/account.html">Аккаунт</a>
+      <a href="/versions.html">История версий</a>
+      <a class="nav-cta" href="https://firmware.fieryledlamp.ru">Прошить</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="page-hero shell site-editor-hero">
+    <span class="eyebrow">АДМИНИСТРАТОР · GITHUB</span>
+    <h1>Редактор сайта</h1>
+    <p>Редактирование HTML-страниц FieryLedLamp. Сохранение создаёт коммит напрямую в GitHub, после чего сайт обновляется существующим деплоем.</p>
+  </section>
+
+  <section id="adminEditor" class="shell site-editor-shell">
+    <div class="admin-subnav">
+      <a class="btn ghost" href="/admin-stats.html">Статистика</a>
+      <a class="btn ghost" href="/admin-users.html">Пользователи</a>
+      <a class="btn ghost" href="/admin-notifications.html">Рассылка обновлений</a>
+      <a class="btn ghost active" href="/admin-editor.html">Редактор сайта</a>
+    </div>
+
+    <div id="editorLoading" class="stats-loading">Загрузка редактора…</div>
+
+    <div id="editorApp" class="site-editor-grid" hidden>
+      <aside class="site-editor-sidebar">
+        <div class="site-editor-sidebar-head">
+          <span class="eyebrow">ФАЙЛЫ</span>
+          <strong>Страницы сайта</strong>
+          <small id="editorRepo">—</small>
+        </div>
+        <label class="site-editor-search">
+          <span>Поиск страницы</span>
+          <input id="editorSearch" type="search" placeholder="Например, MQTT">
+        </label>
+        <div id="editorFileList" class="site-editor-files"></div>
+      </aside>
+
+      <section class="site-editor-workspace">
+        <div class="site-editor-toolbar">
+          <div class="site-editor-current">
+            <span id="editorPageLabel">Выберите страницу</span>
+            <strong id="editorFileName">—</strong>
+            <span id="editorDirty" class="site-editor-dirty" hidden>Не сохранено</span>
+          </div>
+          <div class="site-editor-actions">
+            <button id="editorReload" class="btn ghost" type="button" disabled>Перезагрузить</button>
+            <a id="editorOpenPage" class="btn ghost" href="#" target="_blank" rel="noopener" aria-disabled="true">Открыть страницу</a>
+            <button id="editorSave" class="btn primary" type="button" disabled>Сохранить в GitHub</button>
+          </div>
+        </div>
+
+        <div id="editorStatus" class="site-editor-status" aria-live="polite"></div>
+
+        <div class="site-editor-code">
+          <pre id="editorLines" aria-hidden="true">1</pre>
+          <textarea id="editorCode" spellcheck="false" autocomplete="off" autocapitalize="off" wrap="off" disabled></textarea>
+        </div>
+
+        <div class="site-editor-meta">
+          <span>Файл: <code id="editorPath">—</code></span>
+          <span>SHA: <code id="editorSha">—</code></span>
+          <a id="editorCommit" href="#" target="_blank" rel="noopener" hidden>Открыть последний коммит ↗</a>
+        </div>
+      </section>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="shell footer-grid">
+    <div><a class="brand" href="/"><span class="brand-mark">🔥</span><span>FieryLedLamp</span></a><p>Открытый проект умной LED-лампы на ESP32-S3.</p></div>
+    <div><b>Администратор</b><a href="/account.html">Аккаунт</a><a href="/admin-stats.html">Статистика</a><a href="/admin-users.html">Пользователи</a><a href="/admin-notifications.html">Рассылка обновлений</a><a href="/admin-editor.html">Редактор сайта</a></div>
+    <div><b>Ссылки</b><a href="https://github.com/MishanyaTS/FieryLedLamp-Web-Flasher" target="_blank" rel="noopener">GitHub сайта</a><a href="https://firmware.fieryledlamp.ru">Web Flasher</a></div>
+  </div>
+  <div class="shell footer-bottom">FieryLedLamp · 2026</div>
+</footer>
+
+<script src="/site.js"></script>
+<script src="/admin-editor.js?v=20261016-1"></script>
+</body>
+</html>
