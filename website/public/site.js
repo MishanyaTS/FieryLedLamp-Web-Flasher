@@ -453,8 +453,6 @@
         if (adminStatsLink) adminStatsLink.hidden = !data.user.isAdmin;
         const adminUsersLink = document.querySelector("#adminUsersLink");
         if (adminUsersLink) adminUsersLink.hidden = !data.user.isAdmin;
-        const adminEditorLink = document.querySelector("#adminEditorLink");
-        if (adminEditorLink) adminEditorLink.hidden = !data.user.isAdmin;
         account.hidden = false;
         document.querySelector("#accountLoading").hidden = true;
       } catch (_) {
