@@ -1,27 +1,63 @@
 <!doctype html><html lang="ru"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b0d12">
 <meta name="description" content="Подключение FieryLedLamp: ESP32-S3, LED-матрица, RTC, TFT, TM1637, DFPlayer Mini и ИК-приёмник.">
-<title>Подключение — FieryLedLamp</title><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/styles.css">
+<title>Подключение — FieryLedLamp</title><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/styles.css?v=20261017-hardware-components">
 </head><body>
-<header class="site-header"><div class="shell nav-wrap"><a class="brand" href="/"><span class="brand-mark">🔥</span><span>FieryLedLamp</span></a><button class="menu-btn" type="button" aria-expanded="false" aria-controls="site-nav">Меню</button><nav class="nav" id="site-nav"><a href="/">Главная</a><a href="/setup.html">Начало работы</a><a href="/instruction.html">Инструкция</a><a class="active" href="/hardware.html">Подключение</a><a href="/mqtt-broker.html">MQTT</a><a href="/components.html">Компоненты</a><a href="/fiery-lamp-control.html">Fiery Lamp Control</a><a href="/account.html">Аккаунт</a><a href="/versions.html">История версий</a><a class="nav-cta" href="https://firmware.fieryledlamp.ru">Прошить</a></nav></div></header>
+<header class="site-header"><div class="shell nav-wrap"><a class="brand" href="/"><span class="brand-mark">🔥</span><span>FieryLedLamp</span></a><button class="menu-btn" type="button" aria-expanded="false" aria-controls="site-nav">Меню</button><nav class="nav" id="site-nav"><a href="/">Главная</a><a href="/setup.html">Начало работы</a><a href="/instruction.html">Инструкция</a><a class="active" href="/hardware.html">Подключение</a><a href="/mqtt-broker.html">MQTT</a><a href="/fiery-lamp-control.html">Fiery Lamp Control</a><a href="/account.html">Аккаунт</a><a href="/versions.html">История версий</a><a class="nav-cta" href="https://firmware.fieryledlamp.ru">Прошить</a></nav></div></header>
 <main>
-<section class="page-hero shell"><span class="eyebrow">АППАРАТНАЯ ЧАСТЬ</span><h1>Подключение и модули</h1><p>Базовая платформа — ESP32-S3. Конкретный набор периферии зависит от вашей сборки.</p></section>
-<section class="section shell"><div class="hardware-grid">
-<article class="hardware-card"><span>01</span><h3>LED-матрица</h3><p>Основной световой модуль. Размер и компоновка задаются настройками прошивки.</p></article>
-<article class="hardware-card"><span>03</span><h3>DFPlayer Mini</h3><p>Воспроизведение звуков и озвучивание сценариев.</p></article>
-<article class="hardware-card"><span>04</span><h3>TFT дисплей</h3><p>Дополнительные дисплеи для времени, статусов и информации о погоде.</p></article>
-<article class="hardware-card"><span>05</span><h3>ИК-приёмник</h3><p>Управление функциями лампы с инфракрасного пульта.</p></article>
-<article class="hardware-card"><span>06</span><h3>Кнопка</h3><p>Локальное управление основными функциями без телефона и браузера.</p></article>
-</div><div class="center-action"><a class="btn ghost" href="/components.html">Открыть список компонентов</a></div></section>
+<section class="page-hero shell"><span class="eyebrow">АППАРАТНАЯ ЧАСТЬ</span><h1>Подключение</h1><p>Полная схема подключения FieryLedLamp на ESP32-S3 и комплектующие для сборки.</p></section>
 <section class="section shell"><div class="section-head compact"><span class="eyebrow">СХЕМА</span><h2>Полная схема подключения</h2><p>Расширенная конфигурация с матрицей, DFPlayer, ИК-приёмником, и TFT дисплеем.</p></div>
 <a class="scheme-frame" href="https://raw.githubusercontent.com/MishanyaTS/FieryLedLamp/main/FieryLedLamp/Schemes/Lamp%2BTM1637%2BDFplayer%20%2B%20IR2%20%2B%20DS3231%20%2B%20TFT%20%28ESP32S3%29.png" target="_blank" rel="noopener">
 <img src="https://raw.githubusercontent.com/MishanyaTS/FieryLedLamp/main/FieryLedLamp/Schemes/Lamp%2BTM1637%2BDFplayer%20%2B%20IR2%20%2B%20DS3231%20%2B%20TFT%20%28ESP32S3%29.png" alt="Схема подключения FieryLedLamp на ESP32-S3" loading="lazy"></a>
 <div class="notice warning"><b>Питание</b><p>Адресная матрица может потреблять значительный ток. Подбирайте блок питания и сечение проводов с запасом, а землю питания матрицы и ESP32 объединяйте.</p></div></section>
+<section class="section shell components-section">
+<div class="section-head compact"><span class="eyebrow">КОМПОНЕНТЫ</span><h2>Компоненты для сборки</h2><p>Все комплектующие со страницы «Компоненты» теперь собраны здесь, сразу под схемой подключения.</p></div>
+<div class="component-note"><b>Перед заказом</b><p>Проверяйте выбранный вариант товара, распиновку, напряжение питания и размеры. Некоторые позиции на AliExpress могут иметь несколько вариантов в одной карточке.</p></div>
+<div class="components-grid">
+
+<article class="component-card">
+  <div class="component-body"><span class="component-tag required">Основной</span><h2>ESP32-S3 N16R8</h2><p>Главный контроллер лампы с 16 МБ Flash и 8 МБ PSRAM. Управляет матрицей, Wi-Fi, Web-интерфейсом и подключённой периферией.</p><div class="component-specs"><span>ESP32-S3</span><span>16 MB Flash</span><span>8 MB PSRAM</span></div><a class="btn primary component-buy" href="https://aliexpress.ru/item/1005005046672312.html" target="_blank" rel="noopener">Открыть на AliExpress ↗</a></div>
+</article>
+
+<article class="component-card">
+  <div class="component-body"><span class="component-tag required">Основной</span><h2>LED-матрица WS2812B</h2><p>Адресная RGB-матрица для эффектов, текста, часов и анимации. Размер матрицы выбирается под конкретную сборку.</p><div class="component-specs"><span>5 V</span><span>WS2812B</span><span>Адресная RGB</span></div><a class="btn primary component-buy" href="https://aliexpress.ru/item/1005003900118072.html" target="_blank" rel="noopener">Открыть на AliExpress ↗</a></div>
+</article>
+
+<article class="component-card">
+  <div class="component-body"><span class="component-tag optional">Дополнительно</span><h2>DFPlayer Mini</h2><p>MP3-модуль для звуков, будильника и голосовых сообщений. Работает с microSD и управляется по UART.</p><div class="component-specs"><span>UART</span><span>microSD</span><span>MP3</span></div><a class="btn primary component-buy" href="https://aliexpress.ru/item/1005008692398110.html" target="_blank" rel="noopener">Открыть на AliExpress ↗</a></div>
+</article>
+
+<article class="component-card">
+  <div class="component-body"><span class="component-tag optional">Дисплей</span><h2>TFT ST7789 1.47″</h2><p>Цветной IPS-дисплей с разрешением 172×320 для времени, погоды, статусов и служебной информации.</p><div class="component-specs"><span>ST7789</span><span>172×320</span><span>SPI</span></div><a class="btn primary component-buy" href="https://aliexpress.ru/item/1005009269283547.html" target="_blank" rel="noopener">Открыть на AliExpress ↗</a></div>
+</article>
+
+<article class="component-card">
+  <div class="component-body"><span class="component-tag optional">Управление</span><h2>Сенсорная кнопка TTP223</h2><p>Ёмкостная сенсорная кнопка для управления лампой касанием без механических контактов.</p><div class="component-specs"><span>TTP223</span><span>Touch</span><span>Digital OUT</span></div><a class="btn primary component-buy" href="https://aliexpress.ru/item/32964219843.html" target="_blank" rel="noopener">Открыть на AliExpress ↗</a></div>
+</article>
+
+<article class="component-card">
+  <div class="component-body"><span class="component-tag optional">Управление</span><h2>ИК-приёмник</h2><p>Принимает команды инфракрасного пульта. Кнопки пульта и их действия настраиваются в прошивке.</p><div class="component-specs"><span>38 кГц</span><span>IR</span><span>3 вывода</span></div><a class="btn primary component-buy" href="https://aliexpress.ru/item/1005008430639839.html" target="_blank" rel="noopener">Открыть на AliExpress ↗</a></div>
+</article>
+
+<article class="component-card">
+  <div class="component-body"><span class="component-tag optional">Время</span><h2>RTC DS3231</h2><p>Часы реального времени. Сохраняют точное время при отключении питания и дополняют синхронизацию через NTP.</p><div class="component-specs"><span>I²C</span><span>DS3231</span><span>RTC</span></div><a class="btn primary component-buy" href="https://aliexpress.ru/item/1005009709157036.html" target="_blank" rel="noopener">Открыть на AliExpress ↗</a></div>
+</article>
+
+<article class="component-card">
+  <div class="component-body"><span class="component-tag optional">Дисплей</span><h2>TM1637</h2><p>Четырёхразрядный семисегментный дисплей для часов. Для подключения используются линии CLK и DIO.</p><div class="component-specs"><span>4 разряда</span><span>CLK</span><span>DIO</span></div><div class="component-buy-group"><a class="btn primary component-buy" href="https://aliexpress.ru/item/32867950441.html" target="_blank" rel="noopener">AliExpress — вариант 1 ↗</a><a class="btn ghost component-buy" href="https://aliexpress.ru/item/32645208283.html" target="_blank" rel="noopener">AliExpress — вариант 2 ↗</a></div></div>
+</article>
+
+<article class="component-card">
+  <div class="component-body"><span class="component-tag optional">Управление</span><h2>Тактовая кнопка</h2><p>Обычная кнопка без фиксации для локального управления лампой. Подходит для монтажа на плату или проводами.</p><div class="component-specs"><span>Momentary</span><span>NO</span><span>Тактовая</span></div><a class="btn primary component-buy" href="https://aliexpress.ru/item/1005003115135192.html" target="_blank" rel="noopener">Открыть на AliExpress ↗</a></div>
+</article>
+
+</div>
+</section>
 </main>
 <footer class="footer">
   <div class="shell footer-grid">
     <div><a class="brand" href="/"><span class="brand-mark">🔥</span><span>FieryLedLamp</span></a><p>Открытый проект умной LED-лампы на ESP32-S3.</p></div>
-    <div><b>Проект</b><a href="/setup.html">Начало работы</a><a href="/instruction.html">Инструкция</a><a href="/hardware.html">Подключение</a><a href="/components.html">Компоненты</a><a href="/fiery-lamp-control.html">Fiery Lamp Control</a><a href="/account.html">Аккаунт</a><a href="/versions.html">История версий</a></div>
+    <div><b>Проект</b><a href="/setup.html">Начало работы</a><a href="/instruction.html">Инструкция</a><a href="/hardware.html">Подключение</a><a href="/fiery-lamp-control.html">Fiery Lamp Control</a><a href="/account.html">Аккаунт</a><a href="/versions.html">История версий</a></div>
     <div><b>Ссылки</b><a href="https://github.com/MishanyaTS/FieryLedLamp" target="_blank" rel="noopener">GitHub</a><a href="https://community.alexgyver.ru/threads/wifi-lampa-budilnik-obsuzhdenie-proshivki-fieryledlamp.7530/" target="_blank" rel="noopener">Обсуждение</a><a href="https://firmware.fieryledlamp.ru">Web Flasher</a></div>
   </div>
   <div class="shell footer-bottom">FieryLedLamp · 2026</div>
