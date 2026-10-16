@@ -458,7 +458,7 @@ function admin_editor_settings(array $config): array {
     if (!preg_match('~^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$~', $repo)) {
         json_response(['ok' => false, 'message' => 'Некорректный github_repo в конфигурации сервера.'], 500);
     }
-    if ($branch === '' || strlen($branch) > 100 || preg_match('~[\x00-\x20~^:?*\\[]~', $branch)) {
+    if ($branch === '' || strlen($branch) > 100 || !preg_match('~^[A-Za-z0-9._/-]+$~', $branch)) {
         json_response(['ok' => false, 'message' => 'Некорректный github_branch в конфигурации сервера.'], 500);
     }
 
