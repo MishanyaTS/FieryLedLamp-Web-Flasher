@@ -140,6 +140,19 @@ switch ($action) {
         require_method('GET');
         admin_users($pdo);
         break;
+    case 'admin-editor-files':
+        require_method('GET');
+        admin_editor_files($pdo, $config);
+        break;
+    case 'admin-editor-load':
+        require_method('GET');
+        admin_editor_load($pdo, $config);
+        break;
+    case 'admin-editor-save':
+        require_method('POST');
+        require_csrf();
+        admin_editor_save($pdo, $config);
+        break;
     default:
         json_response(['ok' => false, 'message' => 'Неизвестный запрос.'], 404);
 }
@@ -402,6 +415,238 @@ function analytics_sum_firmware_board(PDO $pdo, string $boardId): int {
         WHERE event_type='firmware_download' AND item=?");
     $stmt->execute([$boardId]);
     return (int)$stmt->fetchColumn();
+}
+
+
+function admin_editor_pages(): array {
+    return [
+        'index.html' => 'Главная',
+        'setup.html' => 'Начало работы',
+        'instruction.html' => 'Инструкция',
+        'hardware.html' => 'Подключение',
+        'mqtt-broker.html' => 'MQTT',
+        'mqtt-wqtt.html' => 'Подключение WQTT',
+        'mqtt-commands.html' => 'MQTT-команды',
+        'mqtt-smart-home.html' => 'Умный дом',
+        'components.html' => 'Компоненты',
+        'fiery-lamp-control.html' => 'Fiery Lamp Control',
+        'versions.html' => 'История версий',
+        'account.html' => 'Аккаунт',
+        'login.html' => 'Вход',
+        'register.html' => 'Регистрация',
+        'forgot-password.html' => 'Восстановление пароля',
+        'reset-password.html' => 'Новый пароль',
+        'unsubscribe.html' => 'Отписка',
+        '404.html' => 'Страница 404',
+        'admin-stats.html' => 'Админ: статистика',
+        'admin-users.html' => 'Админ: пользователи',
+        'admin-notifications.html' => 'Админ: рассылка',
+        'admin-editor.html' => 'Админ: редактор сайта',
+    ];
+}
+
+function admin_editor_settings(array $config): array {
+    $token = trim((string)($config['github_token'] ?? ''));
+    if ($token === '') {
+        $envToken = getenv('FIERYLEDLAMP_GITHUB_TOKEN');
+        if (is_string($envToken)) $token = trim($envToken);
+    }
+
+    $repo = trim((string)($config['github_repo'] ?? 'MishanyaTS/FieryLedLamp-Web-Flasher'));
+    $branch = trim((string)($config['github_branch'] ?? 'main'));
+
+    if (!preg_match('~^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$~', $repo)) {
+        json_response(['ok' => false, 'message' => 'Некорректный github_repo в конфигурации сервера.'], 500);
+    }
+    if ($branch === '' || strlen($branch) > 100 || preg_match('~[\x00-\x20~^:?*\\[]~', $branch)) {
+        json_response(['ok' => false, 'message' => 'Некорректный github_branch в конфигурации сервера.'], 500);
+    }
+
+    return [$token, $repo, $branch];
+}
+
+function admin_editor_require_file(string $file): array {
+    $pages = admin_editor_pages();
+    if (!isset($pages[$file])) {
+        json_response(['ok' => false, 'message' => 'Этот файл нельзя редактировать через сайт.'], 403);
+    }
+    return [$file, $pages[$file]];
+}
+
+function github_api_request(string $method, string $url, string $token, ?array $payload = null): array {
+    if ($token === '') {
+        json_response([
+            'ok' => false,
+            'message' => 'GitHub-сохранение не настроено. Добавьте github_token в приватный config.php на HostiMan.',
+            'githubConfigured' => false,
+        ], 503);
+    }
+    if (!function_exists('curl_init')) {
+        json_response(['ok' => false, 'message' => 'На сервере недоступен cURL.'], 503);
+    }
+
+    $ch = curl_init($url);
+    $headers = [
+        'Accept: application/vnd.github+json',
+        'Authorization: Bearer ' . $token,
+        'X-GitHub-Api-Version: 2022-11-28',
+        'User-Agent: FieryLedLamp-Site-Editor/1.0',
+    ];
+    if ($payload !== null) $headers[] = 'Content-Type: application/json';
+
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_CUSTOMREQUEST => $method,
+        CURLOPT_HTTPHEADER => $headers,
+        CURLOPT_TIMEOUT => 20,
+        CURLOPT_CONNECTTIMEOUT => 6,
+        CURLOPT_FOLLOWLOCATION => false,
+    ]);
+    if ($payload !== null) {
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+    }
+
+    $raw = curl_exec($ch);
+    $curlError = curl_error($ch);
+    $status = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if (!is_string($raw)) {
+        json_response(['ok' => false, 'message' => 'Не удалось связаться с GitHub: ' . ($curlError ?: 'ошибка сети')], 502);
+    }
+
+    $data = json_decode($raw, true);
+    if (!is_array($data)) $data = [];
+
+    if ($status < 200 || $status >= 300) {
+        $message = (string)($data['message'] ?? 'Ошибка GitHub API.');
+        if ($status === 401 || $status === 403) {
+            $message = 'GitHub отклонил доступ. Проверьте токен и право Contents: Read and write.';
+        } elseif ($status === 404) {
+            $message = 'Файл или репозиторий не найден в GitHub.';
+        } elseif ($status === 409) {
+            $message = 'GitHub отклонил сохранение из-за конфликта версии.';
+        }
+        json_response(['ok' => false, 'message' => $message, 'githubStatus' => $status], $status >= 400 && $status < 600 ? $status : 502);
+    }
+
+    return $data;
+}
+
+function admin_editor_github_file(array $config, string $file): array {
+    [$token, $repo, $branch] = admin_editor_settings($config);
+    $path = 'website/public/' . $file;
+    $url = 'https://api.github.com/repos/' . $repo . '/contents/' . rawurlencode_path($path) . '?ref=' . rawurlencode($branch);
+    $data = github_api_request('GET', $url, $token);
+
+    $encoded = preg_replace('/\s+/', '', (string)($data['content'] ?? ''));
+    $content = base64_decode($encoded ?: '', true);
+    if (!is_string($content)) {
+        json_response(['ok' => false, 'message' => 'GitHub вернул некорректное содержимое файла.'], 502);
+    }
+
+    return [
+        'content' => $content,
+        'sha' => (string)($data['sha'] ?? ''),
+        'path' => $path,
+        'repo' => $repo,
+        'branch' => $branch,
+    ];
+}
+
+function rawurlencode_path(string $path): string {
+    return implode('/', array_map('rawurlencode', explode('/', $path)));
+}
+
+function admin_editor_files(PDO $pdo, array $config): never {
+    require_admin($pdo);
+    [$token, $repo, $branch] = admin_editor_settings($config);
+
+    $pages = [];
+    foreach (admin_editor_pages() as $file => $label) {
+        $pages[] = [
+            'file' => $file,
+            'label' => $label,
+            'url' => '/' . $file,
+        ];
+    }
+
+    json_response([
+        'ok' => true,
+        'files' => $pages,
+        'repo' => $repo,
+        'branch' => $branch,
+        'githubConfigured' => $token !== '',
+    ]);
+}
+
+function admin_editor_load(PDO $pdo, array $config): never {
+    require_admin($pdo);
+    [$file, $label] = admin_editor_require_file(trim((string)($_GET['file'] ?? '')));
+    $data = admin_editor_github_file($config, $file);
+
+    json_response([
+        'ok' => true,
+        'file' => $file,
+        'label' => $label,
+        'content' => $data['content'],
+        'sha' => $data['sha'],
+        'repo' => $data['repo'],
+        'branch' => $data['branch'],
+    ]);
+}
+
+function admin_editor_save(PDO $pdo, array $config): never {
+    $admin = require_admin($pdo);
+    rate_limit($pdo, 'admin-editor-save', 30, 300);
+
+    $d = input_json();
+    [$file, $label] = admin_editor_require_file(trim((string)($d['file'] ?? '')));
+    $content = (string)($d['content'] ?? '');
+    $expectedSha = trim((string)($d['sha'] ?? ''));
+
+    if ($content === '' || strlen($content) > 1500000) {
+        json_response(['ok' => false, 'message' => 'Содержимое страницы пустое или слишком большое.'], 422);
+    }
+    if ($expectedSha === '' || !preg_match('/^[a-f0-9]{40}$/i', $expectedSha)) {
+        json_response(['ok' => false, 'message' => 'Неизвестна версия файла. Обновите страницу в редакторе.'], 409);
+    }
+
+    $current = admin_editor_github_file($config, $file);
+    if (!hash_equals(strtolower($current['sha']), strtolower($expectedSha))) {
+        json_response([
+            'ok' => false,
+            'message' => 'Файл уже изменился в GitHub. Нажмите «Перезагрузить», чтобы не потерять новые изменения.',
+            'conflict' => true,
+            'currentSha' => $current['sha'],
+        ], 409);
+    }
+
+    [$token, $repo, $branch] = admin_editor_settings($config);
+    $path = 'website/public/' . $file;
+    $url = 'https://api.github.com/repos/' . $repo . '/contents/' . rawurlencode_path($path);
+
+    $result = github_api_request('PUT', $url, $token, [
+        'message' => 'Edit ' . $file . ' from site editor',
+        'content' => base64_encode($content),
+        'sha' => $expectedSha,
+        'branch' => $branch,
+    ]);
+
+    $newSha = (string)($result['content']['sha'] ?? '');
+    $commitSha = (string)($result['commit']['sha'] ?? '');
+    $commitUrl = (string)($result['commit']['html_url'] ?? '');
+
+    json_response([
+        'ok' => true,
+        'message' => 'Страница сохранена в GitHub.',
+        'file' => $file,
+        'label' => $label,
+        'sha' => $newSha,
+        'commitSha' => $commitSha,
+        'commitUrl' => $commitUrl,
+        'savedBy' => (string)($admin['email'] ?? ''),
+    ]);
 }
 
 function admin_users(PDO $pdo): never {
