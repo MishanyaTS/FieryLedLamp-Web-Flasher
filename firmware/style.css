@@ -22,7 +22,7 @@ body{
 }
 button,input,select{font:inherit}
 a{color:inherit}
-.shell{width:min(1360px,calc(100% - 40px));margin-inline:auto}
+.shell{width:min(1520px,calc(100% - 40px));margin-inline:auto}
 .hidden{display:none!important}
 
 /* Header */
@@ -666,7 +666,7 @@ pre{
   .info-grid{grid-template-columns:repeat(3,1fr)}
 }
 @media(max-width:680px){
-  .shell{width:min(100% - 24px,1360px)}
+  .shell{width:min(100% - 24px,1520px)}
   .nav-wrap{height:64px}
   .firmware-hero-grid{padding-top:46px;padding-bottom:52px}
   .firmware-hero-copy h1{font-size:49px}
