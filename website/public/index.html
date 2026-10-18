@@ -5,14 +5,14 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#0b0d12">
   <meta name="mitgo-verification" content="943b095b-0b86-421e-97ec-121d4919be96" />
-  <meta name="description" content="FieryLedLamp - Адресная LED-лампа: эффекты, часы, погода, рассвет, звук, ИК-пульт и управление через Web.">
-  <meta property="og:title" content="FieryLedLamp">
-  <meta property="og:description" content="Адресная LED-лампа с эффектами, часами, погодой, музыкой, пультом и Web-управлением с помощью программы Fiery Lamp Control.">
+  <meta name="description" content="FieryLedLamp — умная адресная LED-лампа на ESP32-S3 с эффектами, часами, погодой, рассветом, звуком, MQTT, ИК-пультом и удобным управлением.">
+  <meta property="og:title" content="FieryLedLamp — умная LED-лампа">
+  <meta property="og:description" content="Адресная LED-лампа на ESP32-S3: эффекты, часы, погода, звук, автоматизация, MQTT, Web Flasher и Fiery Lamp Control.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://fieryledlamp.ru/">
-  <title>FieryLedLamp - Адресная LED-лампа</title>
+  <title>FieryLedLamp — умная LED-лампа на ESP32-S3</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/styles.css?v=20261016-home-no-panel">
+  <link rel="stylesheet" href="/styles.css?v=20261018-home-wide">
 </head>
 <body>
 <header class="site-header">
@@ -22,81 +22,146 @@
     <nav class="nav" id="site-nav">
       <a class="active" href="/">Главная</a>
       <a href="/setup.html">Начало работы</a>
-<a href="/instruction.html">Инструкция</a>
-      <a href="/hardware.html">Подключение</a><a href="/mqtt-broker.html">MQTT</a>
-      <a href="/fiery-lamp-control.html">Fiery Lamp Control</a><a href="/account.html">Аккаунт</a>
-      <a href="/versions.html">История версий</a><a class="nav-cta" href="https://firmware.fieryledlamp.ru">Web Flasher</a>
+      <a href="/instruction.html">Инструкция</a>
+      <a href="/hardware.html">Подключение</a>
+      <a href="/mqtt-broker.html">MQTT</a>
+      <a href="/fiery-lamp-control.html">Fiery Lamp Control</a>
+      <a href="/account.html">Аккаунт</a>
+      <a href="/versions.html">История версий</a>
+      <a class="nav-cta" href="https://firmware.fieryledlamp.ru">Web Flasher</a>
     </nav>
   </div>
 </header>
 
 <main>
-  <section class="hero shell home-hero">
-    <div class="hero-copy">
-      <h1>Свет - которым управляешь ты!</h1>
-      <p class="lead">FieryLedLamp - проект адресной LED-лампы с эффектами, часами, погодой, будильником-рассветом, звуком, пультом и Web-управлением с помощью программы Fiery Lamp Control.</p>
-      <div class="hero-actions">
-        <a class="btn primary" href="https://firmware.fieryledlamp.ru">Web Flasher</a>
+  <section class="home-hero-new">
+    <div class="shell home-hero-grid">
+      <div class="home-hero-copy">
+        <span class="kicker">FIERY LED LAMP · ESP32-S3</span>
+        <h1>Свет, время и автоматизация <span>в одной лампе</span></h1>
+        <p class="lead">FieryLedLamp — открытый проект адресной LED-лампы на ESP32-S3. Она объединяет яркие эффекты, часы и погоду, будильник-рассвет, звук, ИК-пульт, MQTT и удобное управление с телефона или компьютера.</p>
+        <div class="hero-actions">
+          <a class="btn primary" href="https://firmware.fieryledlamp.ru">Прошить лампу</a>
+          <a class="btn ghost" href="/setup.html">Начать сборку</a>
+        </div>
+        <div class="home-hero-points">
+          <span>Web Serial</span>
+          <span>ESP32-S3</span>
+          <span>Локальное управление</span>
+          <span>Обновления прошивки</span>
+        </div>
       </div>
-      <div class="hero-note">Прошивка через Web Serial · HTTPS · без установки программы</div>
+
+      <aside class="home-overview-card">
+        <div class="overview-head">
+          <div>
+            <small>FIERYLEDLAMP</small>
+            <strong>Всё необходимое уже внутри</strong>
+          </div>
+          <span class="overview-live">● READY</span>
+        </div>
+        <div class="overview-grid">
+          <div><span>✦</span><b>LED-эффекты</b><small>Яркость, скорость, масштаб и сохранение настроек.</small></div>
+          <div><span>◷</span><b>Часы и погода</b><small>Время, прогноз и бегущая строка на матрице.</small></div>
+          <div><span>◉</span><b>Автоматизация</b><small>Рассвет, закат, таймеры и сценарии по времени.</small></div>
+          <div><span>⌁</span><b>Управление</b><small>Fiery Lamp Control, Web, MQTT и ИК-пульт.</small></div>
+        </div>
+        <div class="overview-foot">
+          <span>Прошивка через браузер</span>
+          <b>без установки программы</b>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <section class="section shell home-intro">
+    <div class="section-head">
+      <span class="eyebrow">ВОЗМОЖНОСТИ</span>
+      <h2>Не просто светильник</h2>
+      <p>FieryLedLamp можно собрать в своей конфигурации и постепенно расширять. Основные функции собраны в одной прошивке и доступны через единый интерфейс управления.</p>
+    </div>
+    <div class="feature-grid home-feature-grid">
+      <article class="feature-card"><div class="feature-icon">✦</div><h3>Эффекты и цвет</h3><p>Большой набор анимаций для адресной матрицы. Для каждого эффекта можно настраивать яркость, скорость и масштаб.</p></article>
+      <article class="feature-card"><div class="feature-icon">🕒</div><h3>Часы и погода</h3><p>Показывайте текущее время, дату и погодную информацию на матрице или подключённом дисплее.</p></article>
+      <article class="feature-card"><div class="feature-icon">🌅</div><h3>Рассвет и закат</h3><p>Используйте лампу как световой будильник: плавно увеличивайте яркость утром и создавайте сценарии на вечер.</p></article>
+      <article class="feature-card"><div class="feature-icon">📱</div><h3>Fiery Lamp Control</h3><p>Управляйте лампой с телефона или компьютера, меняйте эффекты и параметры и быстро переходите к нужным настройкам.</p></article>
+      <article class="feature-card"><div class="feature-icon">🔊</div><h3>Звук и ИК-пульт</h3><p>Поддерживаются DFPlayer Mini, голосовое озвучивание функций и управление привычным инфракрасным пультом.</p></article>
+      <article class="feature-card"><div class="feature-icon">⌁</div><h3>MQTT и интеграция</h3><p>Подключайте лампу к MQTT-брокеру и используйте команды для внешней автоматизации и умного дома.</p></article>
     </div>
   </section>
 
   <section class="section shell">
-    <div class="section-head">
-      <span class="eyebrow">ВОЗМОЖНОСТИ</span>
-      <h2>Одна лампа - много сценариев</h2>
-      <p>Проект объединяет адресную матрицу, сетевые функции и периферию в одной прошивке.</p>
-    </div>
-    <div class="feature-grid">
-      <article class="feature-card"><div class="feature-icon">✦</div><h3>LED-эффекты</h3><p>Яркость, скорость и масштаб эффектов с сохранением пользовательских параметров.</p></article>
-      <article class="feature-card"><div class="feature-icon">🕒</div><h3>Часы и погода</h3><p>Время и погодная информация могут выводиться бегущей строкой на матрице.</p></article>
-      <article class="feature-card"><div class="feature-icon">🌅</div><h3>Рассвет и закат</h3><p>Будильник-рассвет, сценарии заката и автоматизация по времени.</p></article>
-      <article class="feature-card"><div class="feature-icon">📱</div><h3>Web-управление</h3><p>Настройки доступны из программы телефона или компьютера Fiery Lamp Control.</p></article>
-      <article class="feature-card"><div class="feature-icon">🔊</div><h3>Звук и ИК-пульт</h3><p>Поддержка DFPlayer Mini и ИК-приемника.</p></article>
-      <article class="feature-card"><div class="feature-icon">↻</div><h3>Обновление и резервирование</h3><p>Автообновление, Web-прошивка и сохранение настроек перед обновлением.</p></article>
+    <div class="home-control-panel">
+      <div class="home-control-copy">
+        <span class="eyebrow">УПРАВЛЕНИЕ</span>
+        <h2>Настройки всегда под рукой</h2>
+        <p>После подключения к домашней Wi-Fi сети лампа становится полноценным сетевым устройством. Настраивайте эффекты, дисплей, звук, расписание, оборудование и сетевые функции через понятный интерфейс.</p>
+        <div class="home-control-links">
+          <a class="text-link" href="/instruction.html">Посмотреть все функции →</a>
+          <a class="text-link" href="/fiery-lamp-control.html">Fiery Lamp Control →</a>
+          <a class="text-link" href="/mqtt-broker.html">Настройка MQTT →</a>
+        </div>
+      </div>
+      <div class="home-control-list">
+        <div><span>01</span><p><b>Эффекты и яркость</b><small>Быстрая смена режима и точная настройка параметров.</small></p></div>
+        <div><span>02</span><p><b>Дисплеи и бегущая строка</b><small>Время, погода, служебная информация и уведомления.</small></p></div>
+        <div><span>03</span><p><b>Звук и расписание</b><small>Будильники, рассветы, закаты и звуковые сценарии.</small></p></div>
+        <div><span>04</span><p><b>Сеть и обновления</b><small>Wi-Fi, MQTT, резервирование и обновление прошивки.</small></p></div>
+      </div>
     </div>
   </section>
 
-  <section class="section shell split">
+  <section class="section shell split home-start">
     <div class="copy-block">
       <span class="eyebrow">ПЕРВЫЙ ЗАПУСК</span>
-      <h2>От чистой платы до работающей лампы</h2>
+      <h2>От платы до работающей лампы</h2>
+      <p class="home-copy-muted">Для первого запуска не нужно вручную собирать бинарные файлы. Соберите устройство, подключите ESP32-S3 по USB и воспользуйтесь Web Flasher.</p>
       <ol class="steps-list">
-        <li><span>1</span><div><b>Соберите устройство</b><small>Подключите матрицу и нужные модули по схеме проекта.</small></div></li>
-        <li><span>2</span><div><b>Загрузите прошивку</b><small>Используйте Web Flasher для ESP32-S3.</small></div></li>
-        <li><span>3</span><div><b>Подключитесь к лампе</b><small>При первом запуске лампа создаёт собственную Wi-Fi точку доступа.</small></div></li>
+        <li><span>1</span><div><b>Соберите устройство</b><small>Подключите адресную матрицу и нужные модули по схеме проекта.</small></div></li>
+        <li><span>2</span><div><b>Загрузите прошивку</b><small>Откройте Web Flasher, выберите COM-порт и запустите прошивку ESP32-S3.</small></div></li>
+        <li><span>3</span><div><b>Выполните начальную настройку</b><small>Подключитесь к точке доступа лампы, задайте домашнюю Wi-Fi сеть и сохраните параметры.</small></div></li>
       </ol>
-      <a class="text-link" href="/setup.html">Подробная инструкция →</a>
+      <a class="text-link" href="/setup.html">Открыть подробную инструкцию →</a>
     </div>
-    <div class="code-card">
+    <div class="code-card home-connect-card">
       <div class="code-title"><span></span><span></span><span></span>Первое подключение</div>
       <div class="code-line"><span>Wi-Fi</span><strong>Led Lamp Web</strong></div>
       <div class="code-line"><span>Пароль</span><strong>12341234</strong></div>
       <div class="code-line"><span>Web</span><strong>192.168.4.1</strong></div>
-      <p>После входа откройте «Начальная настройка», задайте домашнюю Wi-Fi сеть и смените стандартный пароль точки доступа.</p>
+      <p>После подключения откройте страницу начальной настройки, укажите параметры домашней сети и смените стандартный пароль точки доступа.</p>
     </div>
   </section>
 
-  <section class="section shell">
-    <div class="section-head"><span class="eyebrow">МОДУЛИ</span><h2>Расширяйте конфигурацию</h2></div>
-    <div class="chips"><span>ESP32-S3</span><span>Адресная LED-матрица</span><span>DS3231</span><span>DFPlayer Mini</span><span>TM1637</span><span>TFT ST7789</span><span>ИК-приёмник</span><span>Кнопка</span></div>
+  <section class="section shell home-hardware">
+    <div class="section-head">
+      <span class="eyebrow">ОБОРУДОВАНИЕ</span>
+      <h2>Соберите конфигурацию под себя</h2>
+      <p>Основой проекта служит ESP32-S3 и адресная LED-матрица. Остальные модули можно добавлять в зависимости от нужных функций.</p>
+    </div>
+    <div class="chips">
+      <span>ESP32-S3</span><span>Адресная LED-матрица</span><span>DS3231</span><span>DFPlayer Mini</span><span>TM1637</span><span>TFT ST7789</span><span>ИК-приёмник</span><span>Кнопка</span><span>Адресная подсветка</span>
+    </div>
     <div class="center-action"><a class="btn ghost" href="/hardware.html">Схема и подключение</a></div>
   </section>
 
-  <section class="section shell cta-panel">
-    <div><span class="eyebrow">ГОТОВЫ НАЧАТЬ?</span><h2>Прошейте лампу прямо из браузера</h2><p>Подключите ESP32-S3 по USB, выберите COM-порт и загрузите подготовленный пакет прошивки.</p></div>
+  <section class="section shell cta-panel home-final-cta">
+    <div>
+      <span class="eyebrow">ГОТОВЫ НАЧАТЬ?</span>
+      <h2>Прошейте FieryLedLamp прямо из браузера</h2>
+      <p>Подключите ESP32-S3 по USB, выберите COM-порт и загрузите подготовленный пакет прошивки. Web Flasher работает через HTTPS и не требует установки отдельной программы.</p>
+    </div>
     <a class="btn primary" href="https://firmware.fieryledlamp.ru">Открыть Web Flasher</a>
   </section>
 </main>
 
 <footer class="footer">
   <div class="shell footer-grid">
-    <div><a class="brand" href="/"><span class="brand-mark">🔥</span><span>FieryLedLamp</span></a><p>Проект LED-лампы на ESP32-S3.</p></div>
+    <div><a class="brand" href="/"><span class="brand-mark">🔥</span><span>FieryLedLamp</span></a><p>Проект адресной LED-лампы на ESP32-S3.</p></div>
     <div><b>Проект</b><a href="/setup.html">Начало работы</a><a href="/instruction.html">Инструкция</a><a href="/hardware.html">Подключение</a><a href="/mqtt-broker.html">MQTT</a><a href="/fiery-lamp-control.html">Fiery Lamp Control</a><a href="/account.html">Аккаунт</a><a href="/versions.html">История версий</a></div>
     <div><b>Ссылки</b><a href="https://community.alexgyver.ru/threads/wifi-lampa-budilnik-obsuzhdenie-proshivki-fieryledlamp.7530/" target="_blank" rel="noopener">Обсуждение</a><a href="https://firmware.fieryledlamp.ru">Web Flasher</a><a href="mailto:mishanyats@fieryledlamp.ru">Поддержка</a><a href="https://pay.cloudtips.ru/p/bdf0decb" target="_blank" rel="noopener">Помощь проекту</a></div>
   </div>
   <div class="shell footer-bottom">FieryLedLamp · 2026</div>
 </footer>
 <script src="/site.js"></script>
-</body></html>
+</body>
+</html>
