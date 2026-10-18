@@ -7,20 +7,22 @@
   <meta name="description" content="Web Flasher FieryLedLamp - nпрошивка ESP32-S3 прямо из браузера." />
   <title>Прошивка FieryLedLamp</title>
   <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="./style.css?v=20261017-fiery-icons" />
+  <link rel="stylesheet" href="./style.css?v=20261018-header-main" />
 </head>
 <body>
   <header class="site-header">
     <div class="shell nav-wrap">
-      <a class="brand" href="https://fieryledlamp.ru/" aria-label="FieryLedLamp - главный сайт">
-        <span class="brand-mark" aria-hidden="true">🔥</span>
-        <span>FieryLedLamp</span>
-      </a>
-      <nav class="nav" aria-label="Основная навигация">
+      <a class="brand" href="https://fieryledlamp.ru/"><span class="brand-mark">🔥</span><span>FieryLedLamp</span></a>
+      <button class="menu-btn" type="button" aria-expanded="false" aria-controls="site-nav">Меню</button>
+      <nav class="nav" id="site-nav">
         <a href="https://fieryledlamp.ru/">Главная</a>
+        <a href="https://fieryledlamp.ru/setup.html">Начало работы</a>
         <a href="https://fieryledlamp.ru/instruction.html">Инструкция</a>
         <a href="https://fieryledlamp.ru/hardware.html">Подключение</a>
-        
+        <a href="https://fieryledlamp.ru/mqtt-broker.html">MQTT</a>
+        <a href="https://fieryledlamp.ru/fiery-lamp-control.html">Fiery Lamp Control</a>
+        <a href="https://fieryledlamp.ru/account.html">Аккаунт</a>
+        <a href="https://fieryledlamp.ru/versions.html">История версий</a>
         <a class="nav-cta active" href="https://firmware.fieryledlamp.ru/">Web Flasher</a>
       </nav>
     </div>
@@ -218,6 +220,17 @@
     <span aria-hidden="true">↑</span>
   </button>
 
+  <script>
+  (() => {
+    const menu = document.querySelector(".menu-btn");
+    const nav = document.querySelector("#site-nav");
+    if (!menu || !nav) return;
+    menu.addEventListener("click", () => {
+      const open = nav.classList.toggle("open");
+      menu.setAttribute("aria-expanded", String(open));
+    });
+  })();
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <script type="module" src="./app.js?v=20261010-previewflash1"></script>
 </body>
