@@ -11,7 +11,7 @@ export const SITE_CONFIG = {
   board: {
     id: "n16r8",
     label: "ESP32-S3 N16R8",
-    manifestUrl: "./ESP32-S3%20N16R8/manifest.json",
-    firmwareZipUrl: "./ESP32-S3%20N16R8/update.zip"
+    manifestUrl: "./update/manifest.json",
+    firmwareZipUrl: "./update/update.zip"
   }
 };
