@@ -99,9 +99,11 @@
       <section id="lumos">
         <h2>Подсветка</h2>
         <div class="mqtt-command-table">
-          <div class="mqtt-command-row"><code>LUMOS_ON</code><span>Включить Подсветку.</span></div>
-          <div class="mqtt-command-row"><code>LUMOS_OFF</code><span>Выключить Подсветку.</span></div>
+          <div class="mqtt-command-row"><code>LUMOS_ON</code><span>Включить Подсветку. Состояние сохраняется в настройках лампы.</span></div>
+          <div class="mqtt-command-row"><code>LUMOS_OFF</code><span>Выключить Подсветку. Состояние сохраняется в настройках лампы.</span></div>
+          <div class="mqtt-command-row"><code>LUMOS_BRI&lt;1–100&gt;</code><span>Установить яркость Подсветки в процентах. Примеры: <code>LUMOS_BRI25</code>, <code>LUMOS_BRI50</code>, <code>LUMOS_BRI100</code>.</span></div>
         </div>
+        <div class="notice"><b>Состояние Подсветки</b><p>В JSON-состоянии лампы, публикуемом в топик <code>Lamp/LedLamp_&lt;ID&gt;/snd</code>, используются поля <code>lumos</code> со значением <code>ON</code>/<code>OFF</code> и <code>lumos_brightness</code> со значением яркости от <code>1</code> до <code>100</code>.</p></div>
       </section>
 
       <section id="random">
@@ -164,7 +166,7 @@
       </section>
 
       <section>
-        <div class="notice"><b>Для WQTT</b><p>Если создаёте ползунок в WQTT, используйте команды <code>BRI{value}</code>, <code>SPD{value}</code>, <code>SCA{value}</code> и <code>EFF{value}</code>.</p></div>
+        <div class="notice"><b>Для WQTT</b><p>Если создаёте ползунок в WQTT, используйте команды <code>BRI{value}</code>, <code>SPD{value}</code>, <code>SCA{value}</code>, <code>EFF{value}</code> и <code>LUMOS_BRI{value}</code> для яркости Подсветки.</p></div>
       </section>
     </article>
   </div>
