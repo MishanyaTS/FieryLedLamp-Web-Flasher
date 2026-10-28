@@ -4,15 +4,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#0b0d12">
-  <meta name="description" content="MQTT для FieryLedLamp: подключение к WQTT, команды управления и интеграция с Умным домом.">
-  <title>MQTT — FieryLedLamp</title>
+  <meta name="description" content="MQTT для Fiery Led Lamp: подключение к WQTT, команды управления и интеграция с Умным домом.">
+  <title>MQTT - Fiery Led Lamp</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/styles.css?v=20261014-mqtt-primary-fix">
 </head>
 <body>
 <header class="site-header">
   <div class="shell nav-wrap">
-    <a class="brand" href="/"><span class="brand-mark">🔥</span><span>FieryLedLamp</span></a>
+    <a class="brand" href="/"><span class="brand-mark">🔥</span><span>Fiery Led Lamp</span></a>
     <button class="menu-btn" type="button" aria-expanded="false" aria-controls="site-nav">Меню</button>
     <nav class="nav" id="site-nav">
       <a href="/">Главная</a>
@@ -24,15 +24,15 @@
       <a href="/fiery-lamp-control.html">Fiery Lamp Control</a>
       <a href="/account.html">Аккаунт</a>
       <a href="/versions.html">История версий</a>
-      <a class="nav-cta" href="https://firmware.fieryledlamp.ru">Web Flasher</a>
+      <a class="nav-cta" href="https://firmware.Fiery Led Lamp.ru">Web Flasher</a>
     </nav>
   </div>
 </header>
 <main class="mqtt-overview">
   <section class="page-hero shell">
-    <span class="eyebrow">FIERYLEDLAMP · MQTT</span>
+    <span class="eyebrow">Fiery Led Lamp · MQTT</span>
     <h1>MQTT</h1>
-    <p>MQTT позволяет управлять FieryLedLamp через интернет, отправлять команды из WQTT и подключать лампу к Умному дому.</p>
+    <p>MQTT позволяет управлять Fiery Led Lamp через интернет, отправлять команды из WQTT и подключать лампу к Умному дому.</p>
     <div class="hero-actions">
       <a class="btn primary" href="/mqtt-wqtt.html">Подключить WQTT</a>
       <a class="btn ghost" href="/mqtt-commands.html">Все MQTT-команды</a>
@@ -48,7 +48,7 @@
     </div>
     <div class="manual-grid">
       <div class="manual-item"><h3>1. Лампа подключается к брокеру</h3><p>В настройках MQTT указываются адрес брокера, порт, логин, пароль и базовый топик. После подключения брокер становится промежуточным сервером между лампой и приложениями или Умным домом.</p></div>
-      <div class="manual-item"><h3>2. Команды приходят в один топик</h3><p>FieryLedLamp слушает общий топик команд <code>Lamp/LedLamp_&lt;ID&gt;/cmnd</code>. Внутри него передаётся сама команда: например <code>P_ON</code>, <code>BRI50</code> или <code>EFF10</code>.</p></div>
+      <div class="manual-item"><h3>2. Команды приходят в один топик</h3><p>Fiery Led Lamp слушает общий топик команд <code>Lamp/LedLamp_&lt;ID&gt;/cmnd</code>. Внутри него передаётся сама команда: например <code>P_ON</code>, <code>BRI50</code> или <code>EFF10</code>.</p></div>
       <div class="manual-item"><h3>3. Лампа публикует состояние</h3><p>Текущее состояние отправляется в <code>Lamp/LedLamp_&lt;ID&gt;/snd</code> в формате JSON. Из него можно получить питание, эффект, яркость, скорость, масштаб, звук, Подсветку и другие доступные параметры.</p></div>
       <div class="manual-item"><h3>4. Управлять можно из разных систем</h3><p>Один и тот же MQTT можно использовать для WQTT, панелей управления, сценариев автоматизации и интеграции с Умным домом. Все они отправляют команды в лампу через брокер.</p></div>
     </div>
@@ -78,10 +78,10 @@
       </div>
     </div>
     <div class="code-card">
-      <div class="code-title"><span></span><span></span><span></span>Топики FieryLedLamp</div>
+      <div class="code-title"><span></span><span></span><span></span>Топики Fiery Led Lamp</div>
       <div class="code-line"><code>Lamp/LedLamp_&lt;ID&gt;/cmnd</code><span>приём команд лампой</span></div>
       <div class="code-line"><code>Lamp/LedLamp_&lt;ID&gt;/snd</code><span>публикация текущего состояния</span></div>
-      <p><code>&lt;ID&gt;</code> — уникальный идентификатор конкретной лампы. Если базовый топик в настройках изменён с <code>Lamp</code> на другой, первая часть адреса тоже изменится.</p>
+      <p><code>&lt;ID&gt;</code> - уникальный идентификатор конкретной лампы. Если базовый топик в настройках изменён с <code>Lamp</code> на другой, первая часть адреса тоже изменится.</p>
     </div>
     <div class="notice">
       <b>Важно</b>
@@ -138,7 +138,7 @@
       </div>
     </div>
     <div class="manual-grid">
-      <div class="manual-item"><h3>Проверьте адрес и порт</h3><p>Ошибка в адресе брокера или использование WebSocket/TLS-порта вместо обычного MQTT-порта — одна из самых частых причин отсутствия соединения.</p></div>
+      <div class="manual-item"><h3>Проверьте адрес и порт</h3><p>Ошибка в адресе брокера или использование WebSocket/TLS-порта вместо обычного MQTT-порта - одна из самых частых причин отсутствия соединения.</p></div>
       <div class="manual-item"><h3>Проверьте логин и пароль</h3><p>Убедитесь, что учётные данные совпадают с настройками брокера и у пользователя есть разрешение на публикацию и подписку на нужные топики.</p></div>
       <div class="manual-item"><h3>Проверьте базовый топик</h3><p>Если вместо <code>Lamp</code> указан другой базовый топик, используйте его во всех командах и настройках внешних устройств.</p></div>
       <div class="manual-item"><h3>Посмотрите статус лампы</h3><p>Откройте «Статусы устройств» и убедитесь, что MQTT показывает «ПОДКЛЮЧЕНО». При временном обрыве лампа автоматически пытается восстановить соединение.</p></div>
@@ -173,11 +173,11 @@
 </main>
 <footer class="footer">
   <div class="shell footer-grid">
-    <div><a class="brand" href="/"><span class="brand-mark">🔥</span><span>FieryLedLamp</span></a><p>Проект LED-лампы на ESP32-S3.</p></div>
+    <div><a class="brand" href="/"><span class="brand-mark">🔥</span><span>Fiery Led Lamp</span></a><p>Проект LED-лампы на ESP32-S3.</p></div>
     <div><b>Проект</b><a href="/setup.html">Начало работы</a><a href="/instruction.html">Инструкция</a><a href="/hardware.html">Подключение</a><a href="/mqtt-broker.html">MQTT</a><a href="/fiery-lamp-control.html">Fiery Lamp Control</a><a href="/account.html">Аккаунт</a><a href="/versions.html">История версий</a></div>
-    <div><b>Ссылки</b><a href="https://community.alexgyver.ru/threads/wifi-lampa-budilnik-obsuzhdenie-proshivki-fieryledlamp.7530/" target="_blank" rel="noopener">Обсуждение</a><a href="https://firmware.fieryledlamp.ru">Web Flasher</a><a href="mailto:mishanyats@fieryledlamp.ru">Поддержка</a><a href="https://pay.cloudtips.ru/p/bdf0decb" target="_blank" rel="noopener">Помощь проекту</a></div>
+    <div><b>Ссылки</b><a href="https://community.alexgyver.ru/threads/wifi-lampa-budilnik-obsuzhdenie-proshivki-Fiery Led Lamp.7530/" target="_blank" rel="noopener">Обсуждение</a><a href="https://firmware.Fiery Led Lamp.ru">Web Flasher</a><a href="mailto:mishanyats@Fiery Led Lamp.ru">Поддержка</a><a href="https://pay.cloudtips.ru/p/bdf0decb" target="_blank" rel="noopener">Помощь проекту</a></div>
   </div>
-  <div class="shell footer-bottom">FieryLedLamp · 2026</div>
+  <div class="shell footer-bottom">Fiery Led Lamp · 2026</div>
 </footer>
 <script src="/site.js"></script>
 </body>
