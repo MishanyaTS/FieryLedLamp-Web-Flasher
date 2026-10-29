@@ -880,3 +880,22 @@ background:linear-gradient(180deg,#131821,#0e1219);border-color:#283141;box-shad
   }
 }
 
+/* Site-wide title clipping fix - 2026-10-29 */
+.hero,
+.page-hero,
+.home-hero-grid,
+.home-hero-copy,
+.version-hero-grid,
+.version-hero-copy{
+  overflow:visible;
+}
+.hero h1,
+.page-hero h1,
+.home-hero-copy h1,
+.version-hero-copy h1{
+  line-height:1.08;
+  padding-top:.04em;
+  padding-bottom:.14em;
+  overflow:visible;
+}
+
