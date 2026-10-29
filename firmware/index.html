@@ -4,36 +4,36 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="theme-color" content="#090b10" />
-  <meta name="description" content="Web Flasher FieryLedLamp - nпрошивка ESP32-S3 прямо из браузера." />
-  <title>Прошивка FieryLedLamp</title>
+  <meta name="description" content="Web Flasher Fiery Led Lamp - прошивка ESP32-S3 прямо из браузера." />
+  <title>Прошивка Fiery Led Lamp</title>
   <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="./style.css?v=20261018-wide" />
+  <link rel="stylesheet" href="./style.css?v=20261029-unified" />
 </head>
 <body>
   <header class="site-header">
-    <div class="shell nav-wrap">
-      <a class="brand" href="https://fieryledlamp.ru/"><span class="brand-mark">🔥</span><span>FieryLedLamp</span></a>
-      <button class="menu-btn" type="button" aria-expanded="false" aria-controls="site-nav">Меню</button>
-      <nav class="nav" id="site-nav">
-        <a href="https://fieryledlamp.ru/">Главная</a>
-        <a href="https://fieryledlamp.ru/setup.html">Начало работы</a>
-        <a href="https://fieryledlamp.ru/instruction.html">Инструкция</a>
-        <a href="https://fieryledlamp.ru/hardware.html">Подключение</a>
-        <a href="https://fieryledlamp.ru/mqtt-broker.html">MQTT</a>
-        <a href="https://fieryledlamp.ru/fiery-lamp-control.html">Fiery Lamp Control</a>
-        <a href="https://fieryledlamp.ru/account.html">Аккаунт</a>
-        <a href="https://fieryledlamp.ru/versions.html">История версий</a>
-        <a class="nav-cta active" href="https://firmware.fieryledlamp.ru/">Web Flasher</a>
-      </nav>
-    </div>
-  </header>
+  <div class="shell nav-wrap">
+    <a class="brand" href="https://fieryledlamp.ru/"><span class="brand-mark">🔥</span><span>Fiery Led Lamp</span></a>
+    <button class="menu-btn" type="button" aria-expanded="false" aria-controls="site-nav">Меню</button>
+    <nav class="nav" id="site-nav">
+      <a href="https://fieryledlamp.ru/">Главная</a>
+      <a href="https://fieryledlamp.ru/setup.html">Начало работы</a>
+      <a href="https://fieryledlamp.ru/instruction.html">Инструкция</a>
+      <a href="https://fieryledlamp.ru/hardware.html">Подключение</a>
+      <a href="https://fieryledlamp.ru/mqtt-broker.html">MQTT</a>
+      <a href="https://fieryledlamp.ru/fiery-lamp-control.html">Fiery Lamp Control</a>
+      <a href="https://fieryledlamp.ru/account.html">Аккаунт</a>
+      <a href="https://fieryledlamp.ru/versions.html">История версий</a>
+      <a class="nav-cta active" href="https://firmware.fieryledlamp.ru/">Web Flasher</a>
+    </nav>
+  </div>
+</header>
 
   <main>
     <section class="firmware-hero">
       <div class="shell firmware-hero-grid">
         <div class="firmware-hero-copy">
           <span class="eyebrow">WEB FLASHER</span>
-          <h1>Прошейте <span>FieryLedLamp</span><br>прямо из браузера</h1>
+          <h1>Прошейте <span>Fiery Led Lamp</span><br>прямо из браузера</h1>
           <p>Подключите ESP32-S3 N16R8 по USB и выберите COM-порт. Подготовленные файлы прошивки будут записаны автоматически.</p>
           <div class="hero-chips" aria-label="Возможности Web Flasher">
             <span>ESP32-S3</span>
@@ -60,7 +60,7 @@
           </div>
           <div class="preview-meta">
             <div><small>Режим</small><b>QIO</b></div>
-            <div><small>Flash</small><b id="previewFlash">—</b></div>
+            <div><small>Flash</small><b id="previewFlash">-</b></div>
             <div><small>Скорость</small><b>921600</b></div>
           </div>
         </div>
@@ -162,12 +162,12 @@
             <span><b>Полностью очистить Flash перед прошивкой</b><small>Удалит Wi-Fi, настройки и остальные сохранённые данные.</small></span>
           </label>
           <div class="info-grid">
-            <div><span>Чип</span><b id="cfgChip">—</b></div>
-            <div><span>Flash</span><b id="cfgFlash">—</b></div>
-            <div><span>PSRAM</span><b id="cfgPsram">—</b></div>
-            <div><span>Режим</span><b id="cfgMode">—</b></div>
-            <div><span>Частота</span><b id="cfgFreq">—</b></div>
-            <div><span>Скорость</span><b id="cfgBaud">—</b></div>
+            <div><span>Чип</span><b id="cfgChip">-</b></div>
+            <div><span>Flash</span><b id="cfgFlash">-</b></div>
+            <div><span>PSRAM</span><b id="cfgPsram">-</b></div>
+            <div><span>Режим</span><b id="cfgMode">-</b></div>
+            <div><span>Частота</span><b id="cfgFreq">-</b></div>
+            <div><span>Скорость</span><b id="cfgBaud">-</b></div>
           </div>
           <div class="file-list" id="fileList"></div>
         </div>
@@ -193,7 +193,7 @@
   <footer class="footer">
     <div class="shell footer-grid">
       <div>
-        <a class="brand" href="https://fieryledlamp.ru/"><span class="brand-mark">🔥</span><span>FieryLedLamp</span></a>
+        <a class="brand" href="https://fieryledlamp.ru/"><span class="brand-mark">🔥</span><span>Fiery Led Lamp</span></a>
         <p>Проект LED-лампы на ESP32-S3.</p>
       </div>
       <div>
@@ -214,7 +214,7 @@
         <a href="https://pay.cloudtips.ru/p/bdf0decb" target="_blank" rel="noopener">Помощь проекту</a>
       </div>
     </div>
-    <div class="shell footer-bottom">FieryLedLamp · 2026</div>
+    <div class="shell footer-bottom">Fiery Led Lamp · 2026</div>
   </footer>
 
   <button id="scrollToTopButton" class="scroll-to-top-button" type="button" aria-label="Наверх" title="Наверх">
