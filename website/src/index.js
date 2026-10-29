@@ -58,7 +58,7 @@ function basicAuthOk(request, env) {
 function adminUnauthorized() {
   return new Response("Authorization required", {
     status: 401,
-    headers: { "WWW-Authenticate": 'Basic realm="FieryLedLamp notifications"' }
+    headers: { "WWW-Authenticate": 'Basic realm="Fiery Led Lamp notifications"' }
   });
 }
 
@@ -193,22 +193,22 @@ async function unsubscribe(request, env) {
 async function sendEmail(env, subscriber, message) {
   if (!env.RESEND_API_KEY) throw new Error("RESEND_API_KEY is not configured");
 
-  const from = env.RESEND_FROM || "FieryLedLamp <updates@fieryledlamp.ru>";
+  const from = env.RESEND_FROM || "Fiery Led Lamp <updates@fieryledlamp.ru>";
   const unsubscribeUrl =
     "https://fieryledlamp.ru/unsubscribe.html?token=" +
     encodeURIComponent(subscriber.unsubscribe_token);
 
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:640px;margin:auto;color:#16181d">
-      <h1 style="font-size:26px">FieryLedLamp ${escapeHtml(message.version)}</h1>
-      <p style="font-size:17px">${escapeHtml(message.summary || "Доступно новое обновление прошивки FieryLedLamp.")}</p>
+      <h1 style="font-size:26px">Fiery Led Lamp ${escapeHtml(message.version)}</h1>
+      <p style="font-size:17px">${escapeHtml(message.summary || "Доступно новое обновление прошивки Fiery Led Lamp.")}</p>
       <p>
         <a href="${escapeHtml(message.url)}"
            style="display:inline-block;background:#ff6b2c;color:#fff;text-decoration:none;padding:12px 18px;border-radius:9px;font-weight:bold">
           Открыть обновление
         </a>
       </p>
-      <p style="color:#6d7480;font-size:13px">Вы получили это письмо, потому что включили уведомления об обновлениях FieryLedLamp.</p>
+      <p style="color:#6d7480;font-size:13px">Вы получили это письмо, потому что включили уведомления об обновлениях Fiery Led Lamp.</p>
       <p style="font-size:12px"><a href="${escapeHtml(unsubscribeUrl)}" style="color:#6d7480">Отписаться от уведомлений</a></p>
     </div>
   `;
@@ -223,7 +223,7 @@ async function sendEmail(env, subscriber, message) {
     body: JSON.stringify({
       from,
       to: [subscriber.email],
-      subject: message.title || ("FieryLedLamp " + message.version + " — доступно обновление"),
+      subject: message.title || ("Fiery Led Lamp " + message.version + " - доступно обновление"),
       html
     })
   });
@@ -245,7 +245,7 @@ async function sendSms(env, subscriber, message) {
   const params = new URLSearchParams({
     api_id: env.SMSRU_API_ID,
     to: phone,
-    msg: "FieryLedLamp " + message.version + " доступна. Обновить: " + message.url,
+    msg: "Fiery Led Lamp " + message.version + " доступна. Обновить: " + message.url,
     json: "1",
     daytime: "1"
   });
@@ -447,7 +447,7 @@ async function providerStatus(request, env) {
     email: {
       provider: "Resend",
       configured: Boolean(env.RESEND_API_KEY),
-      from: env.RESEND_FROM || "FieryLedLamp <updates@fieryledlamp.ru>"
+      from: env.RESEND_FROM || "Fiery Led Lamp <updates@fieryledlamp.ru>"
     },
     sms: {
       provider: "SMS.RU",

@@ -9,7 +9,7 @@ return [
     'app_key' => 'CHANGE_TO_LONG_RANDOM_SECRET',
     'mail_provider' => 'resend',
     'resend_api_key' => 're_CHANGE_ME',
-    'mail_from' => 'FieryLedLamp <updates@fieryledlamp.ru>',
-    'mail_from_name' => 'FieryLedLamp',
+    'mail_from' => 'Fiery Led Lamp <updates@fieryledlamp.ru>',
+    'mail_from_name' => 'Fiery Led Lamp',
     'mail_from_email' => 'updates@fieryledlamp.ru',
 ];
