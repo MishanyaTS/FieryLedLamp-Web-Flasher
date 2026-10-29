@@ -74,7 +74,7 @@ function setStep(index) {
 function showResult(type, text) { ui.resultBox.className = `result ${type}`; ui.resultBox.textContent = text; }
 function clearResult() { ui.resultBox.className = "result hidden"; ui.resultBox.textContent = ""; }
 function fmtBytes(bytes) {
-  if (!Number.isFinite(bytes)) return "—";
+  if (!Number.isFinite(bytes)) return "-";
   if (bytes < 1024) return `${bytes} Б`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} КБ`;
   return `${(bytes / (1024 * 1024)).toFixed(2)} МБ`;
@@ -135,10 +135,10 @@ async function loadManifest(board = selectedBoard) {
 
     ui.firmwareName.textContent = manifest.name || SITE_CONFIG.projectName;
     ui.eraseAll.checked = Boolean(manifest.eraseAll);
-    ui.cfgChip.textContent = manifest.chip || "—";
-    ui.cfgFlash.textContent = `${manifest.physicalFlashSize || "—"} • KEEP`;
-    if (ui.previewFlash) ui.previewFlash.textContent = manifest.physicalFlashSize || "—";
-    ui.cfgPsram.textContent = manifest.psramSize || "—";
+    ui.cfgChip.textContent = manifest.chip || "-";
+    ui.cfgFlash.textContent = `${manifest.physicalFlashSize || "-"} • KEEP`;
+    if (ui.previewFlash) ui.previewFlash.textContent = manifest.physicalFlashSize || "-";
+    ui.cfgPsram.textContent = manifest.psramSize || "-";
     ui.cfgMode.textContent = `${(manifest.toolSpiMode || "QIO").toUpperCase()} • DoNotChgBin`;
     ui.cfgFreq.textContent = `${manifest.toolSpiSpeed || "80MHz"} • KEEP`;
     ui.cfgBaud.textContent = String(manifest.baudRate || SITE_CONFIG.baudRate || 921600);

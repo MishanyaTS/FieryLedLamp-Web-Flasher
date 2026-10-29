@@ -66,6 +66,8 @@
 
   if (!history) return;
 
+  const displayText = value => String(value).replace(/FieryLedLamp/g, "Fiery Led Lamp").replace(/[—–]/g, "-");
+
   const escapeHtml = value => String(value)
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
@@ -109,7 +111,7 @@
   function renderLatest(data) {
     const latest = data.versions[0];
     if (currentVersion) {
-      currentVersion.textContent = data.current || latest?.title || "не определена";
+      currentVersion.textContent = displayText(data.current || latest?.title || "не определена");
     }
     if (!latestNotes || !latest) return;
 
@@ -118,8 +120,8 @@
       .slice(0, 3)
       .map(line => line.replace(/^[-–—]\s*/, ""));
 
-    latestNotes.innerHTML = (items.length ? items : ["Актуальная версия прошивки FieryLedLamp."])
-      .map(item => `<div><span>✓</span><p>${escapeHtml(item)}</p></div>`)
+    latestNotes.innerHTML = (items.length ? items : ["Актуальная версия прошивки Fiery Led Lamp."])
+      .map(item => `<div><span>✓</span><p>${escapeHtml(displayText(item))}</p></div>`)
       .join("");
   }
 
@@ -137,7 +139,7 @@
         const bullet = /^[-–—]\s*/.test(line);
         const text = bullet ? line.replace(/^[-–—]\s*/, "") : line;
         return bullet
-          ? `<li>${escapeHtml(text)}</li>`
+          ? `<li>${escapeHtml(displayText(text))}</li>`
           : `<li class="version-note-line">${escapeHtml(text)}</li>`;
       }).join("");
 
@@ -153,7 +155,7 @@
             <div class="version-release-main">
               <div class="version-number">${escapeHtml(number)}</div>
               <div class="version-release-title">
-                <h3>${index === 0 ? "Текущая версия" : "FieryLedLamp"}</h3>
+                <h3>${index === 0 ? "Текущая версия" : "Fiery Led Lamp"}</h3>
                 ${subtitle ? `<span>${escapeHtml(subtitle)}</span>` : ""}
               </div>
             </div>
@@ -215,7 +217,7 @@
     .catch(error => {
       history.innerHTML = `<div class="version-state error"><b>Не удалось загрузить историю версий</b><span>${escapeHtml(error.message)}</span></div>`;
       if (currentVersion) currentVersion.textContent = "недоступна";
-      if (visibleCount) visibleCount.textContent = "—";
+      if (visibleCount) visibleCount.textContent = "-";
       if (latestNotes) latestNotes.innerHTML = '<div><span>!</span><p>Источник временно недоступен.</p></div>';
       if (noResults) noResults.hidden = true;
     });
@@ -441,7 +443,7 @@
         csrf = data.csrf;
         document.querySelector("#accountName").textContent = data.user.name;
         document.querySelector("#accountEmail").textContent = data.user.email;
-        document.querySelector("#accountCreated").textContent = data.user.createdAt || "—";
+        document.querySelector("#accountCreated").textContent = data.user.createdAt || "-";
         document.querySelector("#notifyUpdates").checked = Boolean(data.user.notifyUpdates);
         const badge = document.querySelector("#verifyBadge");
         badge.textContent = data.user.verified ? "E-mail подтверждён" : "E-mail не подтверждён";
@@ -760,7 +762,7 @@
     .replaceAll("'", "&#039;");
 
   const formatDate = value => {
-    if (!value) return "—";
+    if (!value) return "-";
     const parsed = new Date(String(value).replace(" ", "T"));
     if (Number.isNaN(parsed.getTime())) return String(value);
     return parsed.toLocaleString("ru-RU", {

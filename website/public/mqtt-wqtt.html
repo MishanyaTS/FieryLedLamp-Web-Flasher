@@ -7,7 +7,7 @@
   <meta name="description" content="Подключение Fiery Led Lamp к WQTT: параметры брокера, настройка лампы, топик управления и проверка команд.">
   <title>Подключение WQTT - Fiery Led Lamp</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/styles.css?v=20261029-unified">
 </head>
 <body>
 <header class="site-header">
@@ -20,11 +20,10 @@
       <a href="/instruction.html">Инструкция</a>
       <a href="/hardware.html">Подключение</a>
       <a class="active" href="/mqtt-broker.html">MQTT</a>
-      
       <a href="/fiery-lamp-control.html">Fiery Lamp Control</a>
       <a href="/account.html">Аккаунт</a>
       <a href="/versions.html">История версий</a>
-      <a href="https://firmware.fieryledlamp.ru">Web Flasher</a>
+      <a class="nav-cta" href="https://firmware.fieryledlamp.ru/">Web Flasher</a>
     </nav>
   </div>
 </header>
@@ -119,10 +118,10 @@
           <div class="mqtt-command-row"><code>Цикл</code><span><b>Топик:</b> <code>.../cmnd</code><br><b>ВКЛ:</b> <code>FAV_ON</code> · <b>ВЫКЛ:</b> <code>FAV_OFF</code></span></div>
           <div class="mqtt-command-row"><code>Звук</code><span><b>Топик:</b> <code>.../cmnd</code><br><b>ВКЛ:</b> <code>SO_ON</code> · <b>ВЫКЛ:</b> <code>SO_OFF</code></span></div>
           <div class="mqtt-command-row"><code>Подсветка</code><span><b>Топик:</b> <code>.../cmnd</code><br><b>ВКЛ:</b> <code>LUMOS_ON</code> · <b>ВЫКЛ:</b> <code>LUMOS_OFF</code></span></div>
-          <div class="mqtt-command-row"><code>Яркость</code><span><b>Топик:</b> <code>.../cmnd</code><br><b>Команда:</b> <code>BRI{value}</code> · диапазон <code>1–100</code></span></div>
-          <div class="mqtt-command-row"><code>Скорость</code><span><b>Топик:</b> <code>.../cmnd</code><br><b>Команда:</b> <code>SPD{value}</code> · диапазон <code>1–255</code></span></div>
-          <div class="mqtt-command-row"><code>Масштаб</code><span><b>Топик:</b> <code>.../cmnd</code><br><b>Команда:</b> <code>SCA{value}</code> · диапазон <code>1–100</code></span></div>
-          <div class="mqtt-command-row"><code>Эффект</code><span><b>Топик:</b> <code>.../cmnd</code><br><b>Команда:</b> <code>EFF{value}</code> · диапазон <code>0–133</code></span></div>
+          <div class="mqtt-command-row"><code>Яркость</code><span><b>Топик:</b> <code>.../cmnd</code><br><b>Команда:</b> <code>BRI{value}</code> · диапазон <code>1-100</code></span></div>
+          <div class="mqtt-command-row"><code>Скорость</code><span><b>Топик:</b> <code>.../cmnd</code><br><b>Команда:</b> <code>SPD{value}</code> · диапазон <code>1-255</code></span></div>
+          <div class="mqtt-command-row"><code>Масштаб</code><span><b>Топик:</b> <code>.../cmnd</code><br><b>Команда:</b> <code>SCA{value}</code> · диапазон <code>1-100</code></span></div>
+          <div class="mqtt-command-row"><code>Эффект</code><span><b>Топик:</b> <code>.../cmnd</code><br><b>Команда:</b> <code>EFF{value}</code> · диапазон <code>0-133</code></span></div>
         </div>
         <div class="notice"><b>Пример ползунка</b><p>При команде <code>BRI{value}</code> значение <code>75</code> превращается в команду <code>BRI75</code>.</p></div>
       </section>
@@ -133,7 +132,7 @@
   <div class="shell footer-grid">
     <div><a class="brand" href="/"><span class="brand-mark">🔥</span><span>Fiery Led Lamp</span></a><p>Проект LED-лампы на ESP32-S3.</p></div>
     <div><b>Проект</b><a href="/setup.html">Начало работы</a><a href="/instruction.html">Инструкция</a><a href="/hardware.html">Подключение</a><a href="/mqtt-broker.html">MQTT</a><a href="/fiery-lamp-control.html">Fiery Lamp Control</a><a href="/account.html">Аккаунт</a><a href="/versions.html">История версий</a></div>
-    <div><b>Ссылки</b><a href="https://community.alexgyver.ru/threads/wifi-lampa-budilnik-obsuzhdenie-proshivki-Fiery Led Lamp.7530/" target="_blank" rel="noopener">Обсуждение</a><a href="https://firmware.Fiery Led Lamp.ru">Web Flasher</a><a href="mailto:mishanyats@Fiery Led Lamp.ru">Поддержка</a><a href="https://pay.cloudtips.ru/p/bdf0decb" target="_blank" rel="noopener">Помощь проекту</a></div>
+    <div><b>Ссылки</b><a href="https://community.alexgyver.ru/threads/wifi-lampa-budilnik-obsuzhdenie-proshivki-fieryledlamp.7530/" target="_blank" rel="noopener">Обсуждение</a><a href="https://firmware.fieryledlamp.ru">Web Flasher</a><a href="mailto:mishanyats@fieryledlamp.ru">Поддержка</a><a href="https://pay.cloudtips.ru/p/bdf0decb" target="_blank" rel="noopener">Помощь проекту</a></div>
   </div>
   <div class="shell footer-bottom">Fiery Led Lamp · 2026</div>
 </footer>

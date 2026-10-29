@@ -676,7 +676,7 @@ function send_email(array $config, string $to, string $subject, string $html): b
 
     if ($provider === 'resend') {
         $key = (string)($config['resend_api_key'] ?? '');
-        $from = (string)($config['mail_from'] ?? 'FieryLedLamp <updates@fieryledlamp.ru>');
+        $from = (string)($config['mail_from'] ?? 'Fiery Led Lamp <updates@fieryledlamp.ru>');
         if ($key === '' || !function_exists('curl_init')) {
             return false;
         }
@@ -704,7 +704,7 @@ function send_email(array $config, string $to, string $subject, string $html): b
     }
 
     $fromEmail = (string)($config['mail_from_email'] ?? 'updates@fieryledlamp.ru');
-    $fromName = (string)($config['mail_from_name'] ?? 'FieryLedLamp');
+    $fromName = (string)($config['mail_from_name'] ?? 'Fiery Led Lamp');
     $headers = implode("\r\n", [
         'MIME-Version: 1.0',
         'Content-Type: text/html; charset=UTF-8',
@@ -720,7 +720,7 @@ function email_layout(string $title, string $body, string $buttonText = '', stri
         $button = '<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:24px 0 8px"><tr><td style="border-radius:10px;background:#ff6b2c"><a href="' . htmlspecialchars($buttonUrl, ENT_QUOTES) . '" style="display:inline-block;padding:13px 20px;color:#ffffff!important;text-decoration:none;font-size:16px;line-height:20px;font-weight:700;border-radius:10px"> ' . htmlspecialchars($buttonText, ENT_QUOTES) . ' </a></td></tr></table>';
     }
 
-    return '<!doctype html><html><head><meta charset="utf-8"><meta name="color-scheme" content="dark light"><meta name="supported-color-schemes" content="dark light"></head><body style="margin:0;padding:0;background:#0b0d12;color:#eef1f5;font-family:Arial,Helvetica,sans-serif"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:#0b0d12"><tr><td align="center" style="padding:32px 16px"><table role="presentation" width="620" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:620px;background:#141923;border:1px solid #303949;border-radius:18px"><tr><td style="padding:28px;color:#eef1f5"><div style="color:#ff8d55!important;font-size:16px;line-height:22px;font-weight:700;margin-bottom:12px">FieryLedLamp</div><h1 style="margin:0 0 20px;color:#f7f8fa!important;font-family:Arial,Helvetica,sans-serif;font-size:28px;line-height:34px;font-weight:800">' . htmlspecialchars($title, ENT_QUOTES) . '</h1><div style="color:#cbd5e1!important;font-size:16px;line-height:25px">' . $body . '</div>' . $button . '<div style="margin-top:30px;padding-top:18px;border-top:1px solid #2b3442;color:#7f8b9b!important;font-size:12px;line-height:18px">fieryledlamp.ru</div></td></tr></table></td></tr></table></body></html>';
+    return '<!doctype html><html><head><meta charset="utf-8"><meta name="color-scheme" content="dark light"><meta name="supported-color-schemes" content="dark light"></head><body style="margin:0;padding:0;background:#0b0d12;color:#eef1f5;font-family:Arial,Helvetica,sans-serif"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:#0b0d12"><tr><td align="center" style="padding:32px 16px"><table role="presentation" width="620" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:620px;background:#141923;border:1px solid #303949;border-radius:18px"><tr><td style="padding:28px;color:#eef1f5"><div style="color:#ff8d55!important;font-size:16px;line-height:22px;font-weight:700;margin-bottom:12px">Fiery Led Lamp</div><h1 style="margin:0 0 20px;color:#f7f8fa!important;font-family:Arial,Helvetica,sans-serif;font-size:28px;line-height:34px;font-weight:800">' . htmlspecialchars($title, ENT_QUOTES) . '</h1><div style="color:#cbd5e1!important;font-size:16px;line-height:25px">' . $body . '</div>' . $button . '<div style="margin-top:30px;padding-top:18px;border-top:1px solid #2b3442;color:#7f8b9b!important;font-size:12px;line-height:18px">fieryledlamp.ru</div></td></tr></table></td></tr></table></body></html>';
 }
 
 function register_user(PDO $pdo, array $config): never {
@@ -770,8 +770,8 @@ function register_user(PDO $pdo, array $config): never {
 
     $token = issue_token($pdo, $id, 'verify', 86400);
     $url = app_url($config) . '/api/index.php?action=verify-email&token=' . urlencode($token);
-    $body = '<p style="color:#aeb7c4;line-height:1.6">Здравствуйте, ' . htmlspecialchars($name, ENT_QUOTES) . '! Нажмите кнопку, чтобы подтвердить e-mail для аккаунта FieryLedLamp.</p>';
-    $sent = send_email($config, $email, 'Подтверждение e-mail — FieryLedLamp', email_layout('Подтвердите e-mail', $body, 'Подтвердить e-mail', $url));
+    $body = '<p style="color:#aeb7c4;line-height:1.6">Здравствуйте, ' . htmlspecialchars($name, ENT_QUOTES) . '! Нажмите кнопку, чтобы подтвердить e-mail для аккаунта Fiery Led Lamp.</p>';
+    $sent = send_email($config, $email, 'Подтверждение e-mail - Fiery Led Lamp', email_layout('Подтвердите e-mail', $body, 'Подтвердить e-mail', $url));
 
     json_response(['ok' => true, 'emailSent' => $sent]);
 }
@@ -857,9 +857,9 @@ function resend_verification(PDO $pdo, array $config): never {
 
     $token = issue_token($pdo, (int)$u['id'], 'verify', 86400);
     $url = app_url($config) . '/api/index.php?action=verify-email&token=' . urlencode($token);
-    $body = '<p style="color:#aeb7c4;line-height:1.6">Нажмите кнопку, чтобы подтвердить e-mail для аккаунта FieryLedLamp.</p>';
+    $body = '<p style="color:#aeb7c4;line-height:1.6">Нажмите кнопку, чтобы подтвердить e-mail для аккаунта Fiery Led Lamp.</p>';
 
-    if (!send_email($config, (string)$u['email'], 'Подтверждение e-mail — FieryLedLamp', email_layout('Подтвердите e-mail', $body, 'Подтвердить e-mail', $url))) {
+    if (!send_email($config, (string)$u['email'], 'Подтверждение e-mail - Fiery Led Lamp', email_layout('Подтвердите e-mail', $body, 'Подтвердить e-mail', $url))) {
         json_response(['ok' => false, 'message' => 'Не удалось отправить письмо.'], 503);
     }
 
@@ -898,7 +898,7 @@ function request_reset(PDO $pdo, array $config): never {
         $token = issue_token($pdo, (int)$u['id'], 'reset', 3600);
         $url = app_url($config) . '/reset-password.html?token=' . urlencode($token);
         $body = '<p style="color:#aeb7c4;line-height:1.6">Получен запрос на восстановление пароля. Ссылка действует 1 час.</p>';
-        send_email($config, (string)$u['email'], 'Восстановление пароля — FieryLedLamp', email_layout('Новый пароль', $body, 'Создать новый пароль', $url));
+        send_email($config, (string)$u['email'], 'Восстановление пароля - Fiery Led Lamp', email_layout('Новый пароль', $body, 'Создать новый пароль', $url));
     }
 
     json_response(['ok' => true, 'message' => $message]);
@@ -982,7 +982,7 @@ function admin_notify(PDO $pdo, array $config): never {
         json_response(['ok' => false, 'message' => 'Укажите версию.'], 422);
     }
     if ($title === '') {
-        $title = 'FieryLedLamp — доступно обновление ' . $version;
+        $title = 'Fiery Led Lamp - доступно обновление ' . $version;
     }
     if (!filter_var($url, FILTER_VALIDATE_URL) || stripos($url, 'https://') !== 0) {
         json_response(['ok' => false, 'message' => 'Укажите корректную HTTPS-ссылку.'], 422);
@@ -1007,7 +1007,7 @@ function admin_notify(PDO $pdo, array $config): never {
         }
 
         $unsub = app_url($config) . '/api/index.php?action=unsubscribe&id=' . (int)$u['id'] . '&token=' . urlencode(unsubscribe_token($config, (int)$u['id'], (string)$u['email']));
-        $body = '<p style="color:#aeb7c4;line-height:1.6">Здравствуйте, ' . htmlspecialchars((string)$u['name'], ENT_QUOTES) . '!</p><p style="color:#aeb7c4;line-height:1.6">' . nl2br(htmlspecialchars($summary !== '' ? $summary : 'Доступна новая версия FieryLedLamp.', ENT_QUOTES)) . '</p><p style="color:#7e8998;font-size:12px">Не хотите получать письма? <a style="color:#ff9d69" href="' . htmlspecialchars($unsub, ENT_QUOTES) . '">Отключить уведомления</a>.</p>';
+        $body = '<p style="color:#aeb7c4;line-height:1.6">Здравствуйте, ' . htmlspecialchars((string)$u['name'], ENT_QUOTES) . '!</p><p style="color:#aeb7c4;line-height:1.6">' . nl2br(htmlspecialchars($summary !== '' ? $summary : 'Доступна новая версия Fiery Led Lamp.', ENT_QUOTES)) . '</p><p style="color:#7e8998;font-size:12px">Не хотите получать письма? <a style="color:#ff9d69" href="' . htmlspecialchars($unsub, ENT_QUOTES) . '">Отключить уведомления</a>.</p>';
 
         $ok = send_email($config, (string)$u['email'], $title, email_layout($version, $body, 'Открыть обновление', $url));
 

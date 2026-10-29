@@ -7,7 +7,7 @@
   <meta name="description" content="Подключение Fiery Led Lamp к Умному дому через WQTT: переключатели, ползунки, топики состояния, Алиса и Маруся.">
   <title>Умный дом - Fiery Led Lamp</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/styles.css?v=20261029-unified">
 </head>
 <body>
 <header class="site-header">
@@ -20,11 +20,10 @@
       <a href="/instruction.html">Инструкция</a>
       <a href="/hardware.html">Подключение</a>
       <a class="active" href="/mqtt-broker.html">MQTT</a>
-      
       <a href="/fiery-lamp-control.html">Fiery Lamp Control</a>
       <a href="/account.html">Аккаунт</a>
       <a href="/versions.html">История версий</a>
-      <a href="https://firmware.fieryledlamp.ru">Web Flasher</a>
+      <a class="nav-cta" href="https://firmware.fieryledlamp.ru/">Web Flasher</a>
     </nav>
   </div>
 </header>
@@ -100,10 +99,10 @@
         <h2>3. Ползунки</h2>
         <p>Для ползунков команда прописывается прямо в топике управления через <code>&amp;&amp;</code>, а значение подставляется через <code>%VALUE%</code>.</p>
         <div class="mqtt-command-table">
-          <div class="mqtt-command-row"><code>Яркость</code><span><b>Управление:</b> <code>Lamp/LedLamp_&lt;ID&gt;/cmnd&amp;&amp;BRI%VALUE%</code><br><b>Состояние:</b> <code>Lamp/LedLamp_&lt;ID&gt;/snd$.bri</code><br><b>Диапазон:</b> <code>1–100</code>, шаг <code>1</code></span></div>
-          <div class="mqtt-command-row"><code>Скорость</code><span><b>Управление:</b> <code>Lamp/LedLamp_&lt;ID&gt;/cmnd&amp;&amp;SPD%VALUE%</code><br><b>Состояние:</b> <code>Lamp/LedLamp_&lt;ID&gt;/snd$.spd</code><br><b>Диапазон:</b> <code>1–255</code>, шаг <code>1</code></span></div>
-          <div class="mqtt-command-row"><code>Масштаб</code><span><b>Управление:</b> <code>Lamp/LedLamp_&lt;ID&gt;/cmnd&amp;&amp;SCA%VALUE%</code><br><b>Состояние:</b> <code>Lamp/LedLamp_&lt;ID&gt;/snd$.sca</code><br><b>Диапазон:</b> <code>1–100</code>, шаг <code>1</code></span></div>
-          <div class="mqtt-command-row"><code>Эффект</code><span><b>Управление:</b> <code>Lamp/LedLamp_&lt;ID&gt;/cmnd&amp;&amp;EFF%VALUE%</code><br><b>Состояние:</b> <code>Lamp/LedLamp_&lt;ID&gt;/snd$.effect</code><br><b>Диапазон:</b> <code>0–133</code>, шаг <code>1</code></span></div>
+          <div class="mqtt-command-row"><code>Яркость</code><span><b>Управление:</b> <code>Lamp/LedLamp_&lt;ID&gt;/cmnd&amp;&amp;BRI%VALUE%</code><br><b>Состояние:</b> <code>Lamp/LedLamp_&lt;ID&gt;/snd$.bri</code><br><b>Диапазон:</b> <code>1-100</code>, шаг <code>1</code></span></div>
+          <div class="mqtt-command-row"><code>Скорость</code><span><b>Управление:</b> <code>Lamp/LedLamp_&lt;ID&gt;/cmnd&amp;&amp;SPD%VALUE%</code><br><b>Состояние:</b> <code>Lamp/LedLamp_&lt;ID&gt;/snd$.spd</code><br><b>Диапазон:</b> <code>1-255</code>, шаг <code>1</code></span></div>
+          <div class="mqtt-command-row"><code>Масштаб</code><span><b>Управление:</b> <code>Lamp/LedLamp_&lt;ID&gt;/cmnd&amp;&amp;SCA%VALUE%</code><br><b>Состояние:</b> <code>Lamp/LedLamp_&lt;ID&gt;/snd$.sca</code><br><b>Диапазон:</b> <code>1-100</code>, шаг <code>1</code></span></div>
+          <div class="mqtt-command-row"><code>Эффект</code><span><b>Управление:</b> <code>Lamp/LedLamp_&lt;ID&gt;/cmnd&amp;&amp;EFF%VALUE%</code><br><b>Состояние:</b> <code>Lamp/LedLamp_&lt;ID&gt;/snd$.effect</code><br><b>Диапазон:</b> <code>0-133</code>, шаг <code>1</code></span></div>
         </div>
         <div class="notice"><b>Пример</b><p>При яркости <code>75</code> WQTT подставит значение в <code>BRI%VALUE%</code> и отправит команду <code>BRI75</code>.</p></div>
       </section>
@@ -144,7 +143,7 @@
   <div class="shell footer-grid">
     <div><a class="brand" href="/"><span class="brand-mark">🔥</span><span>Fiery Led Lamp</span></a><p>Проект LED-лампы на ESP32-S3.</p></div>
     <div><b>Проект</b><a href="/setup.html">Начало работы</a><a href="/instruction.html">Инструкция</a><a href="/hardware.html">Подключение</a><a href="/mqtt-broker.html">MQTT</a><a href="/fiery-lamp-control.html">Fiery Lamp Control</a><a href="/account.html">Аккаунт</a><a href="/versions.html">История версий</a></div>
-    <div><b>Ссылки</b><a href="https://community.alexgyver.ru/threads/wifi-lampa-budilnik-obsuzhdenie-proshivki-Fiery Led Lamp.7530/" target="_blank" rel="noopener">Обсуждение</a><a href="https://firmware.Fiery Led Lamp.ru">Web Flasher</a><a href="mailto:mishanyats@Fiery Led Lamp.ru">Поддержка</a><a href="https://pay.cloudtips.ru/p/bdf0decb" target="_blank" rel="noopener">Помощь проекту</a></div>
+    <div><b>Ссылки</b><a href="https://community.alexgyver.ru/threads/wifi-lampa-budilnik-obsuzhdenie-proshivki-fieryledlamp.7530/" target="_blank" rel="noopener">Обсуждение</a><a href="https://firmware.fieryledlamp.ru">Web Flasher</a><a href="mailto:mishanyats@fieryledlamp.ru">Поддержка</a><a href="https://pay.cloudtips.ru/p/bdf0decb" target="_blank" rel="noopener">Помощь проекту</a></div>
   </div>
   <div class="shell footer-bottom">Fiery Led Lamp · 2026</div>
 </footer>
