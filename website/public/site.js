@@ -66,6 +66,8 @@
 
   if (!history) return;
 
+  const displayText = value => String(value).replace(/FieryLedLamp/g, "Fiery Led Lamp").replace(/[—–]/g, "-");
+
   const escapeHtml = value => String(value)
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
@@ -109,7 +111,7 @@
   function renderLatest(data) {
     const latest = data.versions[0];
     if (currentVersion) {
-      currentVersion.textContent = data.current || latest?.title || "не определена";
+      currentVersion.textContent = displayText(data.current || latest?.title || "не определена");
     }
     if (!latestNotes || !latest) return;
 
@@ -119,7 +121,7 @@
       .map(line => line.replace(/^[-–—]\s*/, ""));
 
     latestNotes.innerHTML = (items.length ? items : ["Актуальная версия прошивки Fiery Led Lamp."])
-      .map(item => `<div><span>✓</span><p>${escapeHtml(item)}</p></div>`)
+      .map(item => `<div><span>✓</span><p>${escapeHtml(displayText(item))}</p></div>`)
       .join("");
   }
 
@@ -137,7 +139,7 @@
         const bullet = /^[-–—]\s*/.test(line);
         const text = bullet ? line.replace(/^[-–—]\s*/, "") : line;
         return bullet
-          ? `<li>${escapeHtml(text)}</li>`
+          ? `<li>${escapeHtml(displayText(text))}</li>`
           : `<li class="version-note-line">${escapeHtml(text)}</li>`;
       }).join("");
 
