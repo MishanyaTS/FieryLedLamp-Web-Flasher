@@ -897,3 +897,14 @@ background:linear-gradient(180deg,#131821,#0e1219);border-color:#283141;box-shad
   overflow:visible;
 }
 
+/* Homepage title clipping fix - 2026-10-29 */
+.home-hero-new{
+  overflow:visible;
+}
+.home-hero-copy h1{
+  line-height:1.10;
+  padding-top:.05em;
+  padding-bottom:.20em;
+  overflow:visible;
+}
+
