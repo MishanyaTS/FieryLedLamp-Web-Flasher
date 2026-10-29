@@ -818,3 +818,23 @@ background:linear-gradient(180deg,#131821,#0e1219);border-color:#283141;box-shad
 .home-hardware .section-head{max-width:850px}.home-final-cta{padding:48px}
 @media(max-width:1050px){.home-hero-grid{grid-template-columns:1fr;min-height:auto;padding:68px 0}.home-overview-card{max-width:760px}.home-control-panel{grid-template-columns:1fr}.home-control-list{grid-template-columns:1fr 1fr}}
 @media(max-width:680px){.home-hero-grid{padding:48px 0;gap:34px}.home-hero-copy{text-align:left}.home-hero-copy h1{font-size:46px}.home-hero-copy .hero-actions{justify-content:flex-start}.home-overview-card{padding:18px;border-radius:22px}.overview-grid{grid-template-columns:1fr}.overview-grid>div{min-height:auto}.overview-foot{align-items:flex-start;flex-direction:column;gap:5px}.home-control-panel{padding:24px}.home-control-list{grid-template-columns:1fr}.home-control-links{flex-direction:column;gap:12px}.home-start{gap:36px}.home-final-cta{padding:28px}}
+
+/* Unified header and top sections - 2026-10-29 */
+.site-header{position:sticky;top:0;z-index:100;background:#080a0fee;border-bottom:1px solid #1d2430;box-shadow:0 8px 30px #0002;backdrop-filter:blur(16px)}
+.site-header .nav-wrap{height:72px;gap:18px}
+.site-header .brand{white-space:nowrap}
+.site-header .nav{gap:2px}
+.site-header .nav a{color:#929dac;padding:9px 10px;border-radius:10px;font-size:14px;font-weight:650}
+.site-header .nav a:hover,.site-header .nav a.active{background:#171c25;color:#fff}
+.site-header .nav .nav-cta{color:#929dac;background:transparent;box-shadow:none;margin-left:0}
+.site-header .nav .nav-cta:hover,.site-header .nav .nav-cta.active{background:#171c25;color:#fff}
+.page-hero{position:relative;isolation:isolate}
+.page-hero::before{content:"";position:absolute;top:0;bottom:0;left:50%;width:100vw;transform:translateX(-50%);z-index:-1;pointer-events:none;border-bottom:1px solid #202733;background:radial-gradient(circle at 18% 0,#263149 0,transparent 31%),radial-gradient(circle at 86% 28%,#4a231622 0,transparent 28%),linear-gradient(#0b0e14,#090b10)}
+.home-hero-new,.version-hero-shell{background:radial-gradient(circle at 18% 0,#263149 0,transparent 31%),radial-gradient(circle at 86% 28%,#4a231622 0,transparent 28%),linear-gradient(#0b0e14,#090b10)}
+@media(max-width:1350px){
+  .site-header .menu-btn{display:block}
+  .site-header .nav{display:none;position:absolute;top:72px;left:20px;right:20px;flex-direction:column;align-items:stretch;padding:12px;background:#10141cf5;border:1px solid #2b3443;border-radius:14px;box-shadow:0 18px 45px #000a}
+  .site-header .nav.open{display:flex}
+  .site-header .nav a{justify-content:center;text-align:center}
+}
+@media(max-width:680px){.site-header .nav-wrap{height:64px}.site-header .nav{top:64px;left:12px;right:12px}}

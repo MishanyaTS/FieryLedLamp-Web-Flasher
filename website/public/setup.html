@@ -1,9 +1,25 @@
 <!doctype html><html lang="ru"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b0d12">
 <meta name="description" content="Первый запуск и настройка Fiery Led Lamp: прошивка ESP32-S3, подключение к точке доступа и настройка Wi-Fi.">
-<title>Начало работы — Fiery Led Lamp</title><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/styles.css">
+<title>Начало работы - Fiery Led Lamp</title><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/styles.css?v=20261029-unified">
 </head><body>
-<header class="site-header"><div class="shell nav-wrap"><a class="brand" href="/"><span class="brand-mark">🔥</span><span>Fiery Led Lamp</span></a><button class="menu-btn" type="button" aria-expanded="false" aria-controls="site-nav">Меню</button><nav class="nav" id="site-nav"><a href="/">Главная</a><a class="active" href="/setup.html">Начало работы</a><a href="/instruction.html">Инструкция</a><a href="/hardware.html">Подключение</a><a href="/mqtt-broker.html">MQTT</a><a href="/fiery-lamp-control.html">Fiery Lamp Control</a><a href="/account.html">Аккаунт</a><a href="/versions.html">История версий</a><a href="https://firmware.fieryledlamp.ru">Web Flasher</a></nav></div></header>
+<header class="site-header">
+  <div class="shell nav-wrap">
+    <a class="brand" href="/"><span class="brand-mark">🔥</span><span>Fiery Led Lamp</span></a>
+    <button class="menu-btn" type="button" aria-expanded="false" aria-controls="site-nav">Меню</button>
+    <nav class="nav" id="site-nav">
+      <a href="/">Главная</a>
+      <a class="active" href="/setup.html">Начало работы</a>
+      <a href="/instruction.html">Инструкция</a>
+      <a href="/hardware.html">Подключение</a>
+      <a href="/mqtt-broker.html">MQTT</a>
+      <a href="/fiery-lamp-control.html">Fiery Lamp Control</a>
+      <a href="/account.html">Аккаунт</a>
+      <a href="/versions.html">История версий</a>
+      <a class="nav-cta" href="https://firmware.fieryledlamp.ru/">Web Flasher</a>
+    </nav>
+  </div>
+</header>
 <main>
 <section class="page-hero shell"><span class="eyebrow">НАЧАЛО РАБОТЫ</span><h1>Первый запуск Fiery Led Lamp</h1><p>Базовая последовательность: подключение, прошивка, вход в точку доступа и настройка домашней сети.</p></section>
 <section class="section shell docs-layout">
@@ -12,7 +28,7 @@
 <section id="prepare"><h2>1. Подготовка</h2><p>Перед первой прошивкой проверьте схему подключения, питание матрицы и USB-кабель.</section>
 <section id="flash"><h2>2. Загрузите прошивку</h2><p>Откройте Web Flasher в совместимом Chromium-браузере на компьютере, подключите ESP32-S3 по USB и выберите COM-порт.</p><a class="btn primary" href="https://firmware.fieryledlamp.ru">Открыть Web Flasher</a><p class="muted-doc">Во время прошивки не отключайте USB. Если плата не определяется, удерживайте BOOT, кратко нажмите RESET, затем отпустите BOOT.</p></section>
 <section id="first-boot"><h2>3. Первый запуск</h2><p>После первого запуска лампа создаёт точку доступа:</p><div class="credential-grid"><div><span>SSID</span><strong>Led Lamp Web</strong></div><div><span>Пароль</span><strong>12341234</strong></div><div><span>Адрес</span><strong>192.168.4.1</strong></div></div><p>Подключитесь к этой сети и откройте <code>192.168.4.1</code> в браузере.</p><div class="notice"><b>Подключение со смартфона</b><p>Если вы выполняете настройку с телефона, на время подключения к сети <strong>Led Lamp Web</strong> рекомендуется отключить мобильный интернет. Это поможет телефону не переключаться на сотовую сеть из-за отсутствия доступа в интернет через точку доступа лампы.</p></div></section>
-<section id="router"><h2>4. Подключение к домашнему Wi-Fi</h2><p>На странице лампы откройте «Начальная настройка». Укажите имя и пароль домашней сети, сохраните параметры и включите использование подключения к роутеру.</p><div class="notice"><b>Wi-Fi 2,4 ГГц</b><p>Fiery Led Lamp подключается только к сетям Wi-Fi с частотой <strong>2,4 ГГц</strong>. При выборе домашней сети убедитесь, что используется диапазон 2,4 ГГц, а не 5 ГГц.</p></div><p>Там же можно изменить имя лампы, часовой пояс, имя собственной точки доступа и её пароль.</p><div class="notice warning"><b>Безопасность</b><p>Стандартный пароль <code>12341234</code> лучше заменить сразу после первого входа.</p></div></section><section id="control"><h2>5. Подключение к лампе</h2><p>После успешного подключения к Wi-Fi лампа отобразит свой IP-адрес бегущей строкой на матрице. Если к лампе подключён дисплей, IP-адрес также будет показан на нём.</p><p>Установите приложение <strong>Fiery Lamp Control</strong>. Запустите его и нажмите <strong>«Поиск ламп»</strong> — приложение автоматически найдёт FieryLedLamp в вашей локальной сети.</p><p>Если автоматический поиск не сработал, нажмите <strong>«Добавить по IP-адресу»</strong> и введите IP-адрес, который отображается на лампе или дисплее.</p><p>После добавления выберите найденную лампу и откройте её страницу управления.</p><div class="notice"><b>Готово!</b><p>Fiery Led Lamp настроена и готова к работе. Приятного использования!</p></div><a class="btn primary" href="/fiery-lamp-control.html">Скачать Fiery Lamp Control</a></section>
+<section id="router"><h2>4. Подключение к домашнему Wi-Fi</h2><p>На странице лампы откройте «Начальная настройка». Укажите имя и пароль домашней сети, сохраните параметры и включите использование подключения к роутеру.</p><div class="notice"><b>Wi-Fi 2,4 ГГц</b><p>Fiery Led Lamp подключается только к сетям Wi-Fi с частотой <strong>2,4 ГГц</strong>. При выборе домашней сети убедитесь, что используется диапазон 2,4 ГГц, а не 5 ГГц.</p></div><p>Там же можно изменить имя лампы, часовой пояс, имя собственной точки доступа и её пароль.</p><div class="notice warning"><b>Безопасность</b><p>Стандартный пароль <code>12341234</code> лучше заменить сразу после первого входа.</p></div></section><section id="control"><h2>5. Подключение к лампе</h2><p>После успешного подключения к Wi-Fi лампа отобразит свой IP-адрес бегущей строкой на матрице. Если к лампе подключён дисплей, IP-адрес также будет показан на нём.</p><p>Установите приложение <strong>Fiery Lamp Control</strong>. Запустите его и нажмите <strong>«Поиск ламп»</strong> - приложение автоматически найдёт Fiery Led Lamp в вашей локальной сети.</p><p>Если автоматический поиск не сработал, нажмите <strong>«Добавить по IP-адресу»</strong> и введите IP-адрес, который отображается на лампе или дисплее.</p><p>После добавления выберите найденную лампу и откройте её страницу управления.</p><div class="notice"><b>Готово!</b><p>Fiery Led Lamp настроена и готова к работе. Приятного использования!</p></div><a class="btn primary" href="/fiery-lamp-control.html">Скачать Fiery Lamp Control</a></section>
 </article></section></main>
 <footer class="footer">
   <div class="shell footer-grid">

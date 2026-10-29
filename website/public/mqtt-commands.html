@@ -7,7 +7,7 @@
   <meta name="description" content="Все MQTT-команды Fiery Led Lamp: питание, эффекты, яркость, скорость, масштаб, цикл, звук, Подсветка, строка, будильники и таймеры.">
   <title>Все MQTT-команды - Fiery Led Lamp</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/styles.css?v=20261029-unified">
 </head>
 <body>
 <header class="site-header">
@@ -20,11 +20,10 @@
       <a href="/instruction.html">Инструкция</a>
       <a href="/hardware.html">Подключение</a>
       <a class="active" href="/mqtt-broker.html">MQTT</a>
-      
       <a href="/fiery-lamp-control.html">Fiery Lamp Control</a>
       <a href="/account.html">Аккаунт</a>
       <a href="/versions.html">История версий</a>
-      <a href="https://firmware.fieryledlamp.ru">Web Flasher</a>
+      <a class="nav-cta" href="https://firmware.fieryledlamp.ru/">Web Flasher</a>
     </nav>
   </div>
 </header>
@@ -70,10 +69,10 @@
           <div class="mqtt-command-row"><code>EFF&lt;N&gt;</code><span>Выбрать эффект по номеру, от <code>0</code> до <code>133</code>. Пример: <code>EFF10</code>.</span></div>
           <div class="mqtt-command-row"><code>EFF_N</code><span>Следующий эффект.</span></div>
           <div class="mqtt-command-row"><code>EFF_P</code><span>Предыдущий эффект.</span></div>
-          <div class="mqtt-command-row"><code>BRI&lt;1–100&gt;</code><span>Яркость. Пример: <code>BRI50</code>.</span></div>
-          <div class="mqtt-command-row"><code>SPD&lt;1–255&gt;</code><span>Скорость. Пример: <code>SPD120</code>.</span></div>
-          <div class="mqtt-command-row"><code>SCA&lt;1–100&gt;</code><span>Масштаб. Пример: <code>SCA50</code>.</span></div>
-          <div class="mqtt-command-row"><code>GBR&lt;1–100&gt;</code><span>Установить общую яркость эффектов.</span></div>
+          <div class="mqtt-command-row"><code>BRI&lt;1-100&gt;</code><span>Яркость. Пример: <code>BRI50</code>.</span></div>
+          <div class="mqtt-command-row"><code>SPD&lt;1-255&gt;</code><span>Скорость. Пример: <code>SPD120</code>.</span></div>
+          <div class="mqtt-command-row"><code>SCA&lt;1-100&gt;</code><span>Масштаб. Пример: <code>SCA50</code>.</span></div>
+          <div class="mqtt-command-row"><code>GBR&lt;1-100&gt;</code><span>Установить общую яркость эффектов.</span></div>
         </div>
       </section>
 
@@ -92,7 +91,7 @@
         <div class="mqtt-command-table">
           <div class="mqtt-command-row"><code>SO_ON</code><span>Включить озвучивание эффектов.</span></div>
           <div class="mqtt-command-row"><code>SO_OFF</code><span>Выключить озвучивание эффектов.</span></div>
-          <div class="mqtt-command-row"><code>VOL&lt;1–30&gt;</code><span>Громкость. Пример: <code>VOL15</code>.</span></div>
+          <div class="mqtt-command-row"><code>VOL&lt;1-30&gt;</code><span>Громкость. Пример: <code>VOL15</code>.</span></div>
         </div>
       </section>
 
@@ -101,7 +100,7 @@
         <div class="mqtt-command-table">
           <div class="mqtt-command-row"><code>LUMOS_ON</code><span>Включить Подсветку. Состояние сохраняется в настройках лампы.</span></div>
           <div class="mqtt-command-row"><code>LUMOS_OFF</code><span>Выключить Подсветку. Состояние сохраняется в настройках лампы.</span></div>
-          <div class="mqtt-command-row"><code>LUMOS_BRI&lt;1–100&gt;</code><span>Установить яркость Подсветки в процентах. Примеры: <code>LUMOS_BRI25</code>, <code>LUMOS_BRI50</code>, <code>LUMOS_BRI100</code>.</span></div>
+          <div class="mqtt-command-row"><code>LUMOS_BRI&lt;1-100&gt;</code><span>Установить яркость Подсветки в процентах. Примеры: <code>LUMOS_BRI25</code>, <code>LUMOS_BRI50</code>, <code>LUMOS_BRI100</code>.</span></div>
         </div>
         <div class="notice"><b>Состояние Подсветки</b><p>В JSON-состоянии лампы, публикуемом в топик <code>Lamp/LedLamp_&lt;ID&gt;/snd</code>, используются поля <code>lumos</code> со значением <code>ON</code>/<code>OFF</code> и <code>lumos_brightness</code> со значением яркости от <code>1</code> до <code>100</code>.</p></div>
       </section>
@@ -123,24 +122,24 @@
         <h2>Бегущая строка</h2>
         <div class="mqtt-command-table">
           <div class="mqtt-command-row"><code>TXT_Текст</code><span>Показать текст.</span></div>
-          <div class="mqtt-command-row"><code>RUN_T&lt;0–99&gt;</code><span>Периодичность показа. <code>0</code> - не показывать, больше <code>60</code> - постоянно.</span></div>
-          <div class="mqtt-command-row"><code>RUN_C&lt;0–255&gt;</code><span>Цвет строки.</span></div>
+          <div class="mqtt-command-row"><code>RUN_T&lt;0-99&gt;</code><span>Периодичность показа. <code>0</code> - не показывать, больше <code>60</code> - постоянно.</span></div>
+          <div class="mqtt-command-row"><code>RUN_C&lt;0-255&gt;</code><span>Цвет строки.</span></div>
           <div class="mqtt-command-row"><code>RUN_F0</code><span>Чёрный фон.</span></div>
           <div class="mqtt-command-row"><code>RUN_F1</code><span>Цветной фон.</span></div>
-          <div class="mqtt-command-row"><code>RUN_S&lt;0–255&gt;</code><span>Скорость строки.</span></div>
+          <div class="mqtt-command-row"><code>RUN_S&lt;0-255&gt;</code><span>Скорость строки.</span></div>
         </div>
       </section>
 
       <section id="alarm">
         <h2>Будильники, рассвет и закат</h2>
         <div class="mqtt-command-table">
-          <div class="mqtt-command-row"><code>ALM_SET&lt;1–7&gt; ON</code><span>Включить будильник выбранного дня.</span></div>
-          <div class="mqtt-command-row"><code>ALM_SET&lt;1–7&gt; OFF</code><span>Выключить будильник выбранного дня.</span></div>
-          <div class="mqtt-command-row"><code>ALM_SET&lt;1–7&gt; &lt;минуты&gt;</code><span>Время будильника в минутах от начала суток. <code>ALM_SET1 390</code> = 06:30.</span></div>
+          <div class="mqtt-command-row"><code>ALM_SET&lt;1-7&gt; ON</code><span>Включить будильник выбранного дня.</span></div>
+          <div class="mqtt-command-row"><code>ALM_SET&lt;1-7&gt; OFF</code><span>Выключить будильник выбранного дня.</span></div>
+          <div class="mqtt-command-row"><code>ALM_SET&lt;1-7&gt; &lt;минуты&gt;</code><span>Время будильника в минутах от начала суток. <code>ALM_SET1 390</code> = 06:30.</span></div>
           <div class="mqtt-command-row"><code>DAWN&lt;N&gt;</code><span>Выбрать вариант рассвета.</span></div>
-          <div class="mqtt-command-row"><code>SUN_SET&lt;1–7&gt; ON</code><span>Включить закат выбранного дня.</span></div>
-          <div class="mqtt-command-row"><code>SUN_SET&lt;1–7&gt; OFF</code><span>Выключить закат выбранного дня.</span></div>
-          <div class="mqtt-command-row"><code>SUN_SET&lt;1–7&gt; &lt;минуты&gt;</code><span>Задать время заката.</span></div>
+          <div class="mqtt-command-row"><code>SUN_SET&lt;1-7&gt; ON</code><span>Включить закат выбранного дня.</span></div>
+          <div class="mqtt-command-row"><code>SUN_SET&lt;1-7&gt; OFF</code><span>Выключить закат выбранного дня.</span></div>
+          <div class="mqtt-command-row"><code>SUN_SET&lt;1-7&gt; &lt;минуты&gt;</code><span>Задать время заката.</span></div>
           <div class="mqtt-command-row"><code>SUNS&lt;N&gt;</code><span>Выбрать вариант заката.</span></div>
         </div>
       </section>
@@ -175,7 +174,7 @@
   <div class="shell footer-grid">
     <div><a class="brand" href="/"><span class="brand-mark">🔥</span><span>Fiery Led Lamp</span></a><p>Проект LED-лампы на ESP32-S3.</p></div>
     <div><b>Проект</b><a href="/setup.html">Начало работы</a><a href="/instruction.html">Инструкция</a><a href="/hardware.html">Подключение</a><a href="/mqtt-broker.html">MQTT</a><a href="/fiery-lamp-control.html">Fiery Lamp Control</a><a href="/account.html">Аккаунт</a><a href="/versions.html">История версий</a></div>
-    <div><b>Ссылки</b><a href="https://community.alexgyver.ru/threads/wifi-lampa-budilnik-obsuzhdenie-proshivki-Fiery Led Lamp.7530/" target="_blank" rel="noopener">Обсуждение</a><a href="https://firmware.Fiery Led Lamp.ru">Web Flasher</a><a href="mailto:mishanyats@Fiery Led Lamp.ru">Поддержка</a><a href="https://pay.cloudtips.ru/p/bdf0decb" target="_blank" rel="noopener">Помощь проекту</a></div>
+    <div><b>Ссылки</b><a href="https://community.alexgyver.ru/threads/wifi-lampa-budilnik-obsuzhdenie-proshivki-fieryledlamp.7530/" target="_blank" rel="noopener">Обсуждение</a><a href="https://firmware.fieryledlamp.ru">Web Flasher</a><a href="mailto:mishanyats@fieryledlamp.ru">Поддержка</a><a href="https://pay.cloudtips.ru/p/bdf0decb" target="_blank" rel="noopener">Помощь проекту</a></div>
   </div>
   <div class="shell footer-bottom">Fiery Led Lamp · 2026</div>
 </footer>
