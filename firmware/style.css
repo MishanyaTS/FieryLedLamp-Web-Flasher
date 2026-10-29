@@ -925,3 +925,16 @@ details.card{
   }
 }
 
+/* Web Flasher title clipping fix - 2026-10-29 */
+.firmware-hero,
+.firmware-hero-grid,
+.firmware-hero-copy{
+  overflow:visible;
+}
+.firmware-hero-copy h1{
+  line-height:1.08;
+  padding-top:.04em;
+  padding-bottom:.14em;
+  overflow:visible;
+}
+
