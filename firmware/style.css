@@ -938,3 +938,12 @@ details.card{
   overflow:visible;
 }
 
+/* Unified warm hero glow - 2026-10-29 */
+.firmware-hero{
+  background:
+    radial-gradient(circle at 72% 20%,#ff6b2c18 0,transparent 36%),
+    radial-gradient(circle at 18% 0,#263149 0,transparent 31%),
+    radial-gradient(circle at 86% 28%,#4a231622 0,transparent 28%),
+    linear-gradient(#0b0e14,#090b10);
+}
+
