@@ -911,17 +911,21 @@ background:linear-gradient(180deg,#131821,#0e1219);border-color:#283141;box-shad
 }
 
 /* Unified warm hero glow - 2026-10-29 */
-.hero::before,
-.page-hero::before{
+.home-hero-new::before{
+  display:none;
+}
+.home-hero-new,
+.version-hero-shell{
   background:
-    radial-gradient(circle at 72% 20%,#ff6b2c18 0,transparent 36%),
+    radial-gradient(circle at 72% 20%,#ff6b2c20 0,transparent 40%),
     radial-gradient(circle at 18% 0,#263149 0,transparent 31%),
     radial-gradient(circle at 86% 28%,#4a231622 0,transparent 28%),
     linear-gradient(#0b0e14,#090b10);
 }
-.version-hero-shell{
+.hero::before,
+.page-hero::before{
   background:
-    radial-gradient(circle at 72% 20%,#ff6b2c18 0,transparent 36%),
+    radial-gradient(circle at 72% 20%,#ff6b2c20 0,transparent 40%),
     radial-gradient(circle at 18% 0,#263149 0,transparent 31%),
     radial-gradient(circle at 86% 28%,#4a231622 0,transparent 28%),
     linear-gradient(#0b0e14,#090b10);
