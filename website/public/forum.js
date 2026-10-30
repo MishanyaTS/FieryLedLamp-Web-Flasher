@@ -573,8 +573,9 @@
       return;
     }
 
+    const wasEditing = editingId > 0;
     submit.disabled = true;
-    setStatus(editingId ? "Сохранение..." : "Отправка...");
+    setStatus(wasEditing ? "Сохранение..." : "Отправка...");
 
     try {
       const data = new FormData();
@@ -602,7 +603,7 @@
       }
 
       clearEditorMode(true);
-      setStatus(editingId ? "Сообщение изменено." : "Сообщение опубликовано.", "success");
+      setStatus(wasEditing ? "Сообщение изменено." : "Сообщение опубликовано.", "success");
       await loadPosts();
       const last = posts.querySelector(".forum-post:last-of-type");
       last?.scrollIntoView({ behavior: "smooth", block: "center" });
