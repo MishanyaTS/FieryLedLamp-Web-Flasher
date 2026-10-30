@@ -16,6 +16,7 @@
   const counter = document.querySelector("#forumCounter");
   const status = document.querySelector("#forumStatus");
   const submit = document.querySelector("#forumSubmit");
+  const userLabel = document.querySelector("#forumUser");
   const editorTitle = document.querySelector("#forumEditorTitle");
   const replyContext = document.querySelector("#forumReplyContext");
   const replyLabel = document.querySelector("#forumReplyLabel");
@@ -571,6 +572,7 @@
       if (response.status === 401) {
         csrf = "";
         viewer = null;
+        if (userLabel) userLabel.textContent = "";
         if (guest) guest.hidden = false;
         return;
       }
@@ -578,11 +580,13 @@
 
       csrf = String(data.csrf || "");
       viewer = data.user || null;
+      if (userLabel) userLabel.textContent = data.user?.name ? "Вы вошли как " + data.user.name : "";
       if (guest) guest.hidden = true;
       if (form) form.hidden = false;
     } catch (error) {
       csrf = "";
       viewer = null;
+      if (userLabel) userLabel.textContent = "";
       if (guest) guest.hidden = true;
       if (form) form.hidden = true;
       setStatus(error.message || "Не удалось проверить аккаунт.", "error");
