@@ -309,7 +309,7 @@
     }
   };
 
-  const params = new URLSearchParams(location.search);
+  const params = new URLSearchParams(location.search);\n  const requestedNext = params.get("next") || "";\n  const nextPath = requestedNext.startsWith("/") && !requestedNext.startsWith("//") ? requestedNext : "/account.html";
 
   const registerForm = document.querySelector("#registerForm");
   if (registerForm) {
@@ -340,7 +340,7 @@
             : "Аккаунт создан, но письмо подтверждения отправить не удалось. Его можно отправить повторно из аккаунта.",
           data.emailSent ? "success" : "error"
         );
-        setTimeout(() => location.href = "/account.html", 700);
+        setTimeout(() => location.href = nextPath, 700);
       } catch (error) {
         setStatus(registerForm, error.message, "error");
       } finally {
@@ -368,7 +368,7 @@
             remember: loginForm.remember?.checked === true
           })
         }));
-        location.href = "/account.html";
+        location.href = nextPath;
       } catch (error) {
         setStatus(loginForm, error.message, "error");
       } finally {
