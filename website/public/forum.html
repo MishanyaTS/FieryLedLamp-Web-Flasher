@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b0d12">
+  <meta name="description" content="Форум Fiery Led Lamp - вопросы, ответы, идеи и опыт пользователей проекта.">
+  <title>Форум - Fiery Led Lamp</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css?v=20261030-forum">
+</head>
+<body>
+<header class="site-header">
+  <div class="shell nav-wrap">
+    <a class="brand" href="/"><span class="brand-mark">🔥</span><span>Fiery Led Lamp</span></a>
+    <button class="menu-btn" type="button" aria-expanded="false" aria-controls="site-nav">Меню</button>
+    <nav class="nav" id="site-nav">
+      <a href="/">Главная</a>
+      <a href="/setup.html">Начало работы</a>
+      <a href="/instruction.html">Инструкция</a>
+      <a href="/hardware.html">Подключение</a>
+      <a href="/mqtt-broker.html">MQTT</a>
+      <a href="/fiery-lamp-control.html">Fiery Lamp Control</a>
+      <a class="active" href="/forum.html">Форум</a>
+      <a href="/account.html">Аккаунт</a>
+      <a href="/versions.html">История версий</a>
+      <a class="nav-cta" href="https://firmware.fieryledlamp.ru/">Web Flasher</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="page-hero shell">
+    <span class="eyebrow">СООБЩЕСТВО</span>
+    <h1>Форум</h1>
+    <p>Обсуждение проекта Fiery Led Lamp. Читать сообщения могут все, отвечать в теме - только зарегистрированные пользователи.</p>
+  </section>
+
+  <section class="section shell forum-main">
+    <div class="forum-shell">
+      <div class="forum-breadcrumbs"><a href="/">Fiery Led Lamp</a><span>›</span><span>Форум</span><span>›</span><b>Обсуждение проекта</b></div>
+
+      <header class="forum-thread-head">
+        <span class="forum-thread-tag">ESP, IoT</span>
+        <h2>Fiery Led Lamp - обсуждение проекта</h2>
+        <div class="forum-thread-meta">
+          <span>Автор темы: <b>MishanyaTS</b></span>
+          <span>Тема проекта Fiery Led Lamp</span>
+        </div>
+      </header>
+
+      <div class="forum-toolbar">
+        <div id="forumPageInfo" class="forum-page-info">Загрузка сообщений...</div>
+        <nav id="forumPaginationTop" class="forum-pagination" aria-label="Страницы форума"></nav>
+      </div>
+
+      <div id="forumPosts" class="forum-posts">
+        <article class="forum-post forum-first-post" id="post-1">
+          <aside class="forum-author-panel">
+            <div class="forum-avatar">MT</div>
+            <div>
+              <span class="forum-author-name">MishanyaTS</span>
+              <span class="forum-role">Автор темы</span>
+            </div>
+            <div class="forum-author-stats">
+              <span>Проект: <b>Fiery Led Lamp</b></span>
+              <span>Платформа: <b>ESP32-S3</b></span>
+            </div>
+          </aside>
+          <div class="forum-post-main">
+            <div class="forum-post-top"><span>Fiery Led Lamp</span><a class="forum-post-number" href="#post-1">#1</a></div>
+            <div class="forum-post-body">
+              <p>Основная тема для обсуждения Fiery Led Lamp: прошивка, Web-интерфейс, подключение модулей, обновления, эффекты и работа оборудования.</p>
+              <p>Здесь можно задавать вопросы, сообщать об ошибках, предлагать новые функции и делиться своим опытом использования проекта.</p>
+            </div>
+          </div>
+        </article>
+        <div class="forum-empty">Загрузка сообщений...</div>
+      </div>
+
+      <div class="forum-toolbar">
+        <div></div>
+        <nav id="forumPaginationBottom" class="forum-pagination" aria-label="Страницы форума"></nav>
+      </div>
+
+      <section class="forum-reply" id="reply">
+        <div class="forum-reply-head">
+          <div><span class="eyebrow">ОТВЕТ В ТЕМЕ</span><h3>Написать сообщение</h3></div>
+          <span id="forumUser" class="forum-current-user"></span>
+        </div>
+
+        <div id="forumGuest" class="forum-guest" hidden>
+          <p>Чтобы написать сообщение на форуме, войдите в аккаунт или зарегистрируйтесь.</p>
+          <div class="forum-guest-actions">
+            <a class="btn primary" href="/login.html?next=%2Fforum.html%23reply">Войти</a>
+            <a class="btn ghost" href="/register.html?next=%2Fforum.html%23reply">Регистрация</a>
+          </div>
+        </div>
+
+        <form id="forumForm" class="forum-form" hidden>
+          <textarea id="forumText" maxlength="4000" placeholder="Напишите ответ..." aria-label="Ответ в теме"></textarea>
+          <div class="forum-form-foot">
+            <span id="forumCounter" class="forum-counter">0 / 4000</span>
+            <button id="forumSubmit" class="btn primary" type="submit">Ответить</button>
+          </div>
+          <div id="forumStatus" class="forum-status" aria-live="polite"></div>
+        </form>
+      </section>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="shell footer-grid">
+    <div><a class="brand" href="/"><span class="brand-mark">🔥</span><span>Fiery Led Lamp</span></a><p>Проект LED-лампы на ESP32-S3.</p></div>
+    <div><b>Проект</b><a href="/setup.html">Начало работы</a><a href="/instruction.html">Инструкция</a><a href="/hardware.html">Подключение</a><a href="/mqtt-broker.html">MQTT</a><a href="/fiery-lamp-control.html">Fiery Lamp Control</a><a href="/forum.html">Форум</a><a href="/account.html">Аккаунт</a><a href="/versions.html">История версий</a></div>
+    <div><b>Ссылки</b><a href="https://community.alexgyver.ru/threads/wifi-lampa-budilnik-obsuzhdenie-proshivki-fieryledlamp-ot-mishanyats.7530/" target="_blank" rel="noopener">Обсуждение AlexGyver</a><a href="https://t.me/Fiery_Led_Lamp" target="_blank" rel="noopener">Telegram</a><a href="https://firmware.fieryledlamp.ru">Web Flasher</a><a href="mailto:mishanyats@fieryledlamp.ru">Обратная связь</a><a href="https://pay.cloudtips.ru/p/bdf0decb" target="_blank" rel="noopener">Помощь проекту</a></div>
+  </div>
+  <div class="shell footer-bottom">Fiery Led Lamp · 2026</div>
+</footer>
+
+<script src="/site.js?v=20261030-forum"></script>
+<script src="/forum.js?v=20261030-forum"></script>
+</body>
+</html>
