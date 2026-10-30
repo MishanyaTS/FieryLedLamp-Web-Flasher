@@ -31,6 +31,9 @@
   const sizeSelect = document.querySelector("#forumSize");
   const colorInput = document.querySelector("#forumColor");
   const quoteSelection = document.querySelector("#forumQuoteSelection");
+  const linkButton = document.querySelector("#forumLinkButton");
+  const imageButton = document.querySelector("#forumImageButton");
+  const spoilerButton = document.querySelector("#forumSpoilerButton");
 
   if (!posts) return;
 
@@ -49,6 +52,21 @@
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 
+  function safeHttpUrl(value) {
+    try {
+      const normalized = String(value || "").replaceAll("&amp;", "&").trim();
+      const url = new URL(normalized);
+      if (url.protocol !== "http:" && url.protocol !== "https:") return "";
+      return url.href;
+    } catch (_) {
+      return "";
+    }
+  }
+
+  function safeAttribute(value) {
+    return escapeHtml(value).replaceAll("`", "&#096;");
+  }
+
   const initials = name => {
     const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
     return ((parts[0]?.[0] || "?") + (parts[1]?.[0] || "")).toUpperCase();
@@ -66,11 +84,15 @@
   function renderMarkup(raw) {
     let html = escapeHtml(raw || "");
 
-    for (let pass = 0; pass < 3; pass++) {
+    for (let pass = 0; pass < 4; pass++) {
       html = html.replace(/\[quote author=([^\]\n]{1,80})\]([\s\S]*?)\[\/quote\]/gi,
         '<blockquote class="forum-quote"><b>$1 написал(а):</b><div class="forum-quote-content">$2</div></blockquote>');
       html = html.replace(/\[quote\]([\s\S]*?)\[\/quote\]/gi,
         '<blockquote class="forum-quote"><div class="forum-quote-content">$1</div></blockquote>');
+      html = html.replace(/\[spoiler=([^\]\n]{1,80})\]([\s\S]*?)\[\/spoiler\]/gi,
+        '<details class="forum-spoiler"><summary>$1</summary><div class="forum-spoiler-content">$2</div></details>');
+      html = html.replace(/\[spoiler\]([\s\S]*?)\[\/spoiler\]/gi,
+        '<details class="forum-spoiler"><summary>Спойлер</summary><div class="forum-spoiler-content">$1</div></details>');
       html = html.replace(/\[b\]([\s\S]*?)\[\/b\]/gi, "<strong>$1</strong>");
       html = html.replace(/\[i\]([\s\S]*?)\[\/i\]/gi, "<em>$1</em>");
       html = html.replace(/\[u\]([\s\S]*?)\[\/u\]/gi, "<u>$1</u>");
@@ -79,6 +101,21 @@
       html = html.replace(/\[size=(12|14|16|18|20|24|28|32)\]([\s\S]*?)\[\/size\]/gi, '<span style="font-size:$1px">$2</span>');
       html = html.replace(/\[font=(Arial|Verdana|Georgia|Tahoma|Trebuchet MS|Courier New)\]([\s\S]*?)\[\/font\]/gi, '<span style="font-family:$1">$2</span>');
     }
+
+    html = html.replace(/\[url=([^\]\s]+)\]([\s\S]*?)\[\/url\]/gi, (_, href, label) => {
+      const safe = safeHttpUrl(href);
+      return safe ? '<a class="forum-inline-link" href="' + safeAttribute(safe) + '" target="_blank" rel="noopener noreferrer">' + label + '</a>' : label;
+    });
+
+    html = html.replace(/\[url\]([^\[]+)\[\/url\]/gi, (_, href) => {
+      const safe = safeHttpUrl(href);
+      return safe ? '<a class="forum-inline-link" href="' + safeAttribute(safe) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(safe) + '</a>' : escapeHtml(href);
+    });
+
+    html = html.replace(/\[img\]([^\[]+)\[\/img\]/gi, (_, src) => {
+      const safe = safeHttpUrl(src);
+      return safe ? '<a class="forum-inline-image-link" href="' + safeAttribute(safe) + '" target="_blank" rel="noopener noreferrer"><img class="forum-inline-image" src="' + safeAttribute(safe) + '" alt="Изображение" loading="lazy" referrerpolicy="no-referrer"></a>' : '';
+    });
 
     return html.replace(/\n/g, "<br>");
   }
@@ -382,10 +419,7 @@
       const reply = actionButton("↩ Ответить");
       reply.addEventListener("click", () => startReply(item, false));
 
-      const quote = actionButton("❝ Цитировать");
-      quote.addEventListener("click", () => startReply(item, true));
-
-      actions.append(like, reply, quote);
+      actions.append(like, reply);
 
       if (item.canEdit) {
         const edit = actionButton("✎ Изменить");
@@ -621,6 +655,41 @@
   });
 
   quoteSelection?.addEventListener("click", () => wrapSelection("[quote]", "[/quote]"));
+
+  linkButton?.addEventListener("click", () => {
+    const selected = text?.value.slice(text.selectionStart || 0, text.selectionEnd || 0).trim() || "";
+    const url = prompt("Введите адрес ссылки (http:// или https://):", selected.startsWith("http") ? selected : "https://");
+    if (!url) return;
+    if (!safeHttpUrl(url)) {
+      setStatus("Укажите корректную ссылку http:// или https://.", "error");
+      return;
+    }
+    const label = selected && !selected.startsWith("http") ? selected : (prompt("Текст ссылки:", "Ссылка") || "Ссылка");
+    if (selected) {
+      const start = text.selectionStart ?? 0;
+      const end = text.selectionEnd ?? start;
+      text.setRangeText("[url=" + url.trim() + "]" + label + "[/url]", start, end, "end");
+      updateCounter();
+      text.focus();
+    } else {
+      insertAtCursor("[url=" + url.trim() + "]" + label + "[/url]");
+    }
+  });
+
+  imageButton?.addEventListener("click", () => {
+    const url = prompt("Введите прямую ссылку на изображение (http:// или https://):", "https://");
+    if (!url) return;
+    if (!safeHttpUrl(url)) {
+      setStatus("Укажите корректную ссылку на изображение.", "error");
+      return;
+    }
+    insertAtCursor("[img]" + url.trim() + "[/img]");
+  });
+
+  spoilerButton?.addEventListener("click", () => {
+    const title = (prompt("Название спойлера:", "Спойлер") || "Спойлер").replace(/[\]\r\n]/g, " ").slice(0, 80);
+    wrapSelection("[spoiler=" + title + "]", "[/spoiler]");
+  });
 
   emojiButton?.addEventListener("click", event => {
     event.stopPropagation();
