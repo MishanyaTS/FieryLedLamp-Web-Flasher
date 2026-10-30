@@ -960,3 +960,9 @@ details.card{
   filter:drop-shadow(0 0 5px #ff6b2c55)
 }
 
+/* Forum nav icon - native menu icon style */
+.site-header .nav a[href="https://fieryledlamp.ru/forum.html"]::before{
+  background-image:url("https://fieryledlamp.ru/icons/web-menu/article.png");
+  filter:none;
+}
+
