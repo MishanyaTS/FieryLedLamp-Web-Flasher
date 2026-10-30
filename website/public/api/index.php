@@ -1183,7 +1183,7 @@ function discussion_post(PDO $pdo): never {
         json_response(['ok' => false, 'message' => $e instanceof RuntimeException ? $e->getMessage() : 'Не удалось сохранить сообщение.'], 422);
     }
 
-    $total = (int)$pdo->query('SELECT COUNT(*) FROM discussion_messages')->fetchColumn();
+    $total = (int)$pdo->query('SELECT COUNT(*) FROM discussion_messages WHERE deleted_at IS NULL')->fetchColumn();
     json_response(['ok' => true, 'id' => $messageId, 'page' => max(1, (int)ceil($total / 20))], 201);
 }
 
