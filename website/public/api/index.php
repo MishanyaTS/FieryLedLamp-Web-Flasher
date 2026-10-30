@@ -1024,8 +1024,10 @@ function forum_save_uploads(PDO $pdo, int $messageId, int $userId): array {
     $dir = forum_files_dir();
     $finfo = new finfo(FILEINFO_MIME_TYPE);
     $saved = [];
+    $written = [];
 
-    foreach ($names as $i => $originalRaw) {
+    try {
+      foreach ($names as $i => $originalRaw) {
         $error = (int)($errors[$i] ?? UPLOAD_ERR_NO_FILE);
         if ($error === UPLOAD_ERR_NO_FILE) continue;
         if ($error !== UPLOAD_ERR_OK) throw new RuntimeException('Не удалось загрузить один из файлов.');
@@ -1059,10 +1061,15 @@ function forum_save_uploads(PDO $pdo, int $messageId, int $userId): array {
             $stmt = $pdo->prepare('INSERT INTO discussion_attachments(message_id,user_id,original_name,stored_name,mime_type,file_size) VALUES(?,?,?,?,?,?)');
             $stmt->execute([$messageId, $userId, $safeName, $stored, $mime, $size]);
             $saved[] = ['id' => (int)$pdo->lastInsertId(), 'stored' => $stored];
+            $written[] = $stored;
         } catch (Throwable $e) {
             @unlink($target);
             throw $e;
         }
+      }
+    } catch (Throwable $e) {
+      foreach ($written as $storedName) @unlink($dir . '/' . basename((string)$storedName));
+      throw $e;
     }
 
     return $saved;
