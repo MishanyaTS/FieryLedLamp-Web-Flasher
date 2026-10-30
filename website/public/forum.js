@@ -535,7 +535,7 @@
       if (!data.messages?.length && currentPage === 1) {
         const empty = document.createElement("div");
         empty.className = "forum-empty";
-        empty.textContent = "Ответов пока нет. Вы можете написать первым.";
+        empty.textContent = "Сообщений пока нет. Вы можете написать первым.";
         posts.appendChild(empty);
       } else {
         data.messages.forEach((item, index) => {
