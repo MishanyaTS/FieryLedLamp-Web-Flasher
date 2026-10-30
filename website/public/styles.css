@@ -1345,3 +1345,24 @@ background:linear-gradient(180deg,#131821,#0e1219);border-color:#283141;box-shad
   .account-name-row .btn{width:100%}
 }
 
+/* Forum toggle formatting - 2026-10-30 */
+.forum-tool[data-format]{
+  min-width:34px;
+  font-size:14px;
+  transition:background .14s ease,border-color .14s ease,color .14s ease,box-shadow .14s ease,transform .08s ease;
+}
+.forum-tool[data-format]:active{transform:translateY(1px)}
+.forum-tool[data-format].active,
+.forum-tool[data-format][aria-pressed="true"]{
+  border-color:#9a512f;
+  background:linear-gradient(180deg,#ff864c,#d95a2c);
+  color:#fff;
+  box-shadow:0 0 0 1px #ffb07a22 inset,0 0 14px #ff6b2c2b;
+}
+.forum-tool[data-format].active:hover,
+.forum-tool[data-format][aria-pressed="true"]:hover{
+  border-color:#b96740;
+  background:linear-gradient(180deg,#ff955f,#e36735);
+  color:#fff;
+}
+
