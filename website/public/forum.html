@@ -7,7 +7,7 @@
   <meta name="description" content="Форум Fiery Led Lamp - вопросы, ответы, идеи и опыт пользователей проекта.">
   <title>Форум - Fiery Led Lamp</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/styles.css?v=20261030-forum">
+  <link rel="stylesheet" href="/styles.css?v=20261030-forum-advanced">
 </head>
 <body>
 <header class="site-header">
@@ -85,7 +85,7 @@
 
       <section class="forum-reply" id="reply">
         <div class="forum-reply-head">
-          <div><span class="eyebrow">ОТВЕТ В ТЕМЕ</span><h3>Написать сообщение</h3></div>
+          <div><span class="eyebrow">ОТВЕТ В ТЕМЕ</span><h3 id="forumEditorTitle">Написать сообщение</h3></div>
           <span id="forumUser" class="forum-current-user"></span>
         </div>
 
@@ -98,10 +98,68 @@
         </div>
 
         <form id="forumForm" class="forum-form" hidden>
-          <textarea id="forumText" maxlength="4000" placeholder="Напишите ответ..." aria-label="Ответ в теме"></textarea>
+          <div id="forumReplyContext" class="forum-reply-context" hidden>
+            <div><b id="forumReplyLabel"></b><span id="forumReplySnippet"></span></div>
+            <button id="forumReplyCancel" type="button" aria-label="Отменить ответ">×</button>
+          </div>
+
+          <div class="forum-editor">
+            <div class="forum-editor-toolbar" aria-label="Форматирование сообщения">
+              <button type="button" class="forum-tool" data-format="b" title="Жирный"><b>B</b></button>
+              <button type="button" class="forum-tool" data-format="i" title="Курсив"><i>I</i></button>
+              <button type="button" class="forum-tool" data-format="u" title="Подчёркнутый"><u>U</u></button>
+              <button type="button" class="forum-tool" data-format="s" title="Зачёркнутый"><s>S</s></button>
+              <span class="forum-tool-separator"></span>
+              <select id="forumFont" class="forum-tool-select" aria-label="Шрифт">
+                <option value="">Шрифт</option>
+                <option value="Arial">Arial</option>
+                <option value="Verdana">Verdana</option>
+                <option value="Georgia">Georgia</option>
+                <option value="Tahoma">Tahoma</option>
+                <option value="Trebuchet MS">Trebuchet</option>
+                <option value="Courier New">Courier New</option>
+              </select>
+              <select id="forumSize" class="forum-tool-select forum-size-select" aria-label="Размер текста">
+                <option value="">Размер</option>
+                <option value="12">12</option>
+                <option value="14">14</option>
+                <option value="16">16</option>
+                <option value="18">18</option>
+                <option value="20">20</option>
+                <option value="24">24</option>
+                <option value="28">28</option>
+                <option value="32">32</option>
+              </select>
+              <label class="forum-color-tool" title="Цвет текста"><span>A</span><input id="forumColor" type="color" value="#ff9b62" aria-label="Цвет текста"></label>
+              <span class="forum-tool-separator"></span>
+              <button id="forumEmojiButton" type="button" class="forum-tool forum-emoji-button" title="Смайлы">☺</button>
+              <button id="forumQuoteSelection" type="button" class="forum-tool forum-wide-tool" title="Цитата">❝ Цитата</button>
+            </div>
+            <div id="forumEmojiPanel" class="forum-emoji-panel" hidden>
+              <button type="button">😀</button><button type="button">😄</button><button type="button">😂</button><button type="button">😉</button>
+              <button type="button">😊</button><button type="button">😍</button><button type="button">🤔</button><button type="button">😎</button>
+              <button type="button">👍</button><button type="button">👎</button><button type="button">👏</button><button type="button">🔥</button>
+              <button type="button">❤️</button><button type="button">💡</button><button type="button">✅</button><button type="button">⚠️</button>
+              <button type="button">🎉</button><button type="button">🚀</button><button type="button">🙏</button><button type="button">🤝</button>
+            </div>
+            <textarea id="forumText" maxlength="12000" placeholder="Напишите ответ..." aria-label="Ответ в теме"></textarea>
+          </div>
+
+          <div class="forum-attachment-editor">
+            <label class="forum-attach-button">
+              <input id="forumFiles" type="file" multiple accept=".jpg,.jpeg,.png,.webp,.gif,.pdf,.txt,.zip,image/jpeg,image/png,image/webp,image/gif,application/pdf,text/plain,application/zip">
+              <span>📎 Прикрепить файлы</span>
+            </label>
+            <small>До 5 файлов: JPG, PNG, WEBP, GIF, PDF, TXT или ZIP. До 10 МБ каждый.</small>
+          </div>
+          <div id="forumFilesPreview" class="forum-files-preview"></div>
+
           <div class="forum-form-foot">
-            <span id="forumCounter" class="forum-counter">0 / 4000</span>
-            <button id="forumSubmit" class="btn primary" type="submit">Ответить</button>
+            <span id="forumCounter" class="forum-counter">0 / 12000</span>
+            <div class="forum-submit-actions">
+              <button id="forumEditCancel" class="btn ghost" type="button" hidden>Отменить редактирование</button>
+              <button id="forumSubmit" class="btn primary" type="submit">Ответить</button>
+            </div>
           </div>
           <div id="forumStatus" class="forum-status" aria-live="polite"></div>
         </form>
@@ -120,6 +178,6 @@
 </footer>
 
 <script src="/site.js?v=20261030-forum"></script>
-<script src="/forum.js?v=20261030-forum"></script>
+<script src="/forum.js?v=20261030-forum-advanced"></script>
 </body>
 </html>
