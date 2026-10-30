@@ -1316,3 +1316,12 @@ background:linear-gradient(180deg,#131821,#0e1219);border-color:#283141;box-shad
   font-style:italic
 }
 
+/* Forum hidden-state fix - 2026-10-30 */
+.forum-guest[hidden],
+.forum-form[hidden],
+.forum-reply-context[hidden],
+.forum-message-preview[hidden],
+.forum-emoji-panel[hidden]{
+  display:none!important;
+}
+
