@@ -154,40 +154,159 @@
     return data;
   }
 
+  function editorRange() {
+    if (!text) return null;
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return null;
+    const range = selection.getRangeAt(0);
+    const container = range.commonAncestorContainer.nodeType === Node.ELEMENT_NODE
+      ? range.commonAncestorContainer
+      : range.commonAncestorContainer.parentElement;
+    return container && text.contains(container) ? range : null;
+  }
+
+  function placeCaretAfter(node) {
+    const range = document.createRange();
+    range.setStartAfter(node);
+    range.collapse(true);
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
+
+  function insertTextAtRange(value, selectInserted = false) {
+    if (!text) return;
+    text.focus();
+    let range = editorRange();
+    if (!range) {
+      range = document.createRange();
+      range.selectNodeContents(text);
+      range.collapse(false);
+    }
+    range.deleteContents();
+    const node = document.createTextNode(value);
+    range.insertNode(node);
+    const selection = window.getSelection();
+    const next = document.createRange();
+    if (selectInserted) next.selectNodeContents(node);
+    else {
+      next.setStartAfter(node);
+      next.collapse(true);
+    }
+    selection.removeAllRanges();
+    selection.addRange(next);
+    updateCounter();
+  }
+
   function wrapSelection(open, close) {
     if (!text) return;
-    const start = text.selectionStart ?? text.value.length;
-    const end = text.selectionEnd ?? start;
-    const selected = text.value.slice(start, end);
-    const replacement = open + selected + close;
-    text.setRangeText(replacement, start, end, "select");
-    if (!selected) {
-      const pos = start + open.length;
-      text.setSelectionRange(pos, pos);
+    text.focus();
+    let range = editorRange();
+    if (!range) {
+      range = document.createRange();
+      range.selectNodeContents(text);
+      range.collapse(false);
     }
+
+    if (range.collapsed) {
+      const node = document.createTextNode(open + close);
+      range.insertNode(node);
+      const caret = document.createRange();
+      caret.setStart(node, open.length);
+      caret.collapse(true);
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(caret);
+    } else {
+      const endRange = range.cloneRange();
+      endRange.collapse(false);
+      const closeNode = document.createTextNode(close);
+      endRange.insertNode(closeNode);
+
+      const startRange = range.cloneRange();
+      startRange.collapse(true);
+      const openNode = document.createTextNode(open);
+      startRange.insertNode(openNode);
+    }
+
     text.focus();
     updateCounter();
   }
 
   function insertAtCursor(value) {
+    insertTextAtRange(value, false);
+  }
+
+  function selectedEditorText() {
+    const range = editorRange();
+    return range ? window.getSelection().toString() : "";
+  }
+
+  function replaceSelectionWithText(value) {
+    insertTextAtRange(value, false);
+  }
+
+  function editorNodeToBbcode(node) {
+    if (node.nodeType === Node.TEXT_NODE) return node.nodeValue || "";
+    if (node.nodeType !== Node.ELEMENT_NODE) return "";
+
+    const tag = node.tagName.toLowerCase();
+    const inner = [...node.childNodes].map(editorNodeToBbcode).join("");
+
+    if (tag === "br") return "\n";
+    if (tag === "b" || tag === "strong") return "[b]" + inner + "[/b]";
+    if (tag === "i" || tag === "em") return "[i]" + inner + "[/i]";
+    if (tag === "u") return "[u]" + inner + "[/u]";
+    if (tag === "s" || tag === "strike" || tag === "del") return "[s]" + inner + "[/s]";
+    if (tag === "span") {
+      let result = inner;
+      const style = node.style || {};
+      const weight = String(style.fontWeight || "").toLowerCase();
+      const decoration = String(style.textDecoration || style.textDecorationLine || "").toLowerCase();
+      if (weight === "bold" || Number(weight) >= 600) result = "[b]" + result + "[/b]";
+      if (String(style.fontStyle || "").toLowerCase() === "italic") result = "[i]" + result + "[/i]";
+      if (decoration.includes("underline")) result = "[u]" + result + "[/u]";
+      if (decoration.includes("line-through")) result = "[s]" + result + "[/s]";
+      return result;
+    }
+    if (tag === "div" || tag === "p") return inner + "\n";
+
+    return inner;
+  }
+
+  function editorToBbcode() {
+    if (!text) return "";
+    return [...text.childNodes].map(editorNodeToBbcode).join("")
+      .replace(/\n{3,}/g, "\n\n")
+      .replace(/\n+$/g, "");
+  }
+
+  function editorHtmlFromBbcode(value) {
+    let html = escapeHtml(value || "");
+    html = html.replace(/\[b\]([\s\S]*?)\[\/b\]/gi, "<strong>$1</strong>");
+    html = html.replace(/\[i\]([\s\S]*?)\[\/i\]/gi, "<em>$1</em>");
+    html = html.replace(/\[u\]([\s\S]*?)\[\/u\]/gi, "<u>$1</u>");
+    html = html.replace(/\[s\]([\s\S]*?)\[\/s\]/gi, "<s>$1</s>");
+    return html.replace(/\n/g, "<br>");
+  }
+
+  function setEditorBbcode(value) {
     if (!text) return;
-    const start = text.selectionStart ?? text.value.length;
-    const end = text.selectionEnd ?? start;
-    text.setRangeText(value, start, end, "end");
-    text.focus();
+    text.innerHTML = editorHtmlFromBbcode(value || "");
     updateCounter();
   }
 
+
   function updatePreview() {
     if (!previewBox || !previewBody || previewBox.hidden) return;
-    const value = text?.value.trim() || "";
+    const value = editorToBbcode().trim();
     previewBody.innerHTML = value
       ? renderMarkup(value)
       : '<span class="forum-preview-empty">Сообщение пока пустое.</span>';
   }
 
   function updateCounter() {
-    if (counter && text) counter.textContent = text.value.length + " / 12000";
+    if (counter && text) counter.textContent = editorToBbcode().length + " / 12000";
     updatePreview();
     updateFormatButtons();
   }
@@ -225,7 +344,7 @@
     if (editCancel) editCancel.hidden = true;
     if (editorTitle) editorTitle.textContent = "Написать сообщение";
     if (submit) submit.textContent = "Ответить";
-    if (clearText && text) text.value = "";
+    if (clearText && text) text.innerHTML = "";
     if (previewBox) previewBox.hidden = true;
     if (previewButton) previewButton.textContent = "Предпросмотр";
     updateCounter();
@@ -258,8 +377,7 @@
     editingId = Number(item.id);
     pendingFiles = [];
     renderPendingFiles();
-    text.value = String(item.body || "");
-    updateCounter();
+    setEditorBbcode(String(item.body || ""));
     if (replyContext) replyContext.hidden = true;
     if (editCancel) editCancel.hidden = false;
     if (editorTitle) editorTitle.textContent = "Редактирование сообщения #" + item.number;
@@ -600,7 +718,7 @@
 
   async function submitMessage(event) {
     event.preventDefault();
-    const body = text?.value.trim() || "";
+    const body = editorToBbcode().trim();
     if (body.length < 2) {
       setStatus("Введите сообщение.", "error");
       return;
@@ -653,64 +771,39 @@
   }
 
   const formatButtons = [...document.querySelectorAll(".forum-tool[data-format]")];
+  const formatCommands = { b: "bold", i: "italic", u: "underline", s: "strikeThrough" };
 
-  function isFormatActiveAtCursor(tag) {
-    if (!text) return false;
-    const position = text.selectionStart ?? text.value.length;
-    const before = text.value.slice(0, position);
-    const pattern = new RegExp("\\[(/?)" + tag + "\\]", "gi");
-    let depth = 0;
-    let match;
-    while ((match = pattern.exec(before)) !== null) {
-      if (match[1]) depth = Math.max(0, depth - 1);
-      else depth += 1;
-    }
-    return depth > 0;
+  function selectionIsInEditor() {
+    return Boolean(editorRange());
   }
 
   function updateFormatButtons() {
     formatButtons.forEach(button => {
-      const tag = button.dataset.format;
-      const active = Boolean(tag && isFormatActiveAtCursor(tag));
+      const command = formatCommands[button.dataset.format];
+      let active = false;
+      try {
+        active = Boolean(command && selectionIsInEditor() && document.queryCommandState(command));
+      } catch (_) {}
       button.classList.toggle("active", active);
       button.setAttribute("aria-pressed", active ? "true" : "false");
     });
   }
 
   function toggleFormat(tag) {
-    if (!text || !tag) return;
+    const command = formatCommands[tag];
+    if (!text || !command) return;
 
-    const open = "[" + tag + "]";
-    const close = "[/" + tag + "]";
-    let start = text.selectionStart ?? text.value.length;
-    let end = text.selectionEnd ?? start;
-    const selected = text.value.slice(start, end);
-
-    if (start !== end) {
-      const before = text.value.slice(0, start);
-      const after = text.value.slice(end);
-
-      if (before.endsWith(open) && after.startsWith(close)) {
-        const replaceStart = start - open.length;
-        const replaceEnd = end + close.length;
-        text.setRangeText(selected, replaceStart, replaceEnd, "select");
-        text.setSelectionRange(replaceStart, replaceStart + selected.length);
-      } else if (selected.startsWith(open) && selected.endsWith(close)) {
-        const inner = selected.slice(open.length, selected.length - close.length);
-        text.setRangeText(inner, start, end, "select");
-        text.setSelectionRange(start, start + inner.length);
-      } else {
-        text.setRangeText(open + selected + close, start, end, "select");
-        text.setSelectionRange(start + open.length, start + open.length + selected.length);
-      }
-    } else {
-      const active = isFormatActiveAtCursor(tag);
-      const token = active ? close : open;
-      text.setRangeText(token, start, end, "end");
-      const position = start + token.length;
-      text.setSelectionRange(position, position);
+    text.focus();
+    if (!editorRange()) {
+      const range = document.createRange();
+      range.selectNodeContents(text);
+      range.collapse(false);
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
     }
 
+    document.execCommand(command, false, null);
     text.focus();
     updateCounter();
     updateFormatButtons();
@@ -718,6 +811,7 @@
 
   formatButtons.forEach(button => {
     button.setAttribute("aria-pressed", "false");
+    button.addEventListener("mousedown", event => event.preventDefault());
     button.addEventListener("click", () => toggleFormat(button.dataset.format));
   });
 
@@ -745,7 +839,7 @@
   });
 
   linkButton?.addEventListener("click", () => {
-    const selected = text?.value.slice(text.selectionStart || 0, text.selectionEnd || 0).trim() || "";
+    const selected = selectedEditorText().trim();
     const url = prompt("Введите адрес ссылки (http:// или https://):", selected.startsWith("http") ? selected : "https://");
     if (!url) return;
     if (!safeHttpUrl(url)) {
@@ -753,15 +847,7 @@
       return;
     }
     const label = selected && !selected.startsWith("http") ? selected : (prompt("Текст ссылки:", "Ссылка") || "Ссылка");
-    if (selected) {
-      const start = text.selectionStart ?? 0;
-      const end = text.selectionEnd ?? start;
-      text.setRangeText("[url=" + url.trim() + "]" + label + "[/url]", start, end, "end");
-      updateCounter();
-      text.focus();
-    } else {
-      insertAtCursor("[url=" + url.trim() + "]" + label + "[/url]");
-    }
+    replaceSelectionWithText("[url=" + url.trim() + "]" + label + "[/url]");
   });
 
   imageButton?.addEventListener("click", () => {
@@ -818,7 +904,10 @@
   text?.addEventListener("input", updateCounter);
   text?.addEventListener("click", updateFormatButtons);
   text?.addEventListener("keyup", updateFormatButtons);
-  text?.addEventListener("select", updateFormatButtons);
+  text?.addEventListener("mouseup", updateFormatButtons);
+  document.addEventListener("selectionchange", () => {
+    if (selectionIsInEditor()) updateFormatButtons();
+  });
   form?.addEventListener("submit", submitMessage);
 
   addEventListener("popstate", () => {
