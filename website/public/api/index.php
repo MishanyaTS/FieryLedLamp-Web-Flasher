@@ -893,7 +893,6 @@ function discussion_list(PDO $pdo): never {
 
 function discussion_post(PDO $pdo): never {
     $user = require_user($pdo);
-    require_csrf();
     ensure_discussion_table($pdo);
     rate_limit($pdo, 'discussion-post', 8, 60);
 
