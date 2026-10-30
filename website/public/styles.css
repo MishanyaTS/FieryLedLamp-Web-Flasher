@@ -1224,3 +1224,67 @@ background:linear-gradient(180deg,#131821,#0e1219);border-color:#283141;box-shad
   .account-file-button span{justify-content:center}
 }
 
+/* Forum links images spoilers - 2026-10-30 */
+.forum-inline-link{
+  color:#ff9d69;
+  text-decoration:underline;
+  text-decoration-color:#ff7b4266;
+  text-underline-offset:3px
+}
+.forum-inline-link:hover{color:#ffc09a;text-decoration-color:#ff9d69}
+.forum-inline-image-link{
+  display:block;
+  width:max-content;
+  max-width:100%;
+  margin:14px 0;
+  border-radius:14px;
+  overflow:hidden;
+  border:1px solid #303a47;
+  background:#090d13
+}
+.forum-inline-image{
+  display:block;
+  max-width:min(100%,900px);
+  max-height:620px;
+  width:auto;
+  height:auto;
+  object-fit:contain
+}
+.forum-spoiler{
+  margin:14px 0;
+  border:1px solid #343e4b;
+  border-radius:12px;
+  background:#0d1218;
+  overflow:hidden
+}
+.forum-spoiler summary{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:11px 13px;
+  color:#b7c0cc;
+  font-size:12px;
+  font-weight:800;
+  cursor:pointer;
+  user-select:none;
+  list-style:none;
+  background:#121820
+}
+.forum-spoiler summary::-webkit-details-marker{display:none}
+.forum-spoiler summary::before{
+  content:"▸";
+  color:#ff965f;
+  font-size:13px;
+  transition:transform .16s ease
+}
+.forum-spoiler[open] summary::before{transform:rotate(90deg)}
+.forum-spoiler-content{
+  padding:14px 15px;
+  border-top:1px solid #2a333f;
+  color:#aeb8c5;
+  line-height:1.65
+}
+@media(max-width:680px){
+  .forum-inline-image{max-height:420px}
+}
+
