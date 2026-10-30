@@ -258,6 +258,17 @@
     if (tag === "i" || tag === "em") return "[i]" + inner + "[/i]";
     if (tag === "u") return "[u]" + inner + "[/u]";
     if (tag === "s" || tag === "strike" || tag === "del") return "[s]" + inner + "[/s]";
+    if (tag === "span") {
+      let result = inner;
+      const style = node.style || {};
+      const weight = String(style.fontWeight || "").toLowerCase();
+      const decoration = String(style.textDecoration || style.textDecorationLine || "").toLowerCase();
+      if (weight === "bold" || Number(weight) >= 600) result = "[b]" + result + "[/b]";
+      if (String(style.fontStyle || "").toLowerCase() === "italic") result = "[i]" + result + "[/i]";
+      if (decoration.includes("underline")) result = "[u]" + result + "[/u]";
+      if (decoration.includes("line-through")) result = "[s]" + result + "[/s]";
+      return result;
+    }
     if (tag === "div" || tag === "p") return inner + "\n";
 
     return inner;
