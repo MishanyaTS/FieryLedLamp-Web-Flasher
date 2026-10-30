@@ -552,7 +552,7 @@
       renderPager(topPager, pagination);
       renderPager(bottomPager, pagination);
 
-      if (scroll) document.querySelector(".forum-thread-head")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (scroll) posts?.scrollIntoView({ behavior: "smooth", block: "start" });
     } catch (error) {
       posts.replaceChildren();
       const box = document.createElement("div");
