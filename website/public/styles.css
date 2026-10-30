@@ -1288,3 +1288,31 @@ background:linear-gradient(180deg,#131821,#0e1219);border-color:#283141;box-shad
   .forum-inline-image{max-height:420px}
 }
 
+/* Forum message preview - 2026-10-30 */
+.forum-message-preview{
+  margin-top:14px;
+  border:1px solid #34404d;
+  border-radius:14px;
+  overflow:hidden;
+  background:#0b1016
+}
+.forum-message-preview-head{
+  padding:10px 13px;
+  border-bottom:1px solid #2b3541;
+  background:#121820;
+  color:#aeb8c5;
+  font-size:11px;
+  font-weight:850;
+  letter-spacing:.04em;
+  text-transform:uppercase
+}
+.forum-message-preview-body{
+  min-height:90px;
+  padding:16px 17px;
+  margin:0
+}
+.forum-preview-empty{
+  color:#687485;
+  font-style:italic
+}
+
