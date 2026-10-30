@@ -20,18 +20,44 @@ if (!is_array($config)) {
     json_response(['ok' => false, 'message' => 'Ошибка конфигурации сервера.'], 500);
 }
 
-session_name('fieryledlamp_session');
-ini_set('session.gc_maxlifetime', (string)(60 * 60 * 24 * 30));
-session_set_cookie_params([
-    'lifetime' => 0,
-    'path' => '/',
-    'secure' => true,
-    'httponly' => true,
-    'samesite' => 'Lax',
-]);
-session_start();
-if (empty($_SESSION['csrf'])) {
-    $_SESSION['csrf'] = bin2hex(random_bytes(24));
+$action = (string)($_GET['action'] ?? '');
+$publicRequest = in_array($action, ['track', 'track-pixel', 'download', 'avatar', 'discussion-file'], true);
+
+if ($action === 'track') {
+    $origin = (string)($_SERVER['HTTP_ORIGIN'] ?? '');
+    if ($origin === 'https://firmware.fieryledlamp.ru') {
+        header('Access-Control-Allow-Origin: https://firmware.fieryledlamp.ru');
+        header('Vary: Origin');
+    }
+    if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
+        http_response_code(204);
+        exit;
+    }
+}
+
+// Public statistics, downloads and images must not acquire the account's
+// session lock while resolving a country or transferring a file.
+if (!$publicRequest) {
+    session_name('fieryledlamp_session');
+    ini_set('session.gc_maxlifetime', (string)(60 * 60 * 24 * 30));
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path' => '/',
+        'secure' => true,
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
+    session_start();
+    if (empty($_SESSION['csrf'])) {
+        $_SESSION['csrf'] = bin2hex(random_bytes(24));
+    }
+}
+
+// Anonymous page headers do not need a database connection or migrations.
+if ($action === 'me' && empty($_SESSION['user_id'])) {
+    require_method('GET');
+    session_write_close();
+    json_response(['ok' => false, 'message' => 'Требуется вход в аккаунт.'], 401);
 }
 
 try {
@@ -49,21 +75,7 @@ try {
     json_response(['ok' => false, 'message' => 'База данных недоступна.'], 503);
 }
 
-ensure_account_settings_schema($pdo);
-
-$action = (string)($_GET['action'] ?? '');
-
-if ($action === 'track') {
-    $origin = (string)($_SERVER['HTTP_ORIGIN'] ?? '');
-    if ($origin === 'https://firmware.fieryledlamp.ru') {
-        header('Access-Control-Allow-Origin: https://firmware.fieryledlamp.ru');
-        header('Vary: Origin');
-    }
-    if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
-        http_response_code(204);
-        exit;
-    }
-}
+if (!$publicRequest || $action === 'avatar') ensure_account_settings_schema($pdo);
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'verify-email') {
     verify_email($pdo, $config);
@@ -247,9 +259,18 @@ function rate_limit(PDO $pdo, string $action, int $limit, int $seconds): void {
         ->execute([$key, $action]);
 }
 
+function schema_ready_file(string $schema): string {
+    global $config;
+    $identity = $schema . '|' . (string)($config['db_dsn'] ?? '') . '|' . (string)($config['db_user'] ?? '');
+    return dirname(__DIR__, 2) . '/fieryledlamp-private/schema-' . hash('sha256', $identity) . '.ready';
+}
+
 function ensure_account_settings_schema(PDO $pdo): void {
     static $ready = false;
     if ($ready) return;
+    $marker = schema_ready_file('account-settings-v1');
+    if (is_file($marker)) { $ready = true; return; }
+    $complete = true;
 
     $columns = [
         'notify_forum' => "ALTER TABLE users ADD COLUMN notify_forum TINYINT(1) NOT NULL DEFAULT 0 AFTER notify_updates",
@@ -263,8 +284,10 @@ function ensure_account_settings_schema(PDO $pdo): void {
             if (!$stmt || !$stmt->fetch()) $pdo->exec($sql);
         } catch (Throwable $e) {
             // The regular account request will report an error if the schema cannot be upgraded.
+            $complete = false;
         }
     }
+    if ($complete) @file_put_contents($marker, "ready\n", LOCK_EX);
     $ready = true;
 }
 
@@ -457,8 +480,9 @@ function track_download_and_redirect(PDO $pdo, array $config): never {
     }
 
     [$event, $target] = $map[$file];
-    record_analytics_event($pdo, $config, $event, $file, '/fiery-lamp-control.html', '');
     header('Location: ' . $target, true, 302);
+    if (function_exists('fastcgi_finish_request')) fastcgi_finish_request();
+    record_analytics_event($pdo, $config, $event, $file, '/fiery-lamp-control.html', '');
     exit;
 }
 
@@ -935,6 +959,8 @@ function forum_try_schema(PDO $pdo, string $sql): void {
 function ensure_discussion_table(PDO $pdo): void {
     static $ready = false;
     if ($ready) return;
+    $marker = schema_ready_file('forum-features-v1');
+    if (is_file($marker)) { $ready = true; return; }
 
     try {
         $pdo->exec("CREATE TABLE IF NOT EXISTS discussion_messages (
@@ -983,6 +1009,11 @@ function ensure_discussion_table(PDO $pdo): void {
             CONSTRAINT fk_discussion_attachment_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 
+        $columns = $pdo->query('SHOW COLUMNS FROM discussion_messages')->fetchAll(PDO::FETCH_COLUMN);
+        if (array_diff(['parent_id', 'edited_at', 'deleted_at'], $columns)) {
+            throw new RuntimeException('Forum schema is incomplete.');
+        }
+        @file_put_contents($marker, "ready\n", LOCK_EX);
         $ready = true;
     } catch (Throwable $e) {
         json_response(['ok' => false, 'message' => 'Форум временно недоступен.'], 503);

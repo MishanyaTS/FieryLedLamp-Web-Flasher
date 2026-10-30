@@ -86,6 +86,25 @@ def build(check=False):
         for name in ('header.css', 'header.js'):
             outputs[folder / name] = sources[name]
     outputs[ROOT / 'firmware/header-search.json'] = (ROOT / 'website/public/header-search.json').read_text()
+    # Use one content version per asset on every page. Previously site.js had
+    # different query strings on login/forum/account pages, defeating reuse.
+    hashes = {}
+    asset_pattern = re.compile(r'((?:href|src)=")(?P<base>/|\./)(?P<name>[^"?#]+\.(?:css|js))(?:\?[^"#]*)?(")')
+    for path, content in list(outputs.items()):
+        if path.suffix != '.html':
+            continue
+        folder = ROOT / ('firmware' if path.is_relative_to(ROOT / 'firmware') else 'website/public')
+        def stamp_asset(match):
+            name = match.group('name')
+            if name in ('header.css', 'header.js'):
+                return match.group()
+            asset = folder / name
+            if not asset.is_file():
+                return match.group()
+            if asset not in hashes:
+                hashes[asset] = hashlib.sha256(asset.read_bytes()).hexdigest()[:12]
+            return match.group(1) + match.group('base') + name + '?v=' + hashes[asset] + '"'
+        outputs[path] = asset_pattern.sub(stamp_asset, content)
     changed = [path for path, content in outputs.items() if not path.exists() or path.read_text() != content]
     if check and changed:
         raise SystemExit('Shared header is out of date: ' + ', '.join(str(p.relative_to(ROOT)) for p in changed))

@@ -771,7 +771,7 @@
     if (guest) guest.hidden = true;
     if (form) form.hidden = true;
     try {
-      const response = await fetch(meUrl, { credentials: "same-origin", cache: "no-store" });
+      const response = await (window.FierySession ? window.FierySession.get() : fetch(meUrl, { credentials: "same-origin", cache: "no-store" }));
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok || !data.ok || !data.user) {

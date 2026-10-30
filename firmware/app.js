@@ -1,10 +1,24 @@
-import { ESPLoader, Transport } from "https://unpkg.com/esptool-js@0.6.1/bundle.js";
 import { SITE_CONFIG } from "./config.js";
 
+let flashingToolsPromise;
+function loadFlashingTools() {
+  if (!flashingToolsPromise) {
+    const zip = globalThis.JSZip ? Promise.resolve() : new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = new URL("./vendor/jszip-3.10.1/jszip.min.js", import.meta.url).href;
+      script.onload = () => globalThis.JSZip ? resolve() : reject(new Error("Не удалось загрузить библиотеку JSZip."));
+      script.onerror = () => { script.remove(); reject(new Error("Не удалось загрузить библиотеку JSZip. Повторите попытку.")); };
+      document.head.appendChild(script);
+    });
+    flashingToolsPromise = Promise.all([
+      import("./vendor/esptool-js-0.6.1/bundle.js"), zip
+    ]).then(([tools]) => tools).catch(error => { flashingToolsPromise = undefined; throw error; });
+  }
+  return flashingToolsPromise;
+}
 
 const ANALYTICS_URL = "./track.php";
 const ANALYTICS_STORAGE_KEY = "fiery_analytics_id";
-const ANALYTICS_BEACONS = [];
 
 function analyticsVisitorId() {
   try {
@@ -28,15 +42,9 @@ function trackAnalytics(event, item = "", path = "/") {
       visitorId: analyticsVisitorId(),
       t: String(Date.now())
     });
-    const image = new Image();
-    ANALYTICS_BEACONS.push(image);
-    const done = () => {
-      const index = ANALYTICS_BEACONS.indexOf(image);
-      if (index >= 0) ANALYTICS_BEACONS.splice(index, 1);
-    };
-    image.onload = done;
-    image.onerror = done;
-    image.src = ANALYTICS_URL + "?" + params.toString();
+    fetch(ANALYTICS_URL + "?" + params.toString(), {
+      cache: "no-store", credentials: "same-origin", keepalive: true
+    }).catch(() => {});
   } catch (_) {}
 }
 
@@ -321,6 +329,8 @@ async function flash(){
   if(isBusy)return; clearResult(); setBusy(true); setProgress(0,"Подготовка прошивки…"); let transport=null;
   try{
     if(!selectedPort)await choosePort(); setStep(2);
+    setProgress(1, "Подготовка инструментов прошивки…");
+    const { ESPLoader, Transport } = await loadFlashingTools();
     const files=await loadFirmwareFiles(); const totalBytes=files.reduce((s,f)=>s+f.data.length,0); const writtenByFile=new Array(files.length).fill(0);
 
     if(ui.saveSettings?.checked){
@@ -353,7 +363,15 @@ ui.flashBtn.addEventListener("click",flash);ui.clearLogBtn.addEventListener("cli
 if(ui.saveSettings) ui.saveSettings.addEventListener("change",syncEraseAllState);
 if("serial"in navigator)navigator.serial.addEventListener("disconnect",e=>{if(selectedPort&&e.target===selectedPort&&!isBusy){ui.portDot.classList.remove("good");ui.portText.textContent="Порт отключён";setStep(1);log("COM-порт отключён.");}});
 (async function init(){
-  trackAnalytics("firmware_page_view", "", "/");
+  let viewSent = false;
+  const sendView = () => { if (!viewSent) { viewSent = true; trackAnalytics("firmware_page_view", "", "/"); } };
+  const scheduleView = () => {
+    if ("requestIdleCallback" in window) requestIdleCallback(sendView, { timeout: 1500 });
+    else setTimeout(sendView, 300);
+  };
+  addEventListener("pagehide", sendView, { once: true });
+  if (document.readyState === "complete") scheduleView();
+  else addEventListener("load", scheduleView, { once: true });
   setStep(0);
   checkCompatibility();
   try{

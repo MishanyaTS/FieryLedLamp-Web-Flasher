@@ -9,6 +9,7 @@ on:
       - "firmware/Version.txt"
       - "website/shared/header/**"
       - "scripts/render-header.py"
+      - "scripts/optimize-images.py"
       - ".github/workflows/deploy-hostiman.yml"
   workflow_dispatch:
 
@@ -58,6 +59,12 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y lftp
+
+      - name: Optimize connection diagram
+        run: |
+          python3 -m venv .image-tools
+          .image-tools/bin/python -m pip install --disable-pip-version-check --quiet Pillow==11.3.0
+          .image-tools/bin/python scripts/optimize-images.py
 
       - name: Deploy website/public to HostiMan
         env:

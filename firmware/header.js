@@ -2,6 +2,17 @@
   "use strict";
   const header = document.querySelector(".fl-header");
   if (!header) return;
+  if (header.dataset.auth === "local" && !window.FierySession) {
+    let pending;
+    window.FierySession = {
+      get() {
+        if (!pending) pending = fetch("/api/index.php?action=me", { credentials: "same-origin", cache: "no-store" })
+          .catch(error => { pending = undefined; throw error; });
+        return pending.then(response => response.clone());
+      },
+      invalidate() { pending = undefined; }
+    };
+  }
   const menu = header.querySelector(".fl-menu-toggle");
   const nav = header.querySelector(".fl-main-nav");
   const dropdowns = [...header.querySelectorAll(".fl-subnav-toggle")];
@@ -163,7 +174,6 @@
       closeDropdowns();
       if (!desktop.matches) closeMenu();
       if (input.value.trim()) runSearch();
-      else loadIndex().catch(() => {});
     });
     input.addEventListener("keydown", event => {
       if (event.key === "ArrowDown" || event.key === "ArrowUp") {
@@ -190,7 +200,7 @@
   }
 
   if (header.dataset.auth === "local") {
-    fetch("/api/index.php?action=me", { credentials: "same-origin", cache: "no-store" })
+    window.FierySession.get()
       .then(response => response.ok ? response.json() : null)
       .then(data => {
         if (!data?.ok || !data.user) return;
