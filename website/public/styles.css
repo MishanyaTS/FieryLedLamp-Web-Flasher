@@ -1330,3 +1330,18 @@ background:linear-gradient(180deg,#131821,#0e1219);border-color:#283141;box-shad
   display:flex!important;
 }
 
+/* Account username editing - 2026-10-30 */
+.account-name-form{margin:0 0 16px}
+.account-name-form label>span{display:block;margin-bottom:7px;color:#8792a2;font-size:11px;font-weight:750}
+.account-name-row{display:flex;align-items:center;gap:9px}
+.account-name-row input{
+  min-width:0;flex:1;height:42px;padding:0 12px;border:1px solid #303a48;border-radius:10px;
+  background:#0a0f15;color:#fff;font:inherit;outline:none
+}
+.account-name-row input:focus{border-color:#8a4c31;box-shadow:0 0 0 3px #ff6b2c16}
+.account-name-form .form-status{margin-top:8px}
+@media(max-width:580px){
+  .account-name-row{align-items:stretch;flex-direction:column}
+  .account-name-row .btn{width:100%}
+}
+
