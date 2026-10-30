@@ -563,33 +563,37 @@
     }
   }
 
+  function showGuestState() {
+    csrf = "";
+    viewer = null;
+    if (userLabel) userLabel.textContent = "";
+    if (guest) guest.hidden = false;
+    if (form) form.hidden = true;
+  }
+
+  function showUserState(data) {
+    csrf = String(data.csrf || "");
+    viewer = data.user || null;
+    if (userLabel) userLabel.textContent = data.user?.name ? "Вы вошли как " + data.user.name : "";
+    if (guest) guest.hidden = true;
+    if (form) form.hidden = false;
+  }
+
   async function loadUser() {
     if (guest) guest.hidden = true;
     if (form) form.hidden = true;
     try {
       const response = await fetch(meUrl, { credentials: "same-origin", cache: "no-store" });
       const data = await response.json().catch(() => ({}));
-      if (response.status === 401) {
-        csrf = "";
-        viewer = null;
-        if (userLabel) userLabel.textContent = "";
-        if (guest) guest.hidden = false;
+
+      if (!response.ok || !data.ok || !data.user) {
+        showGuestState();
         return;
       }
-      if (!response.ok || !data.ok) throw new Error(data.message || "Не удалось проверить аккаунт.");
 
-      csrf = String(data.csrf || "");
-      viewer = data.user || null;
-      if (userLabel) userLabel.textContent = data.user?.name ? "Вы вошли как " + data.user.name : "";
-      if (guest) guest.hidden = true;
-      if (form) form.hidden = false;
-    } catch (error) {
-      csrf = "";
-      viewer = null;
-      if (userLabel) userLabel.textContent = "";
-      if (guest) guest.hidden = true;
-      if (form) form.hidden = true;
-      setStatus(error.message || "Не удалось проверить аккаунт.", "error");
+      showUserState(data);
+    } catch (_) {
+      showGuestState();
     }
   }
 
