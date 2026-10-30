@@ -309,7 +309,9 @@
     }
   };
 
-  const params = new URLSearchParams(location.search);\n  const requestedNext = params.get("next") || "";\n  const nextPath = requestedNext.startsWith("/") && !requestedNext.startsWith("//") ? requestedNext : "/account.html";
+  const params = new URLSearchParams(location.search);
+  const requestedNext = params.get("next") || "";
+  const nextPath = requestedNext.startsWith("/") && !requestedNext.startsWith("//") ? requestedNext : "/account.html";
 
   const registerForm = document.querySelector("#registerForm");
   if (registerForm) {
