@@ -1080,7 +1080,7 @@ function discussion_list(PDO $pdo): never {
 
     $pageSize = 20;
     $page = max(1, (int)($_GET['page'] ?? 1));
-    $total = (int)$pdo->query('SELECT COUNT(*) FROM discussion_messages')->fetchColumn();
+    $total = (int)$pdo->query('SELECT COUNT(*) FROM discussion_messages WHERE deleted_at IS NULL')->fetchColumn();
     $pages = max(1, (int)ceil($total / $pageSize));
     if ($page > $pages) $page = $pages;
     $offset = ($page - 1) * $pageSize;
@@ -1092,8 +1092,9 @@ function discussion_list(PDO $pdo): never {
             p.body AS parent_body,p.deleted_at AS parent_deleted_at,pu.name AS parent_author
         FROM discussion_messages m
         INNER JOIN users u ON u.id=m.user_id
-        LEFT JOIN discussion_messages p ON p.id=m.parent_id
+        LEFT JOIN discussion_messages p ON p.id=m.parent_id AND p.deleted_at IS NULL
         LEFT JOIN users pu ON pu.id=p.user_id
+        WHERE m.deleted_at IS NULL
         ORDER BY m.id ASC
         LIMIT " . $pageSize . " OFFSET " . $offset;
     $rows = $pdo->query($sql)->fetchAll();
@@ -1109,12 +1110,11 @@ function discussion_list(PDO $pdo): never {
         $id = (int)$row['id'];
         $deleted = !empty($row['deleted_at']);
         $parent = null;
-        if (!empty($row['parent_id'])) {
-            $parentBody = !empty($row['parent_deleted_at']) ? 'Сообщение удалено' : forum_text_snippet((string)($row['parent_body'] ?? ''));
+        if (!empty($row['parent_id']) && !empty($row['parent_author'])) {
             $parent = [
                 'id' => (int)$row['parent_id'],
-                'author' => (string)($row['parent_author'] ?? 'Пользователь'),
-                'snippet' => $parentBody,
+                'author' => (string)$row['parent_author'],
+                'snippet' => forum_text_snippet((string)($row['parent_body'] ?? '')),
             ];
         }
         return [
@@ -1259,9 +1259,10 @@ function discussion_delete(PDO $pdo): never {
 
     $pdo->beginTransaction();
     try {
+        $pdo->prepare('UPDATE discussion_messages SET parent_id=NULL WHERE parent_id=?')->execute([$id]);
         $pdo->prepare('DELETE FROM discussion_likes WHERE message_id=?')->execute([$id]);
         $pdo->prepare('DELETE FROM discussion_attachments WHERE message_id=?')->execute([$id]);
-        $pdo->prepare("UPDATE discussion_messages SET body='',deleted_at=NOW(),edited_at=NULL WHERE id=?")->execute([$id]);
+        $pdo->prepare('DELETE FROM discussion_messages WHERE id=?')->execute([$id]);
         $pdo->commit();
     } catch (Throwable $e) {
         if ($pdo->inTransaction()) $pdo->rollBack();
