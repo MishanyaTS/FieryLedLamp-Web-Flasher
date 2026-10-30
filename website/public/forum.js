@@ -262,7 +262,7 @@
 
     const article = document.createElement("article");
     article.className = "forum-post" + (item.deleted ? " forum-post-is-deleted" : "");
-    article.id = "post-" + number;
+    article.id = "message-" + item.id;
     article.dataset.messageId = String(item.id);
 
     const authorPanel = document.createElement("aside");
@@ -323,7 +323,7 @@
     }
     const anchor = document.createElement("a");
     anchor.className = "forum-post-number";
-    anchor.href = "#post-" + number;
+    anchor.href = "#message-" + item.id;
     anchor.textContent = "#" + number;
     top.append(date, anchor);
     main.appendChild(top);
