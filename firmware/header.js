@@ -7,7 +7,7 @@
   const dropdowns = [...header.querySelectorAll(".fl-subnav-toggle")];
   const search = header.querySelector(".fl-search");
   const input = search?.querySelector("input");
-  const results = search?.querySelector(".fl-search-results");
+  const results = header.querySelector(".fl-search-results");
   const mainBase = new URL(header.dataset.mainBase || "/", location.href);
   let indexPromise;
   let matches = [];
@@ -53,7 +53,7 @@
   });
   document.addEventListener("pointerdown", event => {
     if (!header.contains(event.target)) { closeDropdowns(); closeSearch(); }
-    else if (search && !search.contains(event.target)) closeSearch();
+    else if (search && !search.contains(event.target) && !results?.contains(event.target)) closeSearch();
   });
   document.addEventListener("keydown", event => {
     if (event.key !== "Escape") return;
@@ -102,7 +102,11 @@
       option.setAttribute("aria-selected", String(index === selected));
     });
     input.setAttribute("aria-activedescendant", options[selected].id);
-    options[selected].scrollIntoView({ block: "nearest" });
+    const option = options[selected];
+    const top = option.offsetTop;
+    const bottom = top + option.offsetHeight;
+    if (top < results.scrollTop) results.scrollTop = top;
+    else if (bottom > results.scrollTop + results.clientHeight) results.scrollTop = bottom - results.clientHeight;
   };
   const runSearch = async () => {
     const revision = ++searchRevision;
@@ -138,6 +142,7 @@
         link.append(title, description);
         results.append(link);
       });
+      results.scrollTop = 0;
       showResults();
       return matches;
     } catch (_) {
@@ -177,7 +182,11 @@
         if (option) location.assign(option.href);
       }
     });
-    search.addEventListener("focusout", event => { if (!search.contains(event.relatedTarget)) closeSearch(); });
+    const closeOnFocusOut = event => {
+      if (!search.contains(event.relatedTarget) && !results.contains(event.relatedTarget)) closeSearch();
+    };
+    search.addEventListener("focusout", closeOnFocusOut);
+    results.addEventListener("focusout", closeOnFocusOut);
   }
 
   if (header.dataset.auth === "local") {
@@ -192,6 +201,7 @@
         login.querySelector("span").textContent = data.user.name || "Мой аккаунт";
         login.querySelector("span").classList.add("fl-profile-label");
         login.setAttribute("aria-label", "Мой аккаунт: " + (data.user.name || ""));
+        login.title = "Мой аккаунт: " + (data.user.name || "");
         if (register) register.hidden = true;
       }).catch(() => {});
   }

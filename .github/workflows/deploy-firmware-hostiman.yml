@@ -6,6 +6,8 @@ on:
       - main
     paths:
       - "firmware/**"
+      - "website/shared/header/**"
+      - "scripts/render-header.py"
       - ".github/workflows/deploy-firmware-hostiman.yml"
   workflow_dispatch:
 
@@ -24,6 +26,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+
+      - name: Build shared site header
+        run: python3 scripts/render-header.py
 
       - name: Check HostiMan FTP settings
         env:

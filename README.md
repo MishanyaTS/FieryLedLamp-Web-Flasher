@@ -8,6 +8,10 @@ https://mishanyats.github.io/FieryLedLamp-Web-Flasher/
 
 ## Что где менять
 
+- `website/shared/header/template.html` — единая шапка и меню всех страниц обоих сайтов.
+- `website/shared/header/header.css` — общий стиль шапки высотой 90 пикселей.
+- `website/shared/header/header.js` и `icons.svg` — общий поиск, меню и значки.
+- `scripts/render-header.py` — сборка шапки; выполняется автоматически перед публикацией обоих сайтов. Для локального просмотра после правки общих файлов выполните `python3 scripts/render-header.py`. Сгенерированные шапки в HTML отдельно не редактируются. Подробности: `website/assets/header-outline.md`.
 - `firmware/config.js` — настройки Web Flasher для ESP32-S3 N16R8.
 - `firmware/ESP32-S3 N16R8/manifest.json` — параметры прошивки N16R8.
 - `firmware/index.html` — структура страницы и тексты.
