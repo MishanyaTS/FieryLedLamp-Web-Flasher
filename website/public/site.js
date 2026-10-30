@@ -472,6 +472,8 @@
         csrf = data.csrf;
         accountUser = data.user;
         document.querySelector("#accountName").textContent = data.user.name;
+        const accountNameInput = document.querySelector("#accountNameInput");
+        if (accountNameInput) accountNameInput.value = data.user.name;
         document.querySelector("#accountEmail").textContent = data.user.email;
         document.querySelector("#accountCreated").textContent = data.user.createdAt || "-";
         document.querySelector("#notifyUpdates").checked = Boolean(data.user.notifyUpdates);
@@ -496,6 +498,33 @@
         location.href = "/login.html?next=%2Faccount.html";
       }
     };
+
+    const changeNameForm = document.querySelector("#changeNameForm");
+    changeNameForm?.addEventListener("submit", async event => {
+      event.preventDefault();
+      const button = changeNameForm.querySelector("button[type=submit]");
+      const input = changeNameForm.querySelector('input[name="name"]');
+      const name = input?.value.trim() || "";
+
+      busy(button, true, "Сохранение…");
+      try {
+        const data = await parse(await api("update-name", {
+          method: "POST",
+          headers: { "x-csrf-token": csrf },
+          body: JSON.stringify({ name })
+        }));
+
+        if (accountUser) accountUser.name = data.name;
+        document.querySelector("#accountName").textContent = data.name;
+        if (input) input.value = data.name;
+        setAvatar(accountUser?.avatarUrl || null, data.name);
+        setStatus(changeNameForm, data.message || "Имя изменено.", "success");
+      } catch (error) {
+        setStatus(changeNameForm, error.message, "error");
+      } finally {
+        busy(button, false);
+      }
+    });
 
     document.querySelector("#savePreferences")?.addEventListener("click", async event => {
       const button = event.currentTarget;
