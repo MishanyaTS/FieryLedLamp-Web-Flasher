@@ -102,6 +102,25 @@ switch ($action) {
         require_csrf();
         discussion_post($pdo);
         break;
+    case 'discussion-like':
+        require_method('POST');
+        require_csrf();
+        discussion_like($pdo);
+        break;
+    case 'discussion-edit':
+        require_method('POST');
+        require_csrf();
+        discussion_edit($pdo);
+        break;
+    case 'discussion-delete':
+        require_method('POST');
+        require_csrf();
+        discussion_delete($pdo);
+        break;
+    case 'discussion-file':
+        require_method('GET');
+        discussion_file($pdo);
+        break;
     case 'resend-verification':
         require_method('POST');
         require_csrf();
@@ -848,6 +867,14 @@ function current_user_response(PDO $pdo): never {
 }
 
 
+function forum_try_schema(PDO $pdo, string $sql): void {
+    try {
+        $pdo->exec($sql);
+    } catch (Throwable $e) {
+        // Existing columns/indexes are expected on upgraded installations.
+    }
+}
+
 function ensure_discussion_table(PDO $pdo): void {
     static $ready = false;
     if ($ready) return;
@@ -856,17 +883,189 @@ function ensure_discussion_table(PDO $pdo): void {
         $pdo->exec("CREATE TABLE IF NOT EXISTS discussion_messages (
             id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
             user_id BIGINT UNSIGNED NOT NULL,
+            parent_id BIGINT UNSIGNED NULL,
             body TEXT NOT NULL,
             created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            edited_at DATETIME NULL,
+            deleted_at DATETIME NULL,
             PRIMARY KEY (id),
             KEY idx_discussion_created (created_at, id),
             KEY idx_discussion_user (user_id),
+            KEY idx_discussion_parent (parent_id),
             CONSTRAINT fk_discussion_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+        forum_try_schema($pdo, "ALTER TABLE discussion_messages ADD COLUMN parent_id BIGINT UNSIGNED NULL AFTER user_id");
+        forum_try_schema($pdo, "ALTER TABLE discussion_messages ADD COLUMN edited_at DATETIME NULL AFTER created_at");
+        forum_try_schema($pdo, "ALTER TABLE discussion_messages ADD COLUMN deleted_at DATETIME NULL AFTER edited_at");
+        forum_try_schema($pdo, "ALTER TABLE discussion_messages ADD KEY idx_discussion_parent (parent_id)");
+
+        $pdo->exec("CREATE TABLE IF NOT EXISTS discussion_likes (
+            message_id BIGINT UNSIGNED NOT NULL,
+            user_id BIGINT UNSIGNED NOT NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (message_id,user_id),
+            KEY idx_discussion_like_user (user_id),
+            CONSTRAINT fk_discussion_like_message FOREIGN KEY (message_id) REFERENCES discussion_messages(id) ON DELETE CASCADE,
+            CONSTRAINT fk_discussion_like_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+        $pdo->exec("CREATE TABLE IF NOT EXISTS discussion_attachments (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            message_id BIGINT UNSIGNED NOT NULL,
+            user_id BIGINT UNSIGNED NOT NULL,
+            original_name VARCHAR(255) NOT NULL,
+            stored_name VARCHAR(120) NOT NULL,
+            mime_type VARCHAR(100) NOT NULL,
+            file_size BIGINT UNSIGNED NOT NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY idx_discussion_attachment_message (message_id),
+            KEY idx_discussion_attachment_user (user_id),
+            CONSTRAINT fk_discussion_attachment_message FOREIGN KEY (message_id) REFERENCES discussion_messages(id) ON DELETE CASCADE,
+            CONSTRAINT fk_discussion_attachment_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
         $ready = true;
     } catch (Throwable $e) {
-        json_response(['ok' => false, 'message' => 'Обсуждения временно недоступны.'], 503);
+        json_response(['ok' => false, 'message' => 'Форум временно недоступен.'], 503);
     }
+}
+
+function forum_files_dir(): string {
+    $dir = dirname(__DIR__, 2) . '/fieryledlamp-private/forum-files';
+    if (!is_dir($dir) && !@mkdir($dir, 0750, true) && !is_dir($dir)) {
+        throw new RuntimeException('Не удалось подготовить хранилище файлов.');
+    }
+    return $dir;
+}
+
+function forum_request_data(): array {
+    $type = strtolower((string)($_SERVER['CONTENT_TYPE'] ?? ''));
+    if (str_starts_with($type, 'multipart/form-data')) {
+        return is_array($_POST) ? $_POST : [];
+    }
+    return input_json();
+}
+
+function forum_text_snippet(string $body, int $limit = 180): string {
+    $plain = preg_replace('/\[(?:\/)?[a-z]+(?:=[^\]]+)?\]/iu', '', $body) ?? $body;
+    $plain = trim(preg_replace('/\s+/u', ' ', $plain) ?? $plain);
+    if (text_length($plain) <= $limit) return $plain;
+    return (function_exists('mb_substr') ? mb_substr($plain, 0, $limit, 'UTF-8') : substr($plain, 0, $limit)) . '…';
+}
+
+function forum_current_user(PDO $pdo): ?array {
+    $id = (int)($_SESSION['user_id'] ?? 0);
+    if (!$id) return null;
+    return user_by_id($pdo, $id);
+}
+
+function forum_message(PDO $pdo, int $id): ?array {
+    $stmt = $pdo->prepare('SELECT id,user_id,parent_id,body,created_at,edited_at,deleted_at FROM discussion_messages WHERE id=? LIMIT 1');
+    $stmt->execute([$id]);
+    $row = $stmt->fetch();
+    return $row ?: null;
+}
+
+function forum_attachment_rows(PDO $pdo, array $messageIds): array {
+    if (!$messageIds) return [];
+    $placeholders = implode(',', array_fill(0, count($messageIds), '?'));
+    $stmt = $pdo->prepare("SELECT id,message_id,original_name,mime_type,file_size FROM discussion_attachments WHERE message_id IN ($placeholders) ORDER BY id");
+    $stmt->execute($messageIds);
+    $map = [];
+    foreach ($stmt->fetchAll() as $row) {
+        $mid = (int)$row['message_id'];
+        $map[$mid][] = [
+            'id' => (int)$row['id'],
+            'name' => (string)$row['original_name'],
+            'mime' => (string)$row['mime_type'],
+            'size' => (int)$row['file_size'],
+            'url' => '/api/index.php?action=discussion-file&id=' . (int)$row['id'],
+        ];
+    }
+    return $map;
+}
+
+function forum_liked_map(PDO $pdo, int $userId, array $messageIds): array {
+    if (!$userId || !$messageIds) return [];
+    $placeholders = implode(',', array_fill(0, count($messageIds), '?'));
+    $stmt = $pdo->prepare("SELECT message_id FROM discussion_likes WHERE user_id=? AND message_id IN ($placeholders)");
+    $stmt->execute(array_merge([$userId], $messageIds));
+    $map = [];
+    foreach ($stmt->fetchAll() as $row) $map[(int)$row['message_id']] = true;
+    return $map;
+}
+
+function forum_save_uploads(PDO $pdo, int $messageId, int $userId): array {
+    if (empty($_FILES['files']) || !is_array($_FILES['files'])) return [];
+
+    $files = $_FILES['files'];
+    $names = is_array($files['name'] ?? null) ? $files['name'] : [$files['name'] ?? ''];
+    $tmpNames = is_array($files['tmp_name'] ?? null) ? $files['tmp_name'] : [$files['tmp_name'] ?? ''];
+    $errors = is_array($files['error'] ?? null) ? $files['error'] : [$files['error'] ?? UPLOAD_ERR_NO_FILE];
+    $sizes = is_array($files['size'] ?? null) ? $files['size'] : [$files['size'] ?? 0];
+
+    if (count($names) > 5) {
+        throw new RuntimeException('Можно прикрепить не более 5 файлов к одному сообщению.');
+    }
+
+    $allowed = [
+        'image/jpeg' => 'jpg',
+        'image/png' => 'png',
+        'image/webp' => 'webp',
+        'image/gif' => 'gif',
+        'application/pdf' => 'pdf',
+        'text/plain' => 'txt',
+        'application/zip' => 'zip',
+        'application/x-zip-compressed' => 'zip',
+    ];
+
+    $dir = forum_files_dir();
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $saved = [];
+
+    foreach ($names as $i => $originalRaw) {
+        $error = (int)($errors[$i] ?? UPLOAD_ERR_NO_FILE);
+        if ($error === UPLOAD_ERR_NO_FILE) continue;
+        if ($error !== UPLOAD_ERR_OK) throw new RuntimeException('Не удалось загрузить один из файлов.');
+
+        $size = (int)($sizes[$i] ?? 0);
+        if ($size <= 0 || $size > 10 * 1024 * 1024) {
+            throw new RuntimeException('Размер каждого файла должен быть не более 10 МБ.');
+        }
+
+        $tmp = (string)($tmpNames[$i] ?? '');
+        if ($tmp === '' || !is_uploaded_file($tmp)) throw new RuntimeException('Некорректный загруженный файл.');
+
+        $mime = (string)$finfo->file($tmp);
+        $original = trim((string)$originalRaw);
+        $ext = strtolower(pathinfo($original, PATHINFO_EXTENSION));
+
+        if (!isset($allowed[$mime])) {
+            if (!($mime === 'application/octet-stream' && $ext === 'zip')) {
+                throw new RuntimeException('Разрешены JPG, PNG, WEBP, GIF, PDF, TXT и ZIP.');
+            }
+            $mime = 'application/zip';
+        }
+
+        $stored = bin2hex(random_bytes(20)) . '.' . $allowed[$mime];
+        $target = $dir . '/' . $stored;
+        if (!move_uploaded_file($tmp, $target)) throw new RuntimeException('Не удалось сохранить вложение.');
+
+        $safeName = $original !== '' ? (function_exists('mb_substr') ? mb_substr($original, 0, 255, 'UTF-8') : substr($original, 0, 255)) : ('file.' . $allowed[$mime]);
+
+        try {
+            $stmt = $pdo->prepare('INSERT INTO discussion_attachments(message_id,user_id,original_name,stored_name,mime_type,file_size) VALUES(?,?,?,?,?,?)');
+            $stmt->execute([$messageId, $userId, $safeName, $stored, $mime, $size]);
+            $saved[] = ['id' => (int)$pdo->lastInsertId(), 'stored' => $stored];
+        } catch (Throwable $e) {
+            @unlink($target);
+            throw $e;
+        }
+    }
+
+    return $saved;
 }
 
 function discussion_list(PDO $pdo): never {
@@ -879,29 +1078,62 @@ function discussion_list(PDO $pdo): never {
     if ($page > $pages) $page = $pages;
     $offset = ($page - 1) * $pageSize;
 
-    $sql = "SELECT m.id,m.body,m.created_at,u.name,u.is_admin,u.created_at AS user_created_at,
-            (SELECT COUNT(*) FROM discussion_messages um WHERE um.user_id=m.user_id) AS user_posts
+    $sql = "SELECT m.id,m.user_id,m.parent_id,m.body,m.created_at,m.edited_at,m.deleted_at,
+            u.name,u.is_admin,u.created_at AS user_created_at,
+            (SELECT COUNT(*) FROM discussion_messages um WHERE um.user_id=m.user_id AND um.deleted_at IS NULL) AS user_posts,
+            (SELECT COUNT(*) FROM discussion_likes l WHERE l.message_id=m.id) AS like_count,
+            p.body AS parent_body,p.deleted_at AS parent_deleted_at,pu.name AS parent_author
         FROM discussion_messages m
         INNER JOIN users u ON u.id=m.user_id
+        LEFT JOIN discussion_messages p ON p.id=m.parent_id
+        LEFT JOIN users pu ON pu.id=p.user_id
         ORDER BY m.id ASC
         LIMIT " . $pageSize . " OFFSET " . $offset;
     $rows = $pdo->query($sql)->fetchAll();
 
-    $messages = array_map(static function(array $row): array {
+    $ids = array_map(static fn(array $row): int => (int)$row['id'], $rows);
+    $attachments = forum_attachment_rows($pdo, $ids);
+    $viewer = forum_current_user($pdo);
+    $viewerId = (int)($viewer['id'] ?? 0);
+    $viewerAdmin = !empty($viewer['is_admin']);
+    $liked = forum_liked_map($pdo, $viewerId, $ids);
+
+    $messages = array_map(static function(array $row) use ($attachments, $liked, $viewerId, $viewerAdmin): array {
+        $id = (int)$row['id'];
+        $deleted = !empty($row['deleted_at']);
+        $parent = null;
+        if (!empty($row['parent_id'])) {
+            $parentBody = !empty($row['parent_deleted_at']) ? 'Сообщение удалено' : forum_text_snippet((string)($row['parent_body'] ?? ''));
+            $parent = [
+                'id' => (int)$row['parent_id'],
+                'author' => (string)($row['parent_author'] ?? 'Пользователь'),
+                'snippet' => $parentBody,
+            ];
+        }
         return [
-            'id' => (int)$row['id'],
+            'id' => $id,
+            'userId' => (int)$row['user_id'],
             'author' => (string)$row['name'],
             'isAdmin' => (bool)$row['is_admin'],
-            'body' => (string)$row['body'],
+            'body' => $deleted ? '' : (string)$row['body'],
+            'deleted' => $deleted,
             'createdAt' => date('d.m.Y H:i', strtotime((string)$row['created_at'])),
+            'editedAt' => !empty($row['edited_at']) ? date('d.m.Y H:i', strtotime((string)$row['edited_at'])) : null,
             'joinedAt' => date('d.m.Y', strtotime((string)$row['user_created_at'])),
             'userPosts' => (int)$row['user_posts'],
+            'likes' => $deleted ? 0 : (int)$row['like_count'],
+            'likedByMe' => !$deleted && !empty($liked[$id]),
+            'canEdit' => !$deleted && $viewerId > 0 && $viewerId === (int)$row['user_id'],
+            'canDelete' => !$deleted && $viewerId > 0 && ($viewerId === (int)$row['user_id'] || $viewerAdmin),
+            'replyTo' => $parent,
+            'attachments' => $deleted ? [] : ($attachments[$id] ?? []),
         ];
     }, $rows);
 
     json_response([
         'ok' => true,
         'messages' => $messages,
+        'viewer' => $viewer ? ['id' => $viewerId, 'isAdmin' => $viewerAdmin] : null,
         'pagination' => [
             'page' => $page,
             'pages' => $pages,
@@ -916,36 +1148,157 @@ function discussion_post(PDO $pdo): never {
     ensure_discussion_table($pdo);
     rate_limit($pdo, 'discussion-post', 8, 60);
 
-    $data = input_json();
+    $data = forum_request_data();
+    $body = trim((string)($data['body'] ?? ''));
+    $body = preg_replace("/\r\n?|\n/u", "\n", $body) ?? $body;
+    $parentId = max(0, (int)($data['parentId'] ?? 0));
+
+    $length = text_length($body);
+    if ($length < 2) json_response(['ok' => false, 'message' => 'Введите сообщение.'], 422);
+    if ($length > 12000) json_response(['ok' => false, 'message' => 'Сообщение не должно превышать 12000 символов.'], 422);
+
+    if ($parentId) {
+        $parent = forum_message($pdo, $parentId);
+        if (!$parent || !empty($parent['deleted_at'])) json_response(['ok' => false, 'message' => 'Сообщение, на которое вы отвечаете, недоступно.'], 422);
+    }
+
+    $pdo->beginTransaction();
+    $savedFiles = [];
+    try {
+        $stmt = $pdo->prepare('INSERT INTO discussion_messages(user_id,parent_id,body) VALUES(?,?,?)');
+        $stmt->execute([(int)$user['id'], $parentId ?: null, $body]);
+        $messageId = (int)$pdo->lastInsertId();
+        $savedFiles = forum_save_uploads($pdo, $messageId, (int)$user['id']);
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        foreach ($savedFiles as $file) @unlink(forum_files_dir() . '/' . $file['stored']);
+        json_response(['ok' => false, 'message' => $e instanceof RuntimeException ? $e->getMessage() : 'Не удалось сохранить сообщение.'], 422);
+    }
+
+    $total = (int)$pdo->query('SELECT COUNT(*) FROM discussion_messages')->fetchColumn();
+    json_response(['ok' => true, 'id' => $messageId, 'page' => max(1, (int)ceil($total / 20))], 201);
+}
+
+function discussion_edit(PDO $pdo): never {
+    $user = require_user($pdo);
+    ensure_discussion_table($pdo);
+    rate_limit($pdo, 'discussion-edit', 10, 60);
+
+    $data = forum_request_data();
+    $id = (int)($data['id'] ?? 0);
     $body = trim((string)($data['body'] ?? ''));
     $body = preg_replace("/\r\n?|\n/u", "\n", $body) ?? $body;
 
-    $length = text_length($body);
-    if ($length < 2) {
-        json_response(['ok' => false, 'message' => 'Введите сообщение.'], 422);
+    $message = forum_message($pdo, $id);
+    if (!$message || !empty($message['deleted_at'])) json_response(['ok' => false, 'message' => 'Сообщение не найдено.'], 404);
+    if ((int)$message['user_id'] !== (int)$user['id']) json_response(['ok' => false, 'message' => 'Можно редактировать только свои сообщения.'], 403);
+    if (text_length($body) < 2) json_response(['ok' => false, 'message' => 'Введите сообщение.'], 422);
+    if (text_length($body) > 12000) json_response(['ok' => false, 'message' => 'Сообщение не должно превышать 12000 символов.'], 422);
+
+    $pdo->beginTransaction();
+    $savedFiles = [];
+    try {
+        $pdo->prepare('UPDATE discussion_messages SET body=?,edited_at=NOW() WHERE id=?')->execute([$body, $id]);
+        $savedFiles = forum_save_uploads($pdo, $id, (int)$user['id']);
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        foreach ($savedFiles as $file) @unlink(forum_files_dir() . '/' . $file['stored']);
+        json_response(['ok' => false, 'message' => $e instanceof RuntimeException ? $e->getMessage() : 'Не удалось изменить сообщение.'], 422);
     }
-    if ($length > 4000) {
-        json_response(['ok' => false, 'message' => 'Сообщение не должно превышать 4000 символов.'], 422);
-    }
 
-    $stmt = $pdo->prepare('INSERT INTO discussion_messages(user_id,body) VALUES(?,?)');
-    $stmt->execute([(int)$user['id'], $body]);
-
-    $total = (int)$pdo->query('SELECT COUNT(*) FROM discussion_messages')->fetchColumn();
-    $page = max(1, (int)ceil($total / 20));
-
-    json_response([
-        'ok' => true,
-        'page' => $page,
-        'message' => [
-            'id' => (int)$pdo->lastInsertId(),
-            'author' => (string)$user['name'],
-            'isAdmin' => (bool)$user['is_admin'],
-            'body' => $body,
-            'createdAt' => date('d.m.Y H:i'),
-        ],
-    ], 201);
+    json_response(['ok' => true]);
 }
+
+function discussion_like(PDO $pdo): never {
+    $user = require_user($pdo);
+    ensure_discussion_table($pdo);
+    $data = input_json();
+    $id = (int)($data['id'] ?? 0);
+    $message = forum_message($pdo, $id);
+    if (!$message || !empty($message['deleted_at'])) json_response(['ok' => false, 'message' => 'Сообщение недоступно.'], 404);
+    if ((int)$message['user_id'] === (int)$user['id']) json_response(['ok' => false, 'message' => 'Нельзя поставить лайк своему сообщению.'], 422);
+
+    $check = $pdo->prepare('SELECT 1 FROM discussion_likes WHERE message_id=? AND user_id=? LIMIT 1');
+    $check->execute([$id, (int)$user['id']]);
+    $liked = (bool)$check->fetchColumn();
+
+    if ($liked) {
+        $pdo->prepare('DELETE FROM discussion_likes WHERE message_id=? AND user_id=?')->execute([$id, (int)$user['id']]);
+    } else {
+        $pdo->prepare('INSERT INTO discussion_likes(message_id,user_id) VALUES(?,?)')->execute([$id, (int)$user['id']]);
+    }
+
+    $count = $pdo->prepare('SELECT COUNT(*) FROM discussion_likes WHERE message_id=?');
+    $count->execute([$id]);
+    json_response(['ok' => true, 'liked' => !$liked, 'likes' => (int)$count->fetchColumn()]);
+}
+
+function discussion_delete(PDO $pdo): never {
+    $user = require_user($pdo);
+    ensure_discussion_table($pdo);
+    $data = input_json();
+    $id = (int)($data['id'] ?? 0);
+    $message = forum_message($pdo, $id);
+    if (!$message || !empty($message['deleted_at'])) json_response(['ok' => false, 'message' => 'Сообщение не найдено.'], 404);
+
+    $allowed = (int)$message['user_id'] === (int)$user['id'] || !empty($user['is_admin']);
+    if (!$allowed) json_response(['ok' => false, 'message' => 'Нет прав для удаления этого сообщения.'], 403);
+
+    $stmt = $pdo->prepare('SELECT stored_name FROM discussion_attachments WHERE message_id=?');
+    $stmt->execute([$id]);
+    $files = $stmt->fetchAll();
+
+    $pdo->beginTransaction();
+    try {
+        $pdo->prepare('DELETE FROM discussion_likes WHERE message_id=?')->execute([$id]);
+        $pdo->prepare('DELETE FROM discussion_attachments WHERE message_id=?')->execute([$id]);
+        $pdo->prepare("UPDATE discussion_messages SET body='',deleted_at=NOW(),edited_at=NULL WHERE id=?")->execute([$id]);
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        json_response(['ok' => false, 'message' => 'Не удалось удалить сообщение.'], 500);
+    }
+
+    foreach ($files as $file) {
+        $stored = basename((string)$file['stored_name']);
+        if ($stored !== '') @unlink(forum_files_dir() . '/' . $stored);
+    }
+
+    json_response(['ok' => true]);
+}
+
+function discussion_file(PDO $pdo): never {
+    ensure_discussion_table($pdo);
+    $id = (int)($_GET['id'] ?? 0);
+    $stmt = $pdo->prepare('SELECT a.original_name,a.stored_name,a.mime_type,a.file_size,m.deleted_at FROM discussion_attachments a INNER JOIN discussion_messages m ON m.id=a.message_id WHERE a.id=? LIMIT 1');
+    $stmt->execute([$id]);
+    $row = $stmt->fetch();
+    if (!$row || !empty($row['deleted_at'])) {
+        http_response_code(404);
+        exit;
+    }
+
+    $stored = basename((string)$row['stored_name']);
+    $path = forum_files_dir() . '/' . $stored;
+    if (!is_file($path)) {
+        http_response_code(404);
+        exit;
+    }
+
+    $mime = (string)$row['mime_type'];
+    $name = (string)$row['original_name'];
+    $inline = str_starts_with($mime, 'image/') || $mime === 'application/pdf' || $mime === 'text/plain';
+
+    header('X-Content-Type-Options: nosniff');
+    header('Content-Type: ' . $mime);
+    header('Content-Length: ' . (string)filesize($path));
+    header('Content-Disposition: ' . ($inline ? 'inline' : 'attachment') . "; filename*=UTF-8''" . rawurlencode($name));
+    readfile($path);
+    exit;
+}
+
 
 function update_preferences(PDO $pdo): never {
     $u = require_user($pdo);
