@@ -47,6 +47,7 @@
   let replyToId = 0;
   let editingId = 0;
   let pendingFiles = [];
+  let savedEditorRange = null;
 
   const escapeHtml = value => String(value)
     .replaceAll("&", "&amp;")
@@ -165,6 +166,35 @@
     return container && text.contains(container) ? range : null;
   }
 
+  function saveEditorRange() {
+    const range = editorRange();
+    if (range) savedEditorRange = range.cloneRange();
+  }
+
+  function restoreEditorRange() {
+    if (!text) return false;
+    text.focus();
+    if (!savedEditorRange) return false;
+    try {
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(savedEditorRange.cloneRange());
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function ensureEditorSelection() {
+    if (restoreEditorRange()) return;
+    const range = document.createRange();
+    range.selectNodeContents(text);
+    range.collapse(false);
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
+
   function placeCaretAfter(node) {
     const range = document.createRange();
     range.setStartAfter(node);
@@ -246,6 +276,15 @@
     insertTextAtRange(value, false);
   }
 
+  function cssColorToHex(value) {
+    const color = String(value || "").trim().toLowerCase();
+    if (/^#[0-9a-f]{6}$/.test(color)) return color;
+    const match = color.match(/^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/);
+    if (!match) return "";
+    const parts = match.slice(1).map(v => Math.max(0, Math.min(255, Number(v))));
+    return "#" + parts.map(v => v.toString(16).padStart(2, "0")).join("");
+  }
+
   function editorNodeToBbcode(node) {
     if (node.nodeType === Node.TEXT_NODE) return node.nodeValue || "";
     if (node.nodeType !== Node.ELEMENT_NODE) return "";
@@ -258,15 +297,42 @@
     if (tag === "i" || tag === "em") return "[i]" + inner + "[/i]";
     if (tag === "u") return "[u]" + inner + "[/u]";
     if (tag === "s" || tag === "strike" || tag === "del") return "[s]" + inner + "[/s]";
+    if (tag === "font") {
+      let result = inner;
+      const face = String(node.getAttribute("face") || "").trim();
+      const color = String(node.getAttribute("color") || "").trim();
+      const size = String(node.dataset?.forumSize || "").trim();
+      if (face && /^(Arial|Verdana|Georgia|Tahoma|Trebuchet MS|Courier New)$/i.test(face)) {
+        result = "[font=" + face + "]" + result + "[/font]";
+      }
+      if (size && /^(12|14|16|18|20|24|28|32)$/.test(size)) {
+        result = "[size=" + size + "]" + result + "[/size]";
+      }
+      if (/^#[0-9a-f]{6}$/i.test(color)) {
+        result = "[color=" + color.toLowerCase() + "]" + result + "[/color]";
+      }
+      return result;
+    }
     if (tag === "span") {
       let result = inner;
       const style = node.style || {};
       const weight = String(style.fontWeight || "").toLowerCase();
       const decoration = String(style.textDecoration || style.textDecorationLine || "").toLowerCase();
+      const family = String(style.fontFamily || "").replace(/^["']|["']$/g, "").trim();
+      const size = String(style.fontSize || "").trim();
+      const color = String(style.color || "").trim();
+
       if (weight === "bold" || Number(weight) >= 600) result = "[b]" + result + "[/b]";
       if (String(style.fontStyle || "").toLowerCase() === "italic") result = "[i]" + result + "[/i]";
       if (decoration.includes("underline")) result = "[u]" + result + "[/u]";
       if (decoration.includes("line-through")) result = "[s]" + result + "[/s]";
+      if (family && /^(Arial|Verdana|Georgia|Tahoma|Trebuchet MS|Courier New)$/i.test(family)) {
+        result = "[font=" + family + "]" + result + "[/font]";
+      }
+      const sizeMatch = size.match(/^(12|14|16|18|20|24|28|32)px$/);
+      if (sizeMatch) result = "[size=" + sizeMatch[1] + "]" + result + "[/size]";
+      const hex = cssColorToHex(color);
+      if (hex) result = "[color=" + hex + "]" + result + "[/color]";
       return result;
     }
     if (tag === "div" || tag === "p") return inner + "\n";
@@ -287,6 +353,9 @@
     html = html.replace(/\[i\]([\s\S]*?)\[\/i\]/gi, "<em>$1</em>");
     html = html.replace(/\[u\]([\s\S]*?)\[\/u\]/gi, "<u>$1</u>");
     html = html.replace(/\[s\]([\s\S]*?)\[\/s\]/gi, "<s>$1</s>");
+    html = html.replace(/\[font=(Arial|Verdana|Georgia|Tahoma|Trebuchet MS|Courier New)\]([\s\S]*?)\[\/font\]/gi, '<span style="font-family:$1">$2</span>');
+    html = html.replace(/\[size=(12|14|16|18|20|24|28|32)\]([\s\S]*?)\[\/size\]/gi, '<span style="font-size:$1px">$2</span>');
+    html = html.replace(/\[color=(#[0-9a-f]{6})\]([\s\S]*?)\[\/color\]/gi, '<span style="color:$1">$2</span>');
     return html.replace(/\n/g, "<br>");
   }
 
@@ -770,6 +839,51 @@
     }
   }
 
+  function normalizeEditorFonts() {
+    text?.querySelectorAll("font").forEach(node => {
+      const face = node.getAttribute("face");
+      if (face) node.style.fontFamily = face;
+      const color = node.getAttribute("color");
+      if (color) node.style.color = color;
+      const storedSize = node.dataset.forumSize;
+      if (storedSize) node.style.fontSize = storedSize + "px";
+    });
+  }
+
+  function applyVisualFontFamily(value) {
+    if (!text || !value) return;
+    ensureEditorSelection();
+    document.execCommand("fontName", false, value);
+    normalizeEditorFonts();
+    saveEditorRange();
+    updateCounter();
+  }
+
+  function applyVisualColor(value) {
+    if (!text || !/^#[0-9a-f]{6}$/i.test(value)) return;
+    ensureEditorSelection();
+    document.execCommand("foreColor", false, value);
+    normalizeEditorFonts();
+    saveEditorRange();
+    updateCounter();
+  }
+
+  function applyVisualFontSize(value) {
+    if (!text || !/^(12|14|16|18|20|24|28|32)$/.test(value)) return;
+    ensureEditorSelection();
+
+    const marker = "7";
+    document.execCommand("fontSize", false, marker);
+    text.querySelectorAll('font[size="' + marker + '"]').forEach(node => {
+      node.removeAttribute("size");
+      node.dataset.forumSize = value;
+      node.style.fontSize = value + "px";
+    });
+
+    saveEditorRange();
+    updateCounter();
+  }
+
   const formatButtons = [...document.querySelectorAll(".forum-tool[data-format]")];
   const formatCommands = { b: "bold", i: "italic", u: "underline", s: "strikeThrough" };
 
@@ -815,18 +929,22 @@
     button.addEventListener("click", () => toggleFormat(button.dataset.format));
   });
 
+  fontSelect?.addEventListener("mousedown", saveEditorRange);
+  fontSelect?.addEventListener("focus", saveEditorRange);
   fontSelect?.addEventListener("change", () => {
-    if (fontSelect.value) wrapSelection("[font=" + fontSelect.value + "]", "[/font]");
-    fontSelect.value = "";
+    if (fontSelect.value) applyVisualFontFamily(fontSelect.value);
   });
 
+  sizeSelect?.addEventListener("mousedown", saveEditorRange);
+  sizeSelect?.addEventListener("focus", saveEditorRange);
   sizeSelect?.addEventListener("change", () => {
-    if (sizeSelect.value) wrapSelection("[size=" + sizeSelect.value + "]", "[/size]");
-    sizeSelect.value = "";
+    if (sizeSelect.value) applyVisualFontSize(sizeSelect.value);
   });
 
+  colorInput?.addEventListener("mousedown", saveEditorRange);
+  colorInput?.addEventListener("focus", saveEditorRange);
   colorInput?.addEventListener("change", () => {
-    wrapSelection("[color=" + colorInput.value + "]", "[/color]");
+    applyVisualColor(colorInput.value);
   });
 
   quoteSelection?.addEventListener("click", () => wrapSelection("[quote]", "[/quote]"));
@@ -902,11 +1020,14 @@
 
   editCancel?.addEventListener("click", () => clearEditorMode(true));
   text?.addEventListener("input", updateCounter);
-  text?.addEventListener("click", updateFormatButtons);
-  text?.addEventListener("keyup", updateFormatButtons);
-  text?.addEventListener("mouseup", updateFormatButtons);
+  text?.addEventListener("click", () => { saveEditorRange(); updateFormatButtons(); });
+  text?.addEventListener("keyup", () => { saveEditorRange(); updateFormatButtons(); });
+  text?.addEventListener("mouseup", () => { saveEditorRange(); updateFormatButtons(); });
   document.addEventListener("selectionchange", () => {
-    if (selectionIsInEditor()) updateFormatButtons();
+    if (selectionIsInEditor()) {
+      saveEditorRange();
+      updateFormatButtons();
+    }
   });
   form?.addEventListener("submit", submitMessage);
 
