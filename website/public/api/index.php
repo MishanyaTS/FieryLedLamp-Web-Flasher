@@ -872,11 +872,20 @@ function ensure_discussion_table(PDO $pdo): void {
 function discussion_list(PDO $pdo): never {
     ensure_discussion_table($pdo);
 
-    $rows = $pdo->query("SELECT m.id,m.body,m.created_at,u.name,u.is_admin
+    $pageSize = 20;
+    $page = max(1, (int)($_GET['page'] ?? 1));
+    $total = (int)$pdo->query('SELECT COUNT(*) FROM discussion_messages')->fetchColumn();
+    $pages = max(1, (int)ceil($total / $pageSize));
+    if ($page > $pages) $page = $pages;
+    $offset = ($page - 1) * $pageSize;
+
+    $sql = "SELECT m.id,m.body,m.created_at,u.name,u.is_admin,u.created_at AS user_created_at,
+            (SELECT COUNT(*) FROM discussion_messages um WHERE um.user_id=m.user_id) AS user_posts
         FROM discussion_messages m
         INNER JOIN users u ON u.id=m.user_id
-        ORDER BY m.id DESC
-        LIMIT 100")->fetchAll();
+        ORDER BY m.id ASC
+        LIMIT " . $pageSize . " OFFSET " . $offset;
+    $rows = $pdo->query($sql)->fetchAll();
 
     $messages = array_map(static function(array $row): array {
         return [
@@ -885,10 +894,21 @@ function discussion_list(PDO $pdo): never {
             'isAdmin' => (bool)$row['is_admin'],
             'body' => (string)$row['body'],
             'createdAt' => date('d.m.Y H:i', strtotime((string)$row['created_at'])),
+            'joinedAt' => date('d.m.Y', strtotime((string)$row['user_created_at'])),
+            'userPosts' => (int)$row['user_posts'],
         ];
     }, $rows);
 
-    json_response(['ok' => true, 'messages' => $messages]);
+    json_response([
+        'ok' => true,
+        'messages' => $messages,
+        'pagination' => [
+            'page' => $page,
+            'pages' => $pages,
+            'pageSize' => $pageSize,
+            'total' => $total,
+        ],
+    ]);
 }
 
 function discussion_post(PDO $pdo): never {
@@ -904,15 +924,19 @@ function discussion_post(PDO $pdo): never {
     if ($length < 2) {
         json_response(['ok' => false, 'message' => 'Введите сообщение.'], 422);
     }
-    if ($length > 2000) {
-        json_response(['ok' => false, 'message' => 'Сообщение не должно превышать 2000 символов.'], 422);
+    if ($length > 4000) {
+        json_response(['ok' => false, 'message' => 'Сообщение не должно превышать 4000 символов.'], 422);
     }
 
     $stmt = $pdo->prepare('INSERT INTO discussion_messages(user_id,body) VALUES(?,?)');
     $stmt->execute([(int)$user['id'], $body]);
 
+    $total = (int)$pdo->query('SELECT COUNT(*) FROM discussion_messages')->fetchColumn();
+    $page = max(1, (int)ceil($total / 20));
+
     json_response([
         'ok' => true,
+        'page' => $page,
         'message' => [
             'id' => (int)$pdo->lastInsertId(),
             'author' => (string)$user['name'],
