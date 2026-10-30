@@ -947,3 +947,6 @@ details.card{
     linear-gradient(#0b0e14,#090b10);
 }
 
+.site-header .nav a[href="https://fieryledlamp.ru/discussions.html"]::before{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ff8b52' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 17.5 3.5 21l4.4-1.8A9 9 0 1 0 5 17.5Z'/%3E%3Cpath d='M8 10h8M8 14h5'/%3E%3C/svg%3E")
+}
