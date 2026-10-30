@@ -246,15 +246,18 @@ function ensure_account_settings_schema(PDO $pdo): void {
     static $ready = false;
     if ($ready) return;
 
-    foreach ([
-        "ALTER TABLE users ADD COLUMN notify_forum TINYINT(1) NOT NULL DEFAULT 0 AFTER notify_updates",
-        "ALTER TABLE users ADD COLUMN avatar_file VARCHAR(120) NULL AFTER notify_forum",
-        "ALTER TABLE users ADD COLUMN avatar_mime VARCHAR(100) NULL AFTER avatar_file"
-    ] as $sql) {
+    $columns = [
+        'notify_forum' => "ALTER TABLE users ADD COLUMN notify_forum TINYINT(1) NOT NULL DEFAULT 0 AFTER notify_updates",
+        'avatar_file' => "ALTER TABLE users ADD COLUMN avatar_file VARCHAR(120) NULL AFTER notify_forum",
+        'avatar_mime' => "ALTER TABLE users ADD COLUMN avatar_mime VARCHAR(100) NULL AFTER avatar_file",
+    ];
+
+    foreach ($columns as $column => $sql) {
         try {
-            $pdo->exec($sql);
+            $stmt = $pdo->query("SHOW COLUMNS FROM users LIKE " . $pdo->quote($column));
+            if (!$stmt || !$stmt->fetch()) $pdo->exec($sql);
         } catch (Throwable $e) {
-            // Existing columns are expected on upgraded installations.
+            // The regular account request will report an error if the schema cannot be upgraded.
         }
     }
     $ready = true;
@@ -1482,7 +1485,7 @@ function notify_forum_subscribers(PDO $pdo, array $config, array $author, int $m
         $users = $stmt->fetchAll();
         if (!$users) return;
 
-        $url = app_url($config) . '/forum.html' . ($page > 1 ? '?page=' . $page : '') . '#post-' . ($messageId + 1);
+        $url = app_url($config) . '/forum.html' . ($page > 1 ? '?page=' . $page : '') . '#message-' . $messageId;
         $snippet = forum_text_snippet($body, 420);
         $authorName = htmlspecialchars((string)$author['name'], ENT_QUOTES);
         $safeSnippet = nl2br(htmlspecialchars($snippet, ENT_QUOTES));
