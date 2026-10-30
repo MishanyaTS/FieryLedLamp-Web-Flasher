@@ -7,7 +7,7 @@
   <meta name="description" content="Форум Fiery Led Lamp - вопросы, ответы, идеи и опыт пользователей проекта.">
   <title>Форум - Fiery Led Lamp</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/styles.css?v=20261030-forum-links-spoiler">
+  <link rel="stylesheet" href="/styles.css?v=20261030-forum-preview">
 </head>
 <body>
 <header class="site-header">
@@ -66,7 +66,6 @@
       <section class="forum-reply" id="reply">
         <div class="forum-reply-head">
           <div><span class="eyebrow">ОТВЕТ В ТЕМЕ</span><h3 id="forumEditorTitle">Написать сообщение</h3></div>
-          <span id="forumUser" class="forum-current-user"></span>
         </div>
 
         <div id="forumGuest" class="forum-guest" hidden>
@@ -137,9 +136,15 @@
           </div>
           <div id="forumFilesPreview" class="forum-files-preview"></div>
 
+          <div id="forumMessagePreview" class="forum-message-preview" hidden>
+            <div class="forum-message-preview-head">Предпросмотр сообщения</div>
+            <div id="forumMessagePreviewBody" class="forum-post-body forum-message-preview-body"></div>
+          </div>
+
           <div class="forum-form-foot">
             <span id="forumCounter" class="forum-counter">0 / 12000</span>
             <div class="forum-submit-actions">
+              <button id="forumPreviewButton" class="btn ghost" type="button">Предпросмотр</button>
               <button id="forumEditCancel" class="btn ghost" type="button" hidden>Отменить редактирование</button>
               <button id="forumSubmit" class="btn primary" type="submit">Ответить</button>
             </div>
@@ -161,6 +166,6 @@
 </footer>
 
 <script src="/site.js?v=20261030-forum"></script>
-<script src="/forum.js?v=20261030-forum-links-spoiler"></script>
+<script src="/forum.js?v=20261030-forum-preview"></script>
 </body>
 </html>
