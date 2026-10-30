@@ -93,6 +93,15 @@ switch ($action) {
         require_csrf();
         update_preferences($pdo);
         break;
+    case 'discussion-list':
+        require_method('GET');
+        discussion_list($pdo);
+        break;
+    case 'discussion-post':
+        require_method('POST');
+        require_csrf();
+        discussion_post($pdo);
+        break;
     case 'resend-verification':
         require_method('POST');
         require_csrf();
@@ -836,6 +845,83 @@ function current_user_response(PDO $pdo): never {
             'createdAt' => date('d.m.Y', strtotime((string)$u['created_at'])),
         ],
     ]);
+}
+
+
+function ensure_discussion_table(PDO $pdo): void {
+    static $ready = false;
+    if ($ready) return;
+
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS discussion_messages (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            user_id BIGINT UNSIGNED NOT NULL,
+            body TEXT NOT NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY idx_discussion_created (created_at, id),
+            KEY idx_discussion_user (user_id),
+            CONSTRAINT fk_discussion_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        $ready = true;
+    } catch (Throwable $e) {
+        json_response(['ok' => false, 'message' => 'Обсуждения временно недоступны.'], 503);
+    }
+}
+
+function discussion_list(PDO $pdo): never {
+    ensure_discussion_table($pdo);
+
+    $rows = $pdo->query("SELECT m.id,m.body,m.created_at,u.name,u.is_admin
+        FROM discussion_messages m
+        INNER JOIN users u ON u.id=m.user_id
+        ORDER BY m.id DESC
+        LIMIT 100")->fetchAll();
+
+    $messages = array_map(static function(array $row): array {
+        return [
+            'id' => (int)$row['id'],
+            'author' => (string)$row['name'],
+            'isAdmin' => (bool)$row['is_admin'],
+            'body' => (string)$row['body'],
+            'createdAt' => date('d.m.Y H:i', strtotime((string)$row['created_at'])),
+        ];
+    }, $rows);
+
+    json_response(['ok' => true, 'messages' => $messages]);
+}
+
+function discussion_post(PDO $pdo): never {
+    $user = require_user($pdo);
+    require_csrf();
+    ensure_discussion_table($pdo);
+    rate_limit($pdo, 'discussion-post', 8, 60);
+
+    $data = input_json();
+    $body = trim((string)($data['body'] ?? ''));
+    $body = preg_replace("/\r\n?|\n/u", "\n", $body) ?? $body;
+
+    $length = text_length($body);
+    if ($length < 2) {
+        json_response(['ok' => false, 'message' => 'Введите сообщение.'], 422);
+    }
+    if ($length > 2000) {
+        json_response(['ok' => false, 'message' => 'Сообщение не должно превышать 2000 символов.'], 422);
+    }
+
+    $stmt = $pdo->prepare('INSERT INTO discussion_messages(user_id,body) VALUES(?,?)');
+    $stmt->execute([(int)$user['id'], $body]);
+
+    json_response([
+        'ok' => true,
+        'message' => [
+            'id' => (int)$pdo->lastInsertId(),
+            'author' => (string)$user['name'],
+            'isAdmin' => (bool)$user['is_admin'],
+            'body' => $body,
+            'createdAt' => date('d.m.Y H:i'),
+        ],
+    ], 201);
 }
 
 function update_preferences(PDO $pdo): never {
