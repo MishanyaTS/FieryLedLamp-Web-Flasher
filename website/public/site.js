@@ -432,35 +432,68 @@
   const account = document.querySelector("#accountPanel");
   if (account) {
     let csrf = "";
+    let accountUser = null;
 
-    const accountStatus = (message, type = "") => {
-      const box = document.querySelector("#accountStatus");
+    const statusBox = (selector, message, type = "") => {
+      const box = document.querySelector(selector);
+      if (!box) return;
       box.textContent = message || "";
       box.className = "form-status" + (type ? " " + type : "");
+    };
+
+    const initials = name => {
+      const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+      return ((parts[0]?.[0] || "?") + (parts[1]?.[0] || "")).toUpperCase();
+    };
+
+    const setAvatar = (url, name) => {
+      const image = document.querySelector("#accountAvatarImage");
+      const fallback = document.querySelector("#accountAvatarFallback");
+      const remove = document.querySelector("#removeAvatar");
+      if (fallback) fallback.textContent = initials(name);
+      if (image && url) {
+        image.src = url;
+        image.hidden = false;
+        if (fallback) fallback.hidden = true;
+        if (remove) remove.hidden = false;
+      } else {
+        if (image) {
+          image.removeAttribute("src");
+          image.hidden = true;
+        }
+        if (fallback) fallback.hidden = false;
+        if (remove) remove.hidden = true;
+      }
     };
 
     const loadAccount = async () => {
       try {
         const data = await parse(await api("me", { headers: {} }));
         csrf = data.csrf;
+        accountUser = data.user;
         document.querySelector("#accountName").textContent = data.user.name;
         document.querySelector("#accountEmail").textContent = data.user.email;
         document.querySelector("#accountCreated").textContent = data.user.createdAt || "-";
         document.querySelector("#notifyUpdates").checked = Boolean(data.user.notifyUpdates);
+        document.querySelector("#notifyForum").checked = Boolean(data.user.notifyForum);
+        setAvatar(data.user.avatarUrl, data.user.name);
+
         const badge = document.querySelector("#verifyBadge");
         badge.textContent = data.user.verified ? "E-mail подтверждён" : "E-mail не подтверждён";
         badge.className = "auth-badge " + (data.user.verified ? "success" : "warning");
         document.querySelector("#resendVerify").hidden = data.user.verified;
+
         const adminLink = document.querySelector("#adminNotifyLink");
         if (adminLink) adminLink.hidden = !data.user.isAdmin;
         const adminStatsLink = document.querySelector("#adminStatsLink");
         if (adminStatsLink) adminStatsLink.hidden = !data.user.isAdmin;
         const adminUsersLink = document.querySelector("#adminUsersLink");
         if (adminUsersLink) adminUsersLink.hidden = !data.user.isAdmin;
+
         account.hidden = false;
         document.querySelector("#accountLoading").hidden = true;
       } catch (_) {
-        location.href = "/login.html";
+        location.href = "/login.html?next=%2Faccount.html";
       }
     };
 
@@ -471,11 +504,95 @@
         await parse(await api("preferences", {
           method: "POST",
           headers: { "x-csrf-token": csrf },
-          body: JSON.stringify({ notifyUpdates: document.querySelector("#notifyUpdates").checked })
+          body: JSON.stringify({
+            notifyUpdates: document.querySelector("#notifyUpdates").checked,
+            notifyForum: document.querySelector("#notifyForum").checked
+          })
         }));
-        accountStatus("Настройки сохранены.", "success");
+        statusBox("#preferencesStatus", "Настройки уведомлений сохранены.", "success");
       } catch (error) {
-        accountStatus(error.message, "error");
+        statusBox("#preferencesStatus", error.message, "error");
+      } finally {
+        busy(button, false);
+      }
+    });
+
+    document.querySelector("#saveAvatar")?.addEventListener("click", async event => {
+      const input = document.querySelector("#accountAvatarFile");
+      const file = input?.files?.[0];
+      if (!file) {
+        statusBox("#accountStatus", "Выберите изображение для аватара.", "error");
+        return;
+      }
+
+      const button = event.currentTarget;
+      busy(button, true, "Загрузка…");
+      try {
+        const formData = new FormData();
+        formData.append("avatar", file, file.name);
+        const response = await fetch("/api/index.php?action=avatar-update", {
+          method: "POST",
+          credentials: "same-origin",
+          cache: "no-store",
+          headers: { "X-CSRF-Token": csrf },
+          body: formData
+        });
+        const data = await parse(response);
+        setAvatar(data.avatarUrl, accountUser?.name || "");
+        if (input) input.value = "";
+        statusBox("#accountStatus", "Аватар обновлён.", "success");
+      } catch (error) {
+        statusBox("#accountStatus", error.message, "error");
+      } finally {
+        busy(button, false);
+      }
+    });
+
+    document.querySelector("#removeAvatar")?.addEventListener("click", async event => {
+      const button = event.currentTarget;
+      busy(button, true, "Удаление…");
+      try {
+        const formData = new FormData();
+        formData.append("remove", "1");
+        const response = await fetch("/api/index.php?action=avatar-update", {
+          method: "POST",
+          credentials: "same-origin",
+          cache: "no-store",
+          headers: { "X-CSRF-Token": csrf },
+          body: formData
+        });
+        const data = await parse(response);
+        setAvatar(data.avatarUrl, accountUser?.name || "");
+        statusBox("#accountStatus", "Аватар удалён.", "success");
+      } catch (error) {
+        statusBox("#accountStatus", error.message, "error");
+      } finally {
+        busy(button, false);
+      }
+    });
+
+    const passwordForm = document.querySelector("#changePasswordForm");
+    passwordForm?.addEventListener("submit", async event => {
+      event.preventDefault();
+      if (passwordForm.newPassword.value !== passwordForm.newPassword2.value) {
+        setStatus(passwordForm, "Новые пароли не совпадают.", "error");
+        return;
+      }
+      const button = passwordForm.querySelector("button[type=submit]");
+      busy(button, true, "Сохранение…");
+      try {
+        const data = await parse(await api("change-password", {
+          method: "POST",
+          headers: { "x-csrf-token": csrf },
+          body: JSON.stringify({
+            currentPassword: passwordForm.currentPassword.value,
+            newPassword: passwordForm.newPassword.value
+          })
+        }));
+        passwordForm.reset();
+        setStatus(passwordForm, data.message || "Пароль изменён.", "success");
+      } catch (error) {
+        setStatus(passwordForm, error.message, "error");
       } finally {
         busy(button, false);
       }
@@ -490,9 +607,9 @@
           headers: { "x-csrf-token": csrf },
           body: "{}"
         }));
-        accountStatus(data.message, "success");
+        statusBox("#accountStatus", data.message, "success");
       } catch (error) {
-        accountStatus(error.message, "error");
+        statusBox("#accountStatus", error.message, "error");
       } finally {
         busy(button, false);
       }
@@ -502,7 +619,7 @@
       try {
         await api("logout", { method: "POST", headers: { "x-csrf-token": csrf }, body: "{}" });
       } finally {
-        location.href = "/login.html";
+        location.href = "/";
       }
     });
 
