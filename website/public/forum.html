@@ -7,7 +7,7 @@
   <meta name="description" content="Форум Fiery Led Lamp - вопросы, ответы, идеи и опыт пользователей проекта.">
   <title>Форум - Fiery Led Lamp</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/styles.css?v=20261030-format-toggle">
+  <link rel="stylesheet" href="/styles.css?v=20261030-visual-format">
 </head>
 <body>
 <header class="site-header">
@@ -114,7 +114,7 @@
               <button type="button">❤️</button><button type="button">💡</button><button type="button">✅</button><button type="button">⚠️</button>
               <button type="button">🎉</button><button type="button">🚀</button><button type="button">🙏</button><button type="button">🤝</button>
             </div>
-            <textarea id="forumText" maxlength="12000" placeholder="Напишите ответ..." aria-label="Ответ в теме"></textarea>
+            <div id="forumText" class="forum-rich-editor" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="Напишите ответ..." aria-label="Ответ в теме"></div>
           </div>
 
           <div class="forum-attachment-editor">
@@ -156,6 +156,6 @@
 </footer>
 
 <script src="/site.js?v=20261030-forum"></script>
-<script src="/forum.js?v=20261030-format-toggle"></script>
+<script src="/forum.js?v=20261030-visual-format"></script>
 </body>
 </html>
