@@ -16,7 +16,6 @@
   const counter = document.querySelector("#forumCounter");
   const status = document.querySelector("#forumStatus");
   const submit = document.querySelector("#forumSubmit");
-  const userLabel = document.querySelector("#forumUser");
   const editorTitle = document.querySelector("#forumEditorTitle");
   const replyContext = document.querySelector("#forumReplyContext");
   const replyLabel = document.querySelector("#forumReplyLabel");
@@ -34,6 +33,9 @@
   const linkButton = document.querySelector("#forumLinkButton");
   const imageButton = document.querySelector("#forumImageButton");
   const spoilerButton = document.querySelector("#forumSpoilerButton");
+  const previewButton = document.querySelector("#forumPreviewButton");
+  const previewBox = document.querySelector("#forumMessagePreview");
+  const previewBody = document.querySelector("#forumMessagePreviewBody");
 
   if (!posts) return;
 
@@ -175,8 +177,17 @@
     updateCounter();
   }
 
+  function updatePreview() {
+    if (!previewBox || !previewBody || previewBox.hidden) return;
+    const value = text?.value.trim() || "";
+    previewBody.innerHTML = value
+      ? renderMarkup(value)
+      : '<span class="forum-preview-empty">Сообщение пока пустое.</span>';
+  }
+
   function updateCounter() {
     if (counter && text) counter.textContent = text.value.length + " / 12000";
+    updatePreview();
   }
 
   function renderPendingFiles() {
@@ -213,6 +224,8 @@
     if (editorTitle) editorTitle.textContent = "Написать сообщение";
     if (submit) submit.textContent = "Ответить";
     if (clearText && text) text.value = "";
+    if (previewBox) previewBox.hidden = true;
+    if (previewButton) previewButton.textContent = "Предпросмотр";
     updateCounter();
   }
 
@@ -558,7 +571,6 @@
       if (response.status === 401) {
         csrf = "";
         viewer = null;
-        if (userLabel) userLabel.textContent = "";
         if (guest) guest.hidden = false;
         return;
       }
@@ -566,13 +578,11 @@
 
       csrf = String(data.csrf || "");
       viewer = data.user || null;
-      if (userLabel) userLabel.textContent = data.user?.name ? "Вы вошли как " + data.user.name : "";
       if (guest) guest.hidden = true;
       if (form) form.hidden = false;
     } catch (error) {
       csrf = "";
       viewer = null;
-      if (userLabel) userLabel.textContent = "";
       if (guest) guest.hidden = true;
       if (form) form.hidden = true;
       setStatus(error.message || "Не удалось проверить аккаунт.", "error");
@@ -655,6 +665,13 @@
   });
 
   quoteSelection?.addEventListener("click", () => wrapSelection("[quote]", "[/quote]"));
+
+  previewButton?.addEventListener("click", () => {
+    if (!previewBox) return;
+    previewBox.hidden = !previewBox.hidden;
+    previewButton.textContent = previewBox.hidden ? "Предпросмотр" : "Скрыть предпросмотр";
+    updatePreview();
+  });
 
   linkButton?.addEventListener("click", () => {
     const selected = text?.value.slice(text.selectionStart || 0, text.selectionEnd || 0).trim() || "";
