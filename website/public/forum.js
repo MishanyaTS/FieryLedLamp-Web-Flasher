@@ -189,6 +189,7 @@
   function updateCounter() {
     if (counter && text) counter.textContent = text.value.length + " / 12000";
     updatePreview();
+    updateFormatButtons();
   }
 
   function renderPendingFiles() {
@@ -651,11 +652,73 @@
     }
   }
 
-  document.querySelectorAll(".forum-tool[data-format]").forEach(button => {
-    button.addEventListener("click", () => {
+  const formatButtons = [...document.querySelectorAll(".forum-tool[data-format]")];
+
+  function isFormatActiveAtCursor(tag) {
+    if (!text) return false;
+    const position = text.selectionStart ?? text.value.length;
+    const before = text.value.slice(0, position);
+    const pattern = new RegExp("\\[(/?)" + tag + "\\]", "gi");
+    let depth = 0;
+    let match;
+    while ((match = pattern.exec(before)) !== null) {
+      if (match[1]) depth = Math.max(0, depth - 1);
+      else depth += 1;
+    }
+    return depth > 0;
+  }
+
+  function updateFormatButtons() {
+    formatButtons.forEach(button => {
       const tag = button.dataset.format;
-      wrapSelection("[" + tag + "]", "[/" + tag + "]");
+      const active = Boolean(tag && isFormatActiveAtCursor(tag));
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-pressed", active ? "true" : "false");
     });
+  }
+
+  function toggleFormat(tag) {
+    if (!text || !tag) return;
+
+    const open = "[" + tag + "]";
+    const close = "[/" + tag + "]";
+    let start = text.selectionStart ?? text.value.length;
+    let end = text.selectionEnd ?? start;
+    const selected = text.value.slice(start, end);
+
+    if (start !== end) {
+      const before = text.value.slice(0, start);
+      const after = text.value.slice(end);
+
+      if (before.endsWith(open) && after.startsWith(close)) {
+        const replaceStart = start - open.length;
+        const replaceEnd = end + close.length;
+        text.setRangeText(selected, replaceStart, replaceEnd, "select");
+        text.setSelectionRange(replaceStart, replaceStart + selected.length);
+      } else if (selected.startsWith(open) && selected.endsWith(close)) {
+        const inner = selected.slice(open.length, selected.length - close.length);
+        text.setRangeText(inner, start, end, "select");
+        text.setSelectionRange(start, start + inner.length);
+      } else {
+        text.setRangeText(open + selected + close, start, end, "select");
+        text.setSelectionRange(start + open.length, start + open.length + selected.length);
+      }
+    } else {
+      const active = isFormatActiveAtCursor(tag);
+      const token = active ? close : open;
+      text.setRangeText(token, start, end, "end");
+      const position = start + token.length;
+      text.setSelectionRange(position, position);
+    }
+
+    text.focus();
+    updateCounter();
+    updateFormatButtons();
+  }
+
+  formatButtons.forEach(button => {
+    button.setAttribute("aria-pressed", "false");
+    button.addEventListener("click", () => toggleFormat(button.dataset.format));
   });
 
   fontSelect?.addEventListener("change", () => {
@@ -753,6 +816,9 @@
 
   editCancel?.addEventListener("click", () => clearEditorMode(true));
   text?.addEventListener("input", updateCounter);
+  text?.addEventListener("click", updateFormatButtons);
+  text?.addEventListener("keyup", updateFormatButtons);
+  text?.addEventListener("select", updateFormatButtons);
   form?.addEventListener("submit", submitMessage);
 
   addEventListener("popstate", () => {
