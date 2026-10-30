@@ -95,6 +95,11 @@ switch ($action) {
         require_csrf();
         update_preferences($pdo);
         break;
+    case 'update-name':
+        require_method('POST');
+        require_csrf();
+        update_name($pdo);
+        break;
     case 'change-password':
         require_method('POST');
         require_csrf();
@@ -1362,6 +1367,25 @@ function discussion_file(PDO $pdo): never {
     exit;
 }
 
+
+function update_name(PDO $pdo): never {
+    $u = require_user($pdo);
+    $d = input_json();
+    $name = trim((string)($d['name'] ?? ''));
+    $name = preg_replace('/\s+/u', ' ', $name) ?? $name;
+
+    if (text_length($name) < 2 || text_length($name) > 80) {
+        json_response(['ok' => false, 'message' => 'Имя должно содержать от 2 до 80 символов.'], 422);
+    }
+    if (preg_match('/[\x00-\x1F\x7F]/u', $name)) {
+        json_response(['ok' => false, 'message' => 'Имя содержит недопустимые символы.'], 422);
+    }
+
+    $pdo->prepare('UPDATE users SET name=?,updated_at=NOW() WHERE id=?')
+        ->execute([$name, (int)$u['id']]);
+
+    json_response(['ok' => true, 'name' => $name, 'message' => 'Имя изменено.']);
+}
 
 function update_preferences(PDO $pdo): never {
     $u = require_user($pdo);
