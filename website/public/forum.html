@@ -7,7 +7,7 @@
   <meta name="description" content="Форум Fiery Led Lamp - вопросы, ответы, идеи и опыт пользователей проекта.">
   <title>Форум - Fiery Led Lamp</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/styles.css?v=20261030-forum-guestfix">
+  <link rel="stylesheet" href="/styles.css?v=20261030-format-toggle">
 </head>
 <body>
 <header class="site-header">
@@ -74,10 +74,10 @@
 
           <div class="forum-editor">
             <div class="forum-editor-toolbar" aria-label="Форматирование сообщения">
-              <button type="button" class="forum-tool" data-format="b" title="Жирный"><b>B</b></button>
-              <button type="button" class="forum-tool" data-format="i" title="Курсив"><i>I</i></button>
-              <button type="button" class="forum-tool" data-format="u" title="Подчёркнутый"><u>U</u></button>
-              <button type="button" class="forum-tool" data-format="s" title="Зачёркнутый"><s>S</s></button>
+              <button type="button" class="forum-tool" data-format="b" aria-pressed="false" title="Жирный"><b>B</b></button>
+              <button type="button" class="forum-tool" data-format="i" aria-pressed="false" title="Курсив"><i>I</i></button>
+              <button type="button" class="forum-tool" data-format="u" aria-pressed="false" title="Подчёркнутый"><u>U</u></button>
+              <button type="button" class="forum-tool" data-format="s" aria-pressed="false" title="Зачёркнутый"><s>S</s></button>
               <span class="forum-tool-separator"></span>
               <select id="forumFont" class="forum-tool-select" aria-label="Шрифт">
                 <option value="">Шрифт</option>
@@ -156,6 +156,6 @@
 </footer>
 
 <script src="/site.js?v=20261030-forum"></script>
-<script src="/forum.js?v=20261030-forum-emptyblock-fix"></script>
+<script src="/forum.js?v=20261030-format-toggle"></script>
 </body>
 </html>
