@@ -34,7 +34,6 @@
 
   if (!posts) return;
 
-  const firstPostTemplate = posts.querySelector(".forum-first-post")?.cloneNode(true) || null;
   const messageMap = new Map();
   let csrf = "";
   let viewer = null;
@@ -271,7 +270,15 @@
 
     const avatar = document.createElement("div");
     avatar.className = "forum-avatar";
-    avatar.textContent = initials(item.author);
+    if (item.avatarUrl) {
+      const avatarImage = document.createElement("img");
+      avatarImage.src = item.avatarUrl;
+      avatarImage.alt = "";
+      avatarImage.loading = "lazy";
+      avatar.appendChild(avatarImage);
+    } else {
+      avatar.textContent = initials(item.author);
+    }
 
     const identity = document.createElement("div");
     const name = document.createElement("span");
@@ -408,36 +415,6 @@
     return article;
   }
 
-  function setupStarterPost() {
-    const starter = posts.querySelector(".forum-first-post");
-    const main = starter?.querySelector(".forum-post-main");
-    const body = starter?.querySelector(".forum-post-body");
-    if (!main || !body || main.querySelector(".forum-post-actions")) return;
-
-    const actions = document.createElement("div");
-    actions.className = "forum-post-actions";
-
-    const reply = actionButton("↩ Ответить");
-    reply.addEventListener("click", () => {
-      if (!csrf) return loginForForum();
-      clearEditorMode(false);
-      if (editorTitle) editorTitle.textContent = "Ответ для MishanyaTS";
-      document.querySelector("#reply")?.scrollIntoView({ behavior: "smooth", block: "start" });
-      setTimeout(() => text?.focus(), 300);
-    });
-
-    const quote = actionButton("❝ Цитировать");
-    quote.addEventListener("click", () => {
-      if (!csrf) return loginForForum();
-      const content = body.textContent.trim().slice(0, 3000);
-      clearEditorMode(false);
-      insertAtCursor("[quote author=MishanyaTS]" + content + "[/quote]\n\n");
-      document.querySelector("#reply")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-
-    actions.append(reply, quote);
-    main.appendChild(actions);
-  }
 
   function pageButton(label, page, active = false, disabled = false) {
     const el = document.createElement("button");
@@ -502,7 +479,6 @@
 
       messageMap.clear();
       posts.replaceChildren();
-      if (currentPage === 1 && firstPostTemplate) posts.appendChild(firstPostTemplate.cloneNode(true));
 
       const pagination = data.pagination || { page: 1, pages: 1, total: 0, pageSize: 20 };
       currentPage = Number(pagination.page || 1);
@@ -515,15 +491,14 @@
         posts.appendChild(empty);
       } else {
         data.messages.forEach((item, index) => {
-          const number = ((currentPage - 1) * Number(pagination.pageSize || 20)) + index + 2;
+          const number = ((currentPage - 1) * Number(pagination.pageSize || 20)) + index + 1;
           posts.appendChild(createPost(item, number));
         });
       }
 
-      setupStarterPost();
 
       if (pageInfo) {
-        const totalPosts = Number(pagination.total || 0) + 1;
+        const totalPosts = Number(pagination.total || 0);
         pageInfo.textContent = "Страница " + currentPage + " из " + Number(pagination.pages || 1) + " · сообщений в теме: " + totalPosts;
       }
       renderPager(topPager, pagination);
@@ -532,8 +507,6 @@
       if (scroll) document.querySelector(".forum-thread-head")?.scrollIntoView({ behavior: "smooth", block: "start" });
     } catch (error) {
       posts.replaceChildren();
-      if (currentPage === 1 && firstPostTemplate) posts.appendChild(firstPostTemplate.cloneNode(true));
-      setupStarterPost();
       const box = document.createElement("div");
       box.className = "forum-empty";
       box.textContent = error.message || "Не удалось загрузить сообщения.";
@@ -543,21 +516,32 @@
   }
 
   async function loadUser() {
+    if (guest) guest.hidden = true;
+    if (form) form.hidden = true;
     try {
       const response = await fetch(meUrl, { credentials: "same-origin", cache: "no-store" });
-      const data = await response.json();
-      if (!response.ok || !data.ok) throw new Error("guest");
+      const data = await response.json().catch(() => ({}));
+      if (response.status === 401) {
+        csrf = "";
+        viewer = null;
+        if (userLabel) userLabel.textContent = "";
+        if (guest) guest.hidden = false;
+        return;
+      }
+      if (!response.ok || !data.ok) throw new Error(data.message || "Не удалось проверить аккаунт.");
+
       csrf = String(data.csrf || "");
       viewer = data.user || null;
       if (userLabel) userLabel.textContent = data.user?.name ? "Вы вошли как " + data.user.name : "";
       if (guest) guest.hidden = true;
       if (form) form.hidden = false;
-    } catch (_) {
+    } catch (error) {
       csrf = "";
       viewer = null;
       if (userLabel) userLabel.textContent = "";
-      if (guest) guest.hidden = false;
+      if (guest) guest.hidden = true;
       if (form) form.hidden = true;
+      setStatus(error.message || "Не удалось проверить аккаунт.", "error");
     }
   }
 
