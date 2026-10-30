@@ -49,6 +49,8 @@ try {
     json_response(['ok' => false, 'message' => 'База данных недоступна.'], 503);
 }
 
+ensure_account_settings_schema($pdo);
+
 $action = (string)($_GET['action'] ?? '');
 
 if ($action === 'track') {
@@ -93,6 +95,20 @@ switch ($action) {
         require_csrf();
         update_preferences($pdo);
         break;
+    case 'change-password':
+        require_method('POST');
+        require_csrf();
+        change_password($pdo);
+        break;
+    case 'avatar-update':
+        require_method('POST');
+        require_csrf();
+        avatar_update($pdo);
+        break;
+    case 'avatar':
+        require_method('GET');
+        avatar_response($pdo);
+        break;
     case 'discussion-list':
         require_method('GET');
         discussion_list($pdo);
@@ -100,7 +116,7 @@ switch ($action) {
     case 'discussion-post':
         require_method('POST');
         require_csrf();
-        discussion_post($pdo);
+        discussion_post($pdo, $config);
         break;
     case 'discussion-like':
         require_method('POST');
@@ -226,8 +242,39 @@ function rate_limit(PDO $pdo, string $action, int $limit, int $seconds): void {
         ->execute([$key, $action]);
 }
 
+function ensure_account_settings_schema(PDO $pdo): void {
+    static $ready = false;
+    if ($ready) return;
+
+    foreach ([
+        "ALTER TABLE users ADD COLUMN notify_forum TINYINT(1) NOT NULL DEFAULT 0 AFTER notify_updates",
+        "ALTER TABLE users ADD COLUMN avatar_file VARCHAR(120) NULL AFTER notify_forum",
+        "ALTER TABLE users ADD COLUMN avatar_mime VARCHAR(100) NULL AFTER avatar_file"
+    ] as $sql) {
+        try {
+            $pdo->exec($sql);
+        } catch (Throwable $e) {
+            // Existing columns are expected on upgraded installations.
+        }
+    }
+    $ready = true;
+}
+
+function avatar_dir(): string {
+    $dir = dirname(__DIR__, 2) . '/fieryledlamp-private/avatars';
+    if (!is_dir($dir) && !@mkdir($dir, 0750, true) && !is_dir($dir)) {
+        throw new RuntimeException('Не удалось подготовить хранилище аватаров.');
+    }
+    return $dir;
+}
+
+function avatar_url(array $user): ?string {
+    if (empty($user['avatar_file'])) return null;
+    return '/api/index.php?action=avatar&id=' . (int)$user['id'] . '&v=' . rawurlencode((string)$user['avatar_file']);
+}
+
 function user_by_id(PDO $pdo, int $id): ?array {
-    $stmt = $pdo->prepare('SELECT id,name,email,email_verified_at,notify_updates,is_admin,created_at FROM users WHERE id=? LIMIT 1');
+    $stmt = $pdo->prepare('SELECT id,name,email,email_verified_at,notify_updates,notify_forum,avatar_file,avatar_mime,is_admin,created_at FROM users WHERE id=? LIMIT 1');
     $stmt->execute([$id]);
     $row = $stmt->fetch();
     return $row ?: null;
@@ -860,6 +907,8 @@ function current_user_response(PDO $pdo): never {
             'email' => $u['email'],
             'verified' => !empty($u['email_verified_at']),
             'notifyUpdates' => (bool)$u['notify_updates'],
+            'notifyForum' => (bool)$u['notify_forum'],
+            'avatarUrl' => avatar_url($u),
             'isAdmin' => (bool)$u['is_admin'],
             'createdAt' => date('d.m.Y', strtotime((string)$u['created_at'])),
         ],
@@ -1086,7 +1135,7 @@ function discussion_list(PDO $pdo): never {
     $offset = ($page - 1) * $pageSize;
 
     $sql = "SELECT m.id,m.user_id,m.parent_id,m.body,m.created_at,m.edited_at,m.deleted_at,
-            u.name,u.is_admin,u.created_at AS user_created_at,
+            u.name,u.avatar_file,u.is_admin,u.created_at AS user_created_at,
             (SELECT COUNT(*) FROM discussion_messages um WHERE um.user_id=m.user_id AND um.deleted_at IS NULL) AS user_posts,
             (SELECT COUNT(*) FROM discussion_likes l WHERE l.message_id=m.id) AS like_count,
             p.body AS parent_body,p.deleted_at AS parent_deleted_at,pu.name AS parent_author
@@ -1121,6 +1170,7 @@ function discussion_list(PDO $pdo): never {
             'id' => $id,
             'userId' => (int)$row['user_id'],
             'author' => (string)$row['name'],
+            'avatarUrl' => !empty($row['avatar_file']) ? '/api/index.php?action=avatar&id=' . (int)$row['user_id'] . '&v=' . rawurlencode((string)$row['avatar_file']) : null,
             'isAdmin' => (bool)$row['is_admin'],
             'body' => $deleted ? '' : (string)$row['body'],
             'deleted' => $deleted,
@@ -1150,7 +1200,7 @@ function discussion_list(PDO $pdo): never {
     ]);
 }
 
-function discussion_post(PDO $pdo): never {
+function discussion_post(PDO $pdo, array $config): never {
     $user = require_user($pdo);
     ensure_discussion_table($pdo);
     rate_limit($pdo, 'discussion-post', 8, 60);
@@ -1184,7 +1234,9 @@ function discussion_post(PDO $pdo): never {
     }
 
     $total = (int)$pdo->query('SELECT COUNT(*) FROM discussion_messages WHERE deleted_at IS NULL')->fetchColumn();
-    json_response(['ok' => true, 'id' => $messageId, 'page' => max(1, (int)ceil($total / 20))], 201);
+    $page = max(1, (int)ceil($total / 20));
+    notify_forum_subscribers($pdo, $config, $user, $messageId, $body, $page);
+    json_response(['ok' => true, 'id' => $messageId, 'page' => $page], 201);
 }
 
 function discussion_edit(PDO $pdo): never {
@@ -1311,10 +1363,140 @@ function discussion_file(PDO $pdo): never {
 function update_preferences(PDO $pdo): never {
     $u = require_user($pdo);
     $d = input_json();
-    $notify = !empty($d['notifyUpdates']) ? 1 : 0;
-    $pdo->prepare('UPDATE users SET notify_updates=?, updated_at=NOW() WHERE id=?')
-        ->execute([$notify, (int)$u['id']]);
+    $notifyUpdates = !empty($d['notifyUpdates']) ? 1 : 0;
+    $notifyForum = !empty($d['notifyForum']) ? 1 : 0;
+    $pdo->prepare('UPDATE users SET notify_updates=?,notify_forum=?,updated_at=NOW() WHERE id=?')
+        ->execute([$notifyUpdates, $notifyForum, (int)$u['id']]);
     json_response(['ok' => true]);
+}
+
+function change_password(PDO $pdo): never {
+    rate_limit($pdo, 'change-password', 8, 3600);
+    $u = require_user($pdo);
+    $d = input_json();
+    $current = (string)($d['currentPassword'] ?? '');
+    $new = (string)($d['newPassword'] ?? '');
+
+    if (strlen($new) < 8 || strlen($new) > 200) {
+        json_response(['ok' => false, 'message' => 'Новый пароль должен содержать не менее 8 символов.'], 422);
+    }
+
+    $stmt = $pdo->prepare('SELECT password_hash FROM users WHERE id=? LIMIT 1');
+    $stmt->execute([(int)$u['id']]);
+    $hash = (string)($stmt->fetchColumn() ?: '');
+    if ($hash === '' || !password_verify($current, $hash)) {
+        json_response(['ok' => false, 'message' => 'Текущий пароль указан неверно.'], 422);
+    }
+    if (password_verify($new, $hash)) {
+        json_response(['ok' => false, 'message' => 'Новый пароль должен отличаться от текущего.'], 422);
+    }
+
+    $pdo->prepare('UPDATE users SET password_hash=?,updated_at=NOW() WHERE id=?')
+        ->execute([password_hash($new, PASSWORD_DEFAULT), (int)$u['id']]);
+    json_response(['ok' => true, 'message' => 'Пароль изменён.']);
+}
+
+function avatar_update(PDO $pdo): never {
+    $u = require_user($pdo);
+    $remove = !empty($_POST['remove']);
+    $oldFile = !empty($u['avatar_file']) ? basename((string)$u['avatar_file']) : '';
+
+    if ($remove) {
+        $pdo->prepare('UPDATE users SET avatar_file=NULL,avatar_mime=NULL,updated_at=NOW() WHERE id=?')
+            ->execute([(int)$u['id']]);
+        if ($oldFile !== '') @unlink(avatar_dir() . '/' . $oldFile);
+        json_response(['ok' => true, 'avatarUrl' => null]);
+    }
+
+    if (empty($_FILES['avatar']) || !is_array($_FILES['avatar'])) {
+        json_response(['ok' => false, 'message' => 'Выберите изображение для аватара.'], 422);
+    }
+
+    $file = $_FILES['avatar'];
+    if ((int)($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+        json_response(['ok' => false, 'message' => 'Не удалось загрузить аватар.'], 422);
+    }
+    $size = (int)($file['size'] ?? 0);
+    if ($size <= 0 || $size > 5 * 1024 * 1024) {
+        json_response(['ok' => false, 'message' => 'Размер аватара должен быть не более 5 МБ.'], 422);
+    }
+
+    $tmp = (string)($file['tmp_name'] ?? '');
+    if ($tmp === '' || !is_uploaded_file($tmp)) {
+        json_response(['ok' => false, 'message' => 'Некорректный файл аватара.'], 422);
+    }
+
+    $mime = (string)(new finfo(FILEINFO_MIME_TYPE))->file($tmp);
+    $allowed = ['image/jpeg'=>'jpg','image/png'=>'png','image/webp'=>'webp'];
+    if (!isset($allowed[$mime])) {
+        json_response(['ok' => false, 'message' => 'Для аватара разрешены JPG, PNG и WEBP.'], 422);
+    }
+
+    $stored = 'avatar-' . (int)$u['id'] . '-' . bin2hex(random_bytes(12)) . '.' . $allowed[$mime];
+    $target = avatar_dir() . '/' . $stored;
+    if (!move_uploaded_file($tmp, $target)) {
+        json_response(['ok' => false, 'message' => 'Не удалось сохранить аватар.'], 500);
+    }
+
+    try {
+        $pdo->prepare('UPDATE users SET avatar_file=?,avatar_mime=?,updated_at=NOW() WHERE id=?')
+            ->execute([$stored, $mime, (int)$u['id']]);
+    } catch (Throwable $e) {
+        @unlink($target);
+        json_response(['ok' => false, 'message' => 'Не удалось сохранить настройки аватара.'], 500);
+    }
+
+    if ($oldFile !== '' && $oldFile !== $stored) @unlink(avatar_dir() . '/' . $oldFile);
+    json_response(['ok' => true, 'avatarUrl' => '/api/index.php?action=avatar&id=' . (int)$u['id'] . '&v=' . rawurlencode($stored)]);
+}
+
+function avatar_response(PDO $pdo): never {
+    $id = max(1, (int)($_GET['id'] ?? 0));
+    $stmt = $pdo->prepare('SELECT avatar_file,avatar_mime FROM users WHERE id=? LIMIT 1');
+    $stmt->execute([$id]);
+    $row = $stmt->fetch();
+    if (!$row || empty($row['avatar_file'])) {
+        http_response_code(404);
+        exit;
+    }
+
+    $file = basename((string)$row['avatar_file']);
+    $path = avatar_dir() . '/' . $file;
+    if (!is_file($path)) {
+        http_response_code(404);
+        exit;
+    }
+
+    header('Cache-Control: public, max-age=86400, immutable');
+    header('X-Content-Type-Options: nosniff');
+    header('Content-Type: ' . (string)($row['avatar_mime'] ?: 'image/jpeg'));
+    header('Content-Length: ' . (string)filesize($path));
+    readfile($path);
+    exit;
+}
+
+function notify_forum_subscribers(PDO $pdo, array $config, array $author, int $messageId, string $body, int $page): void {
+    try {
+        $stmt = $pdo->prepare('SELECT id,name,email FROM users WHERE notify_forum=1 AND email_verified_at IS NOT NULL AND id<>? ORDER BY id');
+        $stmt->execute([(int)$author['id']]);
+        $users = $stmt->fetchAll();
+        if (!$users) return;
+
+        $url = app_url($config) . '/forum.html' . ($page > 1 ? '?page=' . $page : '') . '#post-' . ($messageId + 1);
+        $snippet = forum_text_snippet($body, 420);
+        $authorName = htmlspecialchars((string)$author['name'], ENT_QUOTES);
+        $safeSnippet = nl2br(htmlspecialchars($snippet, ENT_QUOTES));
+
+        foreach ($users as $recipient) {
+            $recipientName = htmlspecialchars((string)$recipient['name'], ENT_QUOTES);
+            $mailBody = '<p style="color:#aeb7c4;line-height:1.6">Здравствуйте, ' . $recipientName . '!</p>'
+                . '<p style="color:#aeb7c4;line-height:1.6"><b>' . $authorName . '</b> оставил новое сообщение на форуме Fiery Led Lamp.</p>'
+                . '<div style="margin:16px 0;padding:14px;border-left:3px solid #ff7a42;background:#11151d;color:#cbd5e1;line-height:1.6">' . $safeSnippet . '</div>';
+            send_email($config, (string)$recipient['email'], 'Новое сообщение на форуме - Fiery Led Lamp', email_layout('Новое сообщение на форуме', $mailBody, 'Открыть форум', $url));
+        }
+    } catch (Throwable $e) {
+        // Forum posting must not fail if an email provider is unavailable.
+    }
 }
 
 function resend_verification(PDO $pdo, array $config): never {
