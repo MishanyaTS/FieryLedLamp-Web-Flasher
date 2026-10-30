@@ -1325,3 +1325,8 @@ background:linear-gradient(180deg,#131821,#0e1219);border-color:#283141;box-shad
   display:none!important;
 }
 
+/* Forum guest visibility fix - 2026-10-30 */
+.forum-guest:not([hidden]){
+  display:flex!important;
+}
+
