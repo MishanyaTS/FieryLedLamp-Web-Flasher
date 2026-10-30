@@ -17,6 +17,7 @@
 
   if (!posts) return;
 
+  const firstPostTemplate = posts.querySelector(".forum-first-post")?.cloneNode(true) || null;
   let csrf = "";
   let currentPage = Math.max(1, Number(new URLSearchParams(location.search).get("page")) || 1);
 
@@ -154,9 +155,8 @@
       const data = await response.json();
       if (!response.ok || !data.ok) throw new Error(data.message || "Не удалось загрузить сообщения.");
 
-      const firstPost = posts.querySelector(".forum-first-post");
       posts.replaceChildren();
-      if (currentPage === 1 && firstPost) posts.appendChild(firstPost);
+      if (currentPage === 1 && firstPostTemplate) posts.appendChild(firstPostTemplate.cloneNode(true));
 
       const pagination = data.pagination || { page: 1, pages: 1, total: 0, pageSize: 20 };
       currentPage = Number(pagination.page || 1);
@@ -182,9 +182,8 @@
 
       if (scroll) document.querySelector(".forum-thread-head")?.scrollIntoView({ behavior: "smooth", block: "start" });
     } catch (error) {
-      const firstPost = posts.querySelector(".forum-first-post");
       posts.replaceChildren();
-      if (currentPage === 1 && firstPost) posts.appendChild(firstPost);
+      if (currentPage === 1 && firstPostTemplate) posts.appendChild(firstPostTemplate.cloneNode(true));
       const box = document.createElement("div");
       box.className = "forum-empty";
       box.textContent = error.message || "Не удалось загрузить сообщения.";
