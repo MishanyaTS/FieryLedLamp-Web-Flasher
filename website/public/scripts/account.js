@@ -215,6 +215,13 @@
         if (adminStatsLink) adminStatsLink.hidden = !data.user.isAdmin;
         const adminUsersLink = document.querySelector("#adminUsersLink");
         if (adminUsersLink) adminUsersLink.hidden = !data.user.isAdmin;
+        const adminPanel = document.querySelector("#accountAdminPanel");
+        if (adminPanel) adminPanel.hidden = !data.user.isAdmin;
+        const role = document.querySelector("#accountRole");
+        if (role) {
+          role.textContent = data.user.isAdmin ? "Администратор" : "Пользователь";
+          role.classList.toggle("is-admin", Boolean(data.user.isAdmin));
+        }
 
         account.hidden = false;
         document.querySelector("#accountLoading").hidden = true;
@@ -294,12 +301,19 @@
         const data = await parse(response);
         setAvatar(data.avatarUrl, accountUser?.name || "");
         if (input) input.value = "";
+        const filename = document.querySelector("#accountAvatarFilename");
+        if (filename) filename.textContent = "JPG, PNG или WebP, до 5 МБ.";
         statusBox("#accountStatus", "Аватар обновлён.", "success");
       } catch (error) {
         statusBox("#accountStatus", error.message, "error");
       } finally {
         busy(button, false);
       }
+    });
+
+    document.querySelector("#accountAvatarFile")?.addEventListener("change", event => {
+      const filename = document.querySelector("#accountAvatarFilename");
+      if (filename) filename.textContent = event.currentTarget.files?.[0]?.name || "JPG, PNG или WebP, до 5 МБ.";
     });
 
     document.querySelector("#removeAvatar")?.addEventListener("click", async event => {

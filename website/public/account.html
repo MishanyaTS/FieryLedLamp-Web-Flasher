@@ -1,5 +1,6 @@
 <!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b0d12"><meta name="robots" content="noindex,follow"><meta name="description" content="Личный аккаунт Fiery Led Lamp."><title>Аккаунт - Fiery Led Lamp</title><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/styles.css?v=01371fff9bec">  <link rel="stylesheet" href="/header.css?v=shared-596abcf656f6">
   <script src="/header.js?v=shared-596abcf656f6" defer></script>
+  <link rel="stylesheet" href="/account-ui.css?v=19dcbc49ea4c">
 </head><body><!-- SHARED_HEADER:START -->
 <header class="fl-header" data-main-base="/" data-search-index="/header-search.json?v=shared-596abcf656f6" data-auth="local">
   <svg class="fl-symbols" xmlns="http://www.w3.org/2000/svg" width="0" height="0" aria-hidden="true" focusable="false">
@@ -85,107 +86,82 @@
   </div>
   <div class="fl-search-results" id="fl-search-results" role="listbox" aria-label="Результаты поиска" hidden></div>
 </header>
-<!-- SHARED_HEADER:END --><main>
-  <section class="page-hero shell">
-    <span class="eyebrow">АККАУНТ</span>
-    <h1>Мой аккаунт</h1>
-    <p>Профиль, безопасность и настройки уведомлений Fiery Led Lamp.</p>
-  </section>
-
-  <section class="shell account-settings-shell">
-    <div id="accountLoading" class="account-loading">Загрузка аккаунта…</div>
-
-    <div id="accountPanel" class="account-settings-grid" hidden>
-      <section class="account-settings-card account-profile-card">
-        <div class="account-card-head">
-          <div>
-            <span class="eyebrow">ПРОФИЛЬ</span>
-            <h2>Данные аккаунта</h2>
+<!-- SHARED_HEADER:END --><main class="au-page au-account">
+  <div class="au-wrap">
+    <header class="au-heading">
+      <div><span class="au-eyebrow">ЛИЧНЫЙ КАБИНЕТ</span><h1>Настройки аккаунта</h1><p>Профиль, уведомления и безопасность.</p></div>
+      <a class="au-text-link" href="/forum.html">Перейти на форум <span aria-hidden="true">↗</span></a>
+    </header>
+    <div id="accountLoading" class="au-loading" role="status">Загрузка профиля…</div>
+    <div id="accountPanel" class="au-dashboard" hidden>
+      <section class="au-card au-profile-summary" aria-labelledby="accountName">
+        <div class="au-summary-top">
+          <div class="au-avatar"><img id="accountAvatarImage" alt="Аватар пользователя" hidden><span id="accountAvatarFallback">?</span></div>
+          <div class="au-identity">
+            <div class="au-name-line"><h2 id="accountName">-</h2><span id="accountRole" class="au-role">Пользователь</span></div>
+            <p id="accountEmail" class="au-email">-</p>
+            <div class="au-account-meta"><span id="verifyBadge" class="auth-badge">-</span><span>Дата регистрации: <strong id="accountCreated">-</strong></span></div>
           </div>
+          <button id="logoutButton" class="btn ghost au-logout" type="button">Выйти</button>
         </div>
-
-        <div class="account-profile-row">
-          <div class="account-avatar-large">
-            <img id="accountAvatarImage" alt="Аватар пользователя" hidden>
-            <span id="accountAvatarFallback">?</span>
-          </div>
-          <div class="account-profile-main">
-            <h3 id="accountName">-</h3>
-            <form id="changeNameForm" class="account-name-form">
-              <label>
-                <span>Имя пользователя</span>
-                <div class="account-name-row">
-                  <input id="accountNameInput" name="name" type="text" minlength="2" maxlength="80" autocomplete="name" required>
-                  <button class="btn primary" type="submit">Изменить имя</button>
-                </div>
-              </label>
-              <div class="form-status" aria-live="polite"></div>
-            </form>
-            <div class="account-grid">
-              <div class="account-value"><small>E-mail</small><strong id="accountEmail">-</strong></div>
-              <div class="account-value"><small>Регистрация</small><strong id="accountCreated">-</strong></div>
+        <div class="au-summary-tools">
+          <details class="au-avatar-editor">
+            <summary>Изменить аватар <span aria-hidden="true">⌄</span></summary>
+            <div class="au-avatar-controls">
+              <label class="au-file-button"><input id="accountAvatarFile" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"><span>Выбрать изображение</span></label>
+              <button id="saveAvatar" class="btn primary" type="button">Сохранить аватар</button>
+              <button id="removeAvatar" class="btn ghost" type="button">Удалить</button>
+              <small id="accountAvatarFilename">JPG, PNG или WebP, до 5 МБ.</small>
             </div>
-            <div class="account-verify-row"><span id="verifyBadge" class="auth-badge">-</span></div>
-          </div>
-        </div>
-
-        <div class="account-avatar-settings">
-          <label class="account-file-button">
-            <input id="accountAvatarFile" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp">
-            <span>Выбрать аватар</span>
-          </label>
-          <button id="saveAvatar" class="btn primary" type="button">Сохранить аватар</button>
-          <button id="removeAvatar" class="btn ghost" type="button">Удалить аватар</button>
-          <small>JPG, PNG или WEBP, до 5 МБ.</small>
-        </div>
-
-        <div class="account-actions">
-          <button id="resendVerify" class="btn ghost" type="button">Отправить подтверждение ещё раз</button>
-          <a id="adminNotifyLink" class="btn ghost" href="/admin-notifications.html" hidden>Рассылка обновлений</a>
-          <a id="adminStatsLink" class="btn ghost" href="/admin-stats.html" hidden>Статистика</a>
-          <a id="adminUsersLink" class="btn ghost" href="/admin-users.html" hidden>Пользователи</a>
-          <button id="logoutButton" class="btn ghost" type="button">Выйти</button>
+          </details>
+          <button id="resendVerify" class="au-text-button" type="button">Подтвердить e-mail</button>
         </div>
         <div id="accountStatus" class="form-status" aria-live="polite"></div>
       </section>
 
-      <section class="account-settings-card">
-        <span class="eyebrow">УВЕДОМЛЕНИЯ</span>
-        <h2>Письма на e-mail</h2>
-        <p class="account-card-text">Выберите, какие уведомления хотите получать. Письма отправляются только на подтверждённый e-mail.</p>
-
-        <div class="account-notify-list">
-          <label class="auth-check">
-            <input id="notifyUpdates" type="checkbox">
-            <span><b>Обновления Fiery Led Lamp</b><small>Получать письмо при выходе новой версии прошивки.</small></span>
-          </label>
-          <label class="auth-check">
-            <input id="notifyForum" type="checkbox">
-            <span><b>Новые сообщения на форуме</b><small>Получать письмо, когда на форуме появляется новое сообщение.</small></span>
-          </label>
+      <div class="au-account-columns">
+        <div class="au-card-stack">
+          <section class="au-card" aria-labelledby="profileTitle">
+            <div class="au-section-title"><svg class="au-icon" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><use href="#fl-header-user"></use></svg><div><h2 id="profileTitle">Профиль</h2><p>Ваше имя на сайте и форуме.</p></div></div>
+            <form id="changeNameForm" class="auth-form au-form au-name-form">
+              <div><label for="accountNameInput"><span>Имя пользователя</span></label><div class="au-name-row"><input id="accountNameInput" name="name" type="text" minlength="2" maxlength="80" autocomplete="name" required><button class="btn primary" type="submit">Сохранить имя</button></div></div>
+              <div class="form-status" aria-live="polite"></div>
+            </form>
+          </section>
+          <section class="au-card" aria-labelledby="notificationsTitle">
+            <div class="au-section-title"><svg class="au-icon" viewBox="0 0 24 24" fill="none" stroke="url(#fl-header-fire-line)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4M12 2V1"/></svg><div><h2 id="notificationsTitle">Уведомления</h2><p>Письма отправляются на подтверждённый e-mail.</p></div></div>
+            <div class="au-notifications">
+              <label class="au-notification"><span><b>Обновления прошивки</b><small>Сообщать о новых версиях Fiery Led Lamp.</small></span><input id="notifyUpdates" type="checkbox"></label>
+              <label class="au-notification"><span><b>Сообщения на форуме</b><small>Сообщать о новых сообщениях в обсуждении.</small></span><input id="notifyForum" type="checkbox"></label>
+            </div>
+            <div class="au-card-actions"><button id="savePreferences" class="btn primary" type="button">Сохранить уведомления</button></div>
+            <div id="preferencesStatus" class="form-status" aria-live="polite"></div>
+          </section>
         </div>
-
-        <div class="account-actions">
-          <button id="savePreferences" class="btn primary" type="button">Сохранить уведомления</button>
+        <div class="au-card-stack">
+          <section class="au-card" aria-labelledby="securityTitle">
+            <div class="au-section-title"><svg class="au-icon" viewBox="0 0 24 24" fill="none" stroke="url(#fl-header-fire-line)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></svg><div><h2 id="securityTitle">Безопасность</h2><p>Для смены пароля введите текущий пароль.</p></div></div>
+            <form id="changePasswordForm" class="auth-form au-form">
+              <label><span>Текущий пароль</span><input name="currentPassword" type="password" autocomplete="current-password" required></label>
+              <label><span>Новый пароль</span><input name="newPassword" type="password" autocomplete="new-password" minlength="8" aria-describedby="passwordHint" required></label>
+              <label><span>Повторите новый пароль</span><input name="newPassword2" type="password" autocomplete="new-password" minlength="8" required></label>
+              <small id="passwordHint" class="au-input-hint">Используйте не менее 8 символов.</small>
+              <button class="btn primary" type="submit">Изменить пароль</button>
+              <div class="form-status" aria-live="polite"></div>
+            </form>
+          </section>
+          <section id="accountAdminPanel" class="au-card au-admin-card" aria-labelledby="adminTitle" hidden>
+            <div class="au-section-title"><svg class="au-icon" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><use href="#fl-header-versions"></use></svg><div><span class="au-eyebrow">АДМИНИСТРАТОР</span><h2 id="adminTitle">Управление проектом</h2></div></div>
+            <div class="au-admin-links">
+              <a id="adminUsersLink" href="/admin-users.html" hidden><span><b>Пользователи</b><small>Учётные записи и подписки.</small></span><span aria-hidden="true">↗</span></a>
+              <a id="adminStatsLink" href="/admin-stats.html" hidden><span><b>Статистика</b><small>Посещения и скачивания.</small></span><span aria-hidden="true">↗</span></a>
+              <a id="adminNotifyLink" href="/admin-notifications.html" hidden><span><b>Рассылка обновлений</b><small>Письма подписчикам проекта.</small></span><span aria-hidden="true">↗</span></a>
+            </div>
+          </section>
         </div>
-        <div id="preferencesStatus" class="form-status" aria-live="polite"></div>
-      </section>
-
-      <section class="account-settings-card">
-        <span class="eyebrow">БЕЗОПАСНОСТЬ</span>
-        <h2>Изменить пароль</h2>
-        <p class="account-card-text">Введите текущий пароль и новый пароль не короче 8 символов.</p>
-
-        <form id="changePasswordForm" class="auth-form account-password-form">
-          <label><span>Текущий пароль</span><input name="currentPassword" type="password" autocomplete="current-password" required></label>
-          <label><span>Новый пароль</span><input name="newPassword" type="password" autocomplete="new-password" minlength="8" required></label>
-          <label><span>Повторите новый пароль</span><input name="newPassword2" type="password" autocomplete="new-password" minlength="8" required></label>
-          <button class="btn primary auth-submit" type="submit">Изменить пароль</button>
-          <div class="form-status" aria-live="polite"></div>
-        </form>
-      </section>
+      </div>
     </div>
-  </section>
+  </div>
 </main><footer class="footer">
   <div class="shell footer-grid">
     <div><a class="brand" href="/"><span class="brand-mark">🔥</span><span>Fiery Led Lamp</span></a><p>Проект LED-лампы на ESP32-S3.</p></div>
@@ -194,4 +170,4 @@
   </div>
   <div class="shell footer-bottom">Fiery Led Lamp · 2026</div>
 </footer><script src="/site.js?v=edbe3e5a7bf3" defer></script>
-<script src="/scripts/account.js?v=d9f62cc53023" defer></script></body></html>
+<script src="/scripts/account.js?v=af902a21b373" defer></script></body></html>

@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="/styles.css?v=01371fff9bec">
   <link rel="stylesheet" href="/header.css?v=shared-596abcf656f6">
   <script src="/header.js?v=shared-596abcf656f6" defer></script>
+  <link rel="stylesheet" href="/account-ui.css?v=19dcbc49ea4c">
 </head>
 <body>
 <!-- SHARED_HEADER:START -->
@@ -99,19 +100,19 @@
 </header>
 <!-- SHARED_HEADER:END -->
 
-<main>
-  <section class="page-hero shell">
+<main class="au-page au-admin">
+  <section class="au-heading au-wrap">
     <span class="eyebrow">АДМИНИСТРАТОР</span>
     <h1>Статистика Fiery Led Lamp</h1>
     <p>Посещения, регистрации, страны и скачивания проекта. Данные доступны только администратору.</p>
   </section>
 
   <section id="adminStats" class="shell stats-shell">
-    <div class="admin-subnav">
+    <nav class="admin-subnav" aria-label="Разделы администратора"><a class="au-back-link" href="/account.html">← Мой аккаунт</a>
       <a class="btn ghost active" href="/admin-stats.html">Статистика</a>
       <a class="btn ghost" href="/admin-users.html">Пользователи</a>
       <a class="btn ghost" href="/admin-notifications.html">Рассылка обновлений</a>
-    </div>
+    </nav>
     <div class="stats-toolbar">
       <div><span class="eyebrow">АНАЛИТИКА</span><h2 style="margin:5px 0 0">Общая статистика</h2></div>
       <div class="stats-toolbar-actions">
