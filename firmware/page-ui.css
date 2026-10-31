@@ -1,7 +1,7 @@
 /* Shared content-page theme. Edit this source; render-header.py copies it to both sites. */
 .site-content{--ui-line:#2a313d;--ui-muted:#929eaf;background:#080b10;min-height:60vh}
 .site-content [hidden]{display:none!important}
-.site-content .shell{width:min(1180px,calc(100% - 48px));margin-inline:auto}
+.site-content .shell{width:min(var(--site-content-width),calc(100% - 48px));margin-inline:auto}
 .site-content .section{padding:28px 0}
 .site-content .page-hero{padding:38px 0 26px;isolation:auto}
 .site-content .page-hero::before,.site-content .page-hero::after{display:none}
@@ -139,8 +139,8 @@
 .site-content .password-visibility-toggle{right:5px;width:36px;height:36px;border-radius:8px}
 .site-content .password-eye{border-color:#929eae}
 .site-content .password-eye::after{background:#929eae}
-.ui-account>.shell{max-width:1000px}
-.ui-account-single>.shell{max-width:560px}
+.ui-account>.shell{max-width:1240px}
+.ui-account-single>.shell{max-width:620px}
 .ui-account-single .page-hero{padding-top:48px}
 .ui-system .page-hero{width:min(660px,calc(100% - 48px));padding-top:80px;padding-bottom:80px;min-height:60vh}
 .ui-system .page-hero .btn{margin:14px 8px 0 0}
@@ -180,7 +180,7 @@
 
 /* Forum */
 .site-content .forum-main{padding-top:0;padding-bottom:56px}
-.site-content .forum-shell{width:100%;max-width:1180px}
+.site-content .forum-shell{width:100%;max-width:var(--site-content-width)}
 .site-content .forum-toolbar{margin:0 0 16px}
 .site-content .forum-posts+.forum-toolbar{margin-top:16px}
 .site-content .forum-post{grid-template-columns:164px minmax(0,1fr);border-radius:15px}
@@ -273,3 +273,50 @@
 .manual-nav[open]>summary::after{transform:rotate(180deg)}
 .manual-nav-links{display:grid;padding:0 10px 12px}
 @media(max-width:800px){.manual-nav-links{display:flex;flex-wrap:wrap;gap:6px;padding:0 12px 12px}}
+
+/* Shared full-width heroes and page width, including home and account pages. */
+:root{--site-content-width:1520px;--site-hero-background:radial-gradient(circle at 72% 20%,#ff6b2c20 0,transparent 40%),radial-gradient(circle at 18% 0,#263149 0,transparent 31%),radial-gradient(circle at 86% 28%,#4a231622 0,transparent 28%),linear-gradient(#0b0e14,#090b10)}
+.home-page .shell,.site-content .shell,.au-wrap,.au-admin>.shell,.footer .shell{width:min(var(--site-content-width),calc(100% - 48px));margin-inline:auto}
+.site-content .ui-hero,.au-page .ui-hero,.home-page .ui-hero{position:relative;width:100%;margin:0;padding:0;border-bottom:1px solid #29313d;background:var(--site-hero-background)}
+.ui-hero::before,.ui-hero::after{display:none!important}
+.ui-hero>.shell,.ui-hero>.au-wrap{padding-top:40px;padding-bottom:38px}
+.ui-hero .au-heading{margin:0;padding:0}
+.au-admin .ui-hero .au-heading,.au-login .ui-hero .au-heading{display:block}
+.ui-hero h1,.site-content .ui-hero h1,.ui-hero h1 span,.site-content .ui-hero h1 span{
+ background:linear-gradient(110deg,#fff 0%,#fff 28%,#fff3d6 43%,#ffd59a 56%,#ffad72 69%,#ff7b43 82%,#fff 100%);
+ background-size:260% 100%;background-position:0% 50%;-webkit-background-clip:text;background-clip:text;color:transparent;
+ animation:site-title-flow 7s ease-in-out infinite;
+}
+.ui-hero h1,.site-content .ui-hero h1{font-size:clamp(36px,3.5vw,54px);line-height:1.14;letter-spacing:-.04em;margin:12px 0 17px;padding:0 0 .08em;overflow:visible}
+.ui-hero .au-heading p{font-size:14px;line-height:1.75;color:#9aa6b7}
+.ui-hero .au-eyebrow{color:#d59562}
+.au-account>.ui-content-body,.au-account>.au-wrap{padding-top:30px;padding-bottom:64px}
+.au-admin>.ui-hero+.shell{padding-top:26px}
+.au-login>.au-wrap{padding-top:40px;padding-bottom:64px}
+.au-login-layout{max-width:1120px}
+.au-login .ui-hero>.au-wrap{max-width:1120px}
+.au-login-card h2{font-size:27px;line-height:1.2;font-weight:780;letter-spacing:-.035em;color:#f5f5f7}
+.site-content .page-hero+.section,.site-content .page-hero+.auth-shell{padding-top:28px}
+.site-content .page-hero+.manual-search-wrap{padding-top:26px}
+.ui-account .ui-hero>.shell{max-width:1240px}
+.ui-account-single .ui-hero>.shell{max-width:620px}
+.ui-system .ui-hero.page-hero{min-height:0;width:100%;padding:0}
+@keyframes site-title-flow{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+
+/* The preview follows the selected USB serial port, without opening it. */
+.flasher-preview{transition:border-color .2s ease,background .2s ease}
+.flasher-preview .preview-orb,.flasher-preview .preview-orb span,.flasher-preview .board-chip,.flasher-preview .preview-board{transition:border-color .2s ease,background .2s ease,box-shadow .2s ease}
+.site-content .flasher-preview[data-connected="true"]{border-color:#3f7653;background:linear-gradient(145deg,#18251e,#10191a)}
+.site-content .flasher-preview[data-connected="true"] .preview-orb{border-color:#3b744e;background:#163121}
+.site-content .flasher-preview[data-connected="true"] .preview-orb span{background:#5ddd8d;box-shadow:0 0 0 5px #5ddd8d1c,0 0 15px #5ddd8d35}
+.site-content .flasher-preview[data-connected="true"] .preview-board{border-color:#315b40;background:radial-gradient(ellipse at center,#2256373b,transparent 75%),#0e1914}
+.site-content .flasher-preview[data-connected="true"] .board-chip{border-color:#58b879;background:linear-gradient(145deg,#286744,#123924);color:#e2ffec}
+.site-content .flasher-preview[data-connected="true"] .board-lines i{background:linear-gradient(90deg,transparent,#5ddd8d55,transparent)}
+.site-content .flasher-preview[data-connected="true"] .preview-meta>div{border-color:#2b4936}
+@media(max-width:800px){.ui-hero>.shell,.ui-hero>.au-wrap{padding-top:32px;padding-bottom:30px}.au-login .ui-hero>.au-wrap{max-width:460px}}
+@media(max-width:600px){.home-page .shell,.site-content .shell,.au-wrap,.au-admin>.shell,.footer .shell{width:calc(100% - 28px)}.ui-hero>.shell,.ui-hero>.au-wrap{padding-top:28px;padding-bottom:26px}.ui-hero h1,.site-content .ui-hero h1{font-size:32px;line-height:1.18}.ui-hero .au-heading p{font-size:13px}.au-account>.ui-content-body,.au-account>.au-wrap{padding-top:24px;padding-bottom:44px}.au-login>.au-wrap{padding-top:28px;padding-bottom:44px}.site-content .page-hero+.section,.site-content .page-hero+.auth-shell{padding-top:22px}.site-content .page-hero+.manual-search-wrap{padding-top:22px}.ui-hero .au-heading>.au-text-link{margin-top:12px}}
+@media(prefers-reduced-motion:reduce){.ui-hero h1,.ui-hero h1 span,.site-content .ui-hero h1,.site-content .ui-hero h1 span{animation:none!important;background-position:48% 50%}.flasher-preview,.flasher-preview *{transition:none!important}}
+.ui-hero{--site-hero-copy-size:15px}
+.ui-hero>.shell>p,.ui-hero .au-heading p,.ui-hero .home-hero-copy>.lead,.ui-hero .firmware-hero-copy>p,.ui-hero .version-hero-copy>p{margin:0;max-width:900px;font-size:var(--site-hero-copy-size);line-height:1.75;color:#9aa6b7}
+.ui-hero .eyebrow,.ui-hero .au-eyebrow{font-size:10px;font-weight:750;letter-spacing:.13em;color:#d59562}
+@media(max-width:600px){.ui-hero{--site-hero-copy-size:14px}}

@@ -57,7 +57,7 @@ const ui = {
   eraseAll: $("eraseAll"), saveSettings: $("saveSettings"),
   cfgChip: $("cfgChip"), cfgFlash: $("cfgFlash"), cfgPsram: $("cfgPsram"), cfgMode: $("cfgMode"),
   cfgFreq: $("cfgFreq"), cfgBaud: $("cfgBaud"), fileList: $("fileList"), log: $("log"),
-  clearLogBtn: $("clearLogBtn"), previewFlash: $("previewFlash"), steps: [$("step1"), $("step2"), $("step3")],
+  clearLogBtn: $("clearLogBtn"), previewFlash: $("previewFlash"), preview: document.querySelector(".flasher-preview"), steps: [$("step1"), $("step2"), $("step3")],
 };
 
 let manifest = null;
@@ -110,10 +110,14 @@ function portDescription(port) {
   if (info.usbProductId != null) parts.push(`PID ${info.usbProductId.toString(16).toUpperCase().padStart(4, "0")}`);
   return parts.length ? `Выбран (${parts.join(":")})` : "Порт выбран";
 }
+function setPortConnected(connected) {
+  ui.portDot.classList.toggle("good", connected);
+  if (ui.preview) ui.preview.dataset.connected = String(connected);
+}
 async function choosePort() {
   if (!("serial" in navigator)) throw new Error("Этот браузер не поддерживает Web Serial.");
   selectedPort = await navigator.serial.requestPort();
-  ui.portText.textContent = portDescription(selectedPort); ui.portDot.classList.add("good"); setStep(2);
+  ui.portText.textContent = portDescription(selectedPort); setPortConnected(true); setStep(2);
   log("COM-порт выбран пользователем."); return selectedPort;
 }
 function validateManifest(m) {
@@ -361,7 +365,15 @@ function checkCompatibility(){
 ui.selectPortBtn.addEventListener("click",async()=>{if(isBusy)return;clearResult();try{await choosePort();ui.flashBtn.disabled=!manifest;}catch(e){if(e?.name==="NotFoundError"){log("Выбор COM-порта отменён.");return;}showResult("error",e?.message||String(e));log(`Ошибка выбора порта: ${e?.message||e}`);}});
 ui.flashBtn.addEventListener("click",flash);ui.clearLogBtn.addEventListener("click",()=>{ui.log.textContent="";});
 if(ui.saveSettings) ui.saveSettings.addEventListener("change",syncEraseAllState);
-if("serial"in navigator)navigator.serial.addEventListener("disconnect",e=>{if(selectedPort&&e.target===selectedPort&&!isBusy){ui.portDot.classList.remove("good");ui.portText.textContent="Порт отключён";setStep(1);log("COM-порт отключён.");}});
+if ("serial" in navigator) navigator.serial.addEventListener("disconnect", event => {
+  const port = event.port || event.target;
+  if (!selectedPort || port !== selectedPort) return;
+  selectedPort = null;
+  setPortConnected(false);
+  ui.portText.textContent = "Порт отключён";
+  if (!isBusy) setStep(1);
+  log("COM-порт отключён.");
+});
 (async function init(){
   let viewSent = false;
   const sendView = () => { if (!viewSent) { viewSent = true; trackAnalytics("firmware_page_view", "", "/"); } };

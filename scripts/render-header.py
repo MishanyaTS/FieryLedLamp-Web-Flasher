@@ -74,12 +74,14 @@ def build(check=False):
                     raise ValueError(f'Missing body: {path}')
             asset_base = './' if firmware else '/'
             for name, pattern, include in (
+                ('page-ui.css', r'href="(?:\./|/)page-ui\.css(?:\?[^\"]*)?"', f'<link rel="stylesheet" href="{asset_base}page-ui.css">'),
                 ('header.css', r'href="(?:\./|/)header\.css(?:\?[^\"]*)?"', f'<link rel="stylesheet" href="{asset_base}header.css?v={version}">'),
                 ('header.js', r'src="(?:\./|/)header\.js(?:\?[^\"]*)?"', f'<script src="{asset_base}header.js?v={version}" defer></script>'),
             ):
                 if re.search(pattern, content):
                     attr = 'href' if name.endswith('.css') else 'src'
-                    content = re.sub(pattern, f'{attr}="{asset_base}{name}?v={version}"', content)
+                    suffix = '' if name == 'page-ui.css' else f'?v={version}'
+                    content = re.sub(pattern, f'{attr}="{asset_base}{name}{suffix}"', content)
                 else:
                     content = content.replace('</head>', '  ' + include + '\n</head>', 1)
             outputs[path] = content
