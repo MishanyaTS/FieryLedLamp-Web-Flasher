@@ -53,7 +53,8 @@ def build(check=False):
     symbols = symbols.replace('<svg xmlns="http://www.w3.org/2000/svg">', '<svg class="fl-symbols" xmlns="http://www.w3.org/2000/svg" width="0" height="0" aria-hidden="true" focusable="false">', 1)
     symbols = re.sub(r'id="([^"]+)"', r'id="fl-header-\1"', symbols)
     symbols = re.sub(r'url\(#([^)]+)\)', r'url(#fl-header-\1)', symbols)
-    outputs = {}
+    ui_css = (SOURCE.parent / 'page-ui.css').read_text()
+    outputs = {ROOT / 'website/public/page-ui.css': ui_css, ROOT / 'firmware/page-ui.css': ui_css}
     page_count = 0
     for folder, firmware in ((ROOT / 'website/public', False), (ROOT / 'firmware', True)):
         candidates = [folder / 'index.html'] if firmware else sorted(folder.glob('*.html'))
@@ -99,10 +100,11 @@ def build(check=False):
             if name in ('header.css', 'header.js'):
                 return match.group()
             asset = folder / name
-            if not asset.is_file():
+            if asset not in outputs and not asset.is_file():
                 return match.group()
             if asset not in hashes:
-                hashes[asset] = hashlib.sha256(asset.read_bytes()).hexdigest()[:12]
+                data = outputs[asset].encode() if asset in outputs else asset.read_bytes()
+                hashes[asset] = hashlib.sha256(data).hexdigest()[:12]
             return match.group(1) + match.group('base') + name + '?v=' + hashes[asset] + '"'
         outputs[path] = asset_pattern.sub(stamp_asset, content)
     changed = [path for path, content in outputs.items() if not path.exists() or path.read_text() != content]

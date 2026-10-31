@@ -16,3 +16,15 @@ const manualSearch = document.querySelector("#manualSearch");
   }
 
 })();
+
+(() => {
+  const navigation = document.querySelector("#manualNav");
+  if (!navigation) return;
+  const compact = matchMedia("(max-width:800px)");
+  const setInitialState = () => { navigation.open = !compact.matches; };
+  setInitialState();
+  compact.addEventListener("change", setInitialState);
+  navigation.addEventListener("click", event => {
+    if (compact.matches && event.target.closest("a")) navigation.open = false;
+  });
+})();
