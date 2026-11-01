@@ -6,7 +6,8 @@ on:
       - main
     paths:
       - "firmware/**"
-      - "website/shared/header/**"
+      - "website/shared/**"
+      - "website/public/header-search.json"
       - "scripts/render-header.py"
       - ".github/workflows/deploy-firmware-hostiman.yml"
   workflow_dispatch:
@@ -66,7 +67,7 @@ jobs:
           user = os.environ["FTP_USER"]
           password = os.environ["FTP_PASSWORD"]
           local_root = Path(".deploy-firmware")
-          preserve = set()
+          preserve = {".well-known", ".htaccess"}
 
           ftp = ftplib.FTP(timeout=30)
           ftp.connect(host, port)
@@ -75,7 +76,8 @@ jobs:
 
           def list_dir(path):
               try:
-                  return list(ftp.mlsd(path))
+                  return [(name, facts) for name, facts in ftp.mlsd(path)
+                          if name not in (".", "..") and facts.get("type") not in ("cdir", "pdir")]
               except Exception:
                   names = ftp.nlst(path)
                   out = []

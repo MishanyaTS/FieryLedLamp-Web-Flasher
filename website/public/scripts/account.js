@@ -35,7 +35,13 @@
 
   const params = new URLSearchParams(location.search);
   const requestedNext = params.get("next") || "";
-  const nextPath = requestedNext.startsWith("/") && !requestedNext.startsWith("//") ? requestedNext : "/account.html";
+  let nextPath = "/account.html";
+  if (requestedNext.startsWith("/")) {
+    try {
+      const next = new URL(requestedNext, location.origin);
+      if (next.origin === location.origin) nextPath = next.pathname + next.search + next.hash;
+    } catch (_) {}
+  }
 
   const registerForm = document.querySelector("#registerForm");
   if (registerForm) {
@@ -299,6 +305,7 @@
           body: formData
         });
         const data = await parse(response);
+        if (accountUser) accountUser.avatarUrl = data.avatarUrl;
         setAvatar(data.avatarUrl, accountUser?.name || "");
         if (input) input.value = "";
         const filename = document.querySelector("#accountAvatarFilename");
@@ -331,6 +338,7 @@
           body: formData
         });
         const data = await parse(response);
+        if (accountUser) accountUser.avatarUrl = data.avatarUrl;
         setAvatar(data.avatarUrl, accountUser?.name || "");
         statusBox("#accountStatus", "Аватар удалён.", "success");
       } catch (error) {

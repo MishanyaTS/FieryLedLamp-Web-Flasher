@@ -1,40 +1,41 @@
-# FieryLedLamp Web Flasher
+# Fiery Led Lamp: основной сайт и Web Flasher
 
-Отдельный репозиторий сайта-прошивальщика ESP32-S3 для FieryLedLamp.
+Рабочие сайты размещены на HostiMan:
 
-После включения GitHub Pages сайт будет доступен по адресу:
+- https://fieryledlamp.ru/ — инструкции, форум, аккаунты и администрирование.
+- https://firmware.fieryledlamp.ru/ — Web Flasher для ESP32-S3 N16R8.
 
-https://mishanyats.github.io/FieryLedLamp-Web-Flasher/
+## Структура
 
-## Что где менять
+- `website/public/` — публикуемые HTML, CSS, JavaScript и PHP API основного сайта.
+- `firmware/` — Web Flasher, локальные библиотеки и пакет прошивки.
+- `website/shared/header/` — единые шаблон шапки, SVG-значки, CSS и JavaScript обоих сайтов.
+- `website/shared/page-ui.css` — общие стили верхних блоков и страниц.
+- `website/public/header-search.json` — индекс поиска; при сборке копируется на сайт прошивки.
+- `scripts/render-header.py` — вставляет общую шапку в HTML, копирует общие ресурсы и обновляет версии CSS/JS по содержимому.
+- `scripts/optimize-images.py` — готовит lossless WebP схемы подключения, сохраняя исходный PNG.
+- `server/` — схема MySQL, миграции и пример приватной конфигурации PHP.
 
-- `website/shared/header/template.html` — единая шапка и меню всех страниц обоих сайтов.
-- `website/shared/header/header.css` — общий стиль шапки высотой 90 пикселей.
-- `website/shared/header/header.js` и `icons.svg` — общий поиск, меню и значки.
-- `scripts/render-header.py` — сборка шапки; выполняется автоматически перед публикацией обоих сайтов. Для локального просмотра после правки общих файлов выполните `python3 scripts/render-header.py`. Сгенерированные шапки в HTML отдельно не редактируются. Подробности: `website/assets/header-outline.md`.
-- `firmware/config.js` — настройки Web Flasher для ESP32-S3 N16R8.
-- `firmware/ESP32-S3 N16R8/manifest.json` — параметры прошивки N16R8.
-- `firmware/index.html` — структура страницы и тексты.
-- `firmware/style.css` — внешний вид.
-- `firmware/app.js` — логика Web Serial и esptool-js. В рабочей конфигурации используется KEEP / KEEP / KEEP, аналог DoNotChgBin=ON.
-- `.nojekyll` — служебный файл GitHub Pages, не удалять.
+## Внесение изменений
 
-## Откуда берётся прошивка
+Шапку и общие стили правьте в `website/shared/`. После изменения выполните:
 
-Web Flasher настроен только для платы ESP32-S3 N16R8.
+```sh
+python3 scripts/render-header.py
+python3 scripts/render-header.py --check
+```
 
-Файл прошивки находится в `firmware/ESP32-S3 N16R8/update.zip`, а параметры записи — в `firmware/ESP32-S3 N16R8/manifest.json`.
+Шапка в каждой HTML-странице и копии общих ресурсов — результат сборки. Благодаря этому меню доступно сразу при открытии HTML и не требует дополнительного запроса. Отдельно редактировать эти копии не нужно.
 
-## Текущие адреса
+Основные настройки прошивальщика находятся в `firmware/config.js`, параметры записи — в `firmware/update/manifest.json`. Архив — `firmware/update/update.zip`. Web Flasher загружает библиотеки и архив только после запуска прошивки. Алгоритм записи использует KEEP / KEEP / KEEP, аналог DoNotChgBin=ON.
 
-- `bootloader.bin` → `0x00000000`
-- `partitions.bin` → `0x00008000`
-- `boot_app0.bin` → `0x0000E000`
-- `firmware.bin` → `0x00010000`
-- `littlefs.bin` → `0x00C90000`
+## Публикация
 
-Адреса хранятся в `firmware/ESP32-S3 N16R8/manifest.json`.
+GitHub Actions публикует изменения ветки `main` двумя независимыми workflow:
 
-## Структура Web Flasher
+- `.github/workflows/deploy-hostiman.yml` — основной сайт; также копирует `firmware/Version.txt` и оптимизирует схему.
+- `.github/workflows/deploy-firmware-hostiman.yml` — сайт прошивки.
 
-Все файлы страницы прошивки теперь находятся в папке `firmware/`. Любое изменение внутри этой папки автоматически публикуется на `firmware.fieryledlamp.ru` через GitHub Actions.
+Изменения в `website/shared/` запускают публикацию обоих сайтов. FTP-параметры берутся из GitHub Secrets. Workflow `Build HostiMan packages` запускается вручную, когда нужны ZIP-пакеты для скачивания.
+
+Настройка аккаунтов и почты описана в `server/REGISTRATION_SETUP.md`. Рабочий `config.php`, базы, сессии, аватары и вложения пользователей не хранятся в репозитории.

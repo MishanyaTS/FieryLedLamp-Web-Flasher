@@ -1,10 +1,14 @@
 <?php
 declare(strict_types=1);
 
-function json_response(array $data, int $status = 200): never {
+function write_json_response(array $data, int $status = 200): void {
     http_response_code($status);
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+}
+
+function json_response(array $data, int $status = 200): never {
+    write_json_response($data, $status);
     exit;
 }
 
@@ -333,6 +337,21 @@ function require_admin(PDO $pdo): array {
     return $user;
 }
 
+function user_counts(PDO $pdo): array {
+    $row = $pdo->query('SELECT COUNT(*) AS total,
+        COALESCE(SUM(CASE WHEN email_verified_at IS NOT NULL THEN 1 ELSE 0 END),0) AS verified,
+        COALESCE(SUM(CASE WHEN email_verified_at IS NULL THEN 1 ELSE 0 END),0) AS unverified,
+        COALESCE(SUM(CASE WHEN notify_updates=1 THEN 1 ELSE 0 END),0) AS subscribed,
+        COALESCE(SUM(CASE WHEN notify_updates=1 AND email_verified_at IS NOT NULL THEN 1 ELSE 0 END),0) AS verified_subscribers,
+        COALESCE(SUM(CASE WHEN is_admin=1 THEN 1 ELSE 0 END),0) AS admins
+        FROM users')->fetch();
+    return [
+        'all' => (int)$row['total'], 'verified' => (int)$row['verified'],
+        'unverified' => (int)$row['unverified'], 'subscribed' => (int)$row['subscribed'],
+        'verifiedSubscribers' => (int)$row['verified_subscribers'], 'admins' => (int)$row['admins'],
+    ];
+}
+
 function analytics_visitor_hash(array $config, string $provided = ''): string {
     $seed = trim($provided);
     if ($seed === '' || strlen($seed) > 160) {
@@ -486,29 +505,25 @@ function track_download_and_redirect(PDO $pdo, array $config): never {
     exit;
 }
 
-function analytics_sum(PDO $pdo, string $eventType): int {
-    $stmt = $pdo->prepare('SELECT COALESCE(SUM(event_count),0) FROM analytics_counters WHERE event_type=?');
-    $stmt->execute([$eventType]);
-    return (int)$stmt->fetchColumn();
-}
-
-function analytics_sum_firmware_board(PDO $pdo, string $boardId): int {
-    if ($boardId === 'n16r8') {
-        // До появления выбора платы Web Flasher работал только с N16R8.
-        // Старые записи "update.zip" и пустой item считаем загрузками N16R8.
-        $stmt = $pdo->prepare("SELECT COALESCE(SUM(event_count),0)
-            FROM analytics_counters
-            WHERE event_type='firmware_download'
-              AND (item='n16r8' OR item='update.zip' OR item='')");
-        $stmt->execute();
-        return (int)$stmt->fetchColumn();
+function analytics_totals(PDO $pdo): array {
+    $keys = [
+        'page_view' => 'pageViews', 'firmware_page_view' => 'flasherViews',
+        'app_windows_download' => 'windowsDownloads', 'app_ios_download' => 'iosDownloads',
+        'app_android_click' => 'androidClicks',
+    ];
+    $totals = array_fill_keys(array_values($keys), 0);
+    $totals['firmwareDownloadsN16R8'] = 0;
+    $rows = $pdo->query('SELECT event_type,item,SUM(event_count) AS cnt
+        FROM analytics_counters GROUP BY event_type,item')->fetchAll();
+    foreach ($rows as $row) {
+        $event = (string)$row['event_type'];
+        if (isset($keys[$event])) $totals[$keys[$event]] += (int)$row['cnt'];
+        // Historical empty/update.zip items also belong to N16R8.
+        if ($event === 'firmware_download' && in_array((string)$row['item'], ['n16r8', 'update.zip', ''], true)) {
+            $totals['firmwareDownloadsN16R8'] += (int)$row['cnt'];
+        }
     }
-
-    $stmt = $pdo->prepare("SELECT COALESCE(SUM(event_count),0)
-        FROM analytics_counters
-        WHERE event_type='firmware_download' AND item=?");
-    $stmt->execute([$boardId]);
-    return (int)$stmt->fetchColumn();
+    return $totals;
 }
 
 
@@ -577,13 +592,8 @@ function admin_users(PDO $pdo): never {
         ];
     }, $rows);
 
-    $counts = [
-        'all' => (int)$pdo->query('SELECT COUNT(*) FROM users')->fetchColumn(),
-        'verified' => (int)$pdo->query('SELECT COUNT(*) FROM users WHERE email_verified_at IS NOT NULL')->fetchColumn(),
-        'unverified' => (int)$pdo->query('SELECT COUNT(*) FROM users WHERE email_verified_at IS NULL')->fetchColumn(),
-        'subscribed' => (int)$pdo->query('SELECT COUNT(*) FROM users WHERE notify_updates=1')->fetchColumn(),
-        'admins' => (int)$pdo->query('SELECT COUNT(*) FROM users WHERE is_admin=1')->fetchColumn(),
-    ];
+    $counts = user_counts($pdo);
+    unset($counts['verifiedSubscribers']);
 
     json_response([
         'ok' => true,
@@ -626,16 +636,11 @@ function admin_stats(PDO $pdo): never {
     $from = date('Y-m-d', time() - (($days - 1) * 86400));
 
     try {
-        $totals = [
-            'pageViews' => analytics_sum($pdo, 'page_view'),
-            'flasherViews' => analytics_sum($pdo, 'firmware_page_view'),
-            'firmwareDownloadsN16R8' => analytics_sum_firmware_board($pdo, 'n16r8'),
-            'windowsDownloads' => analytics_sum($pdo, 'app_windows_download'),
-            'iosDownloads' => analytics_sum($pdo, 'app_ios_download'),
-            'androidClicks' => analytics_sum($pdo, 'app_android_click'),
-            'registrations' => (int)$pdo->query('SELECT COUNT(*) FROM users')->fetchColumn(),
-            'verifiedUsers' => (int)$pdo->query('SELECT COUNT(*) FROM users WHERE email_verified_at IS NOT NULL')->fetchColumn(),
-            'subscribers' => (int)$pdo->query('SELECT COUNT(*) FROM users WHERE email_verified_at IS NOT NULL AND notify_updates=1')->fetchColumn(),
+        $counts = user_counts($pdo);
+        $totals = analytics_totals($pdo) + [
+            'registrations' => $counts['all'],
+            'verifiedUsers' => $counts['verified'],
+            'subscribers' => $counts['verifiedSubscribers'],
             'uniqueVisitors' => (int)$pdo->query('SELECT COUNT(DISTINCT visitor_hash) FROM analytics_unique_visitors')->fetchColumn(),
         ];
 
@@ -770,8 +775,9 @@ function consume_token(PDO $pdo, string $raw, string $type): ?int {
         return null;
     }
 
-    $pdo->prepare('UPDATE auth_tokens SET used_at=NOW() WHERE id=?')->execute([(int)$row['id']]);
-    return (int)$row['user_id'];
+    $update = $pdo->prepare('UPDATE auth_tokens SET used_at=NOW() WHERE id=? AND used_at IS NULL AND expires_at>NOW()');
+    $update->execute([(int)$row['id']]);
+    return $update->rowCount() === 1 ? (int)$row['user_id'] : null;
 }
 
 function app_url(array $config): string {
@@ -1274,8 +1280,17 @@ function discussion_post(PDO $pdo, array $config): never {
 
     $total = (int)$pdo->query('SELECT COUNT(*) FROM discussion_messages WHERE deleted_at IS NULL')->fetchColumn();
     $page = max(1, (int)ceil($total / 20));
+    $response = ['ok' => true, 'id' => $messageId, 'page' => $page];
+    // The message is committed; release the session before sending any mail.
+    session_write_close();
+    if (function_exists('fastcgi_finish_request')) {
+        write_json_response($response, 201);
+        fastcgi_finish_request();
+        notify_forum_subscribers($pdo, $config, $user, $messageId, $body, $page);
+        exit;
+    }
     notify_forum_subscribers($pdo, $config, $user, $messageId, $body, $page);
-    json_response(['ok' => true, 'id' => $messageId, 'page' => $page], 201);
+    json_response($response, 201);
 }
 
 function discussion_edit(PDO $pdo): never {

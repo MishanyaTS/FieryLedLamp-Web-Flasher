@@ -40,9 +40,7 @@
 
   if (!posts) return;
 
-  const messageMap = new Map();
   let csrf = "";
-  let viewer = null;
   let currentPage = Math.max(1, Number(new URLSearchParams(location.search).get("page")) || 1);
   let replyToId = 0;
   let editingId = 0;
@@ -190,15 +188,6 @@
     const range = document.createRange();
     range.selectNodeContents(text);
     range.collapse(false);
-    const selection = window.getSelection();
-    selection.removeAllRanges();
-    selection.addRange(range);
-  }
-
-  function placeCaretAfter(node) {
-    const range = document.createRange();
-    range.setStartAfter(node);
-    range.collapse(true);
     const selection = window.getSelection();
     selection.removeAllRanges();
     selection.addRange(range);
@@ -497,7 +486,6 @@
 
   function createPost(item, number) {
     item.number = number;
-    messageMap.set(Number(item.id), item);
 
     const article = document.createElement("article");
     article.className = "forum-post" + (item.deleted ? " forum-post-is-deleted" : "");
@@ -713,12 +701,10 @@
       const data = await response.json();
       if (!response.ok || !data.ok) throw new Error(data.message || "Не удалось загрузить сообщения.");
 
-      messageMap.clear();
       posts.replaceChildren();
 
       const pagination = data.pagination || { page: 1, pages: 1, total: 0, pageSize: 20 };
       currentPage = Number(pagination.page || 1);
-      viewer = data.viewer || viewer;
 
       if (!data.messages?.length && currentPage === 1) {
         const empty = document.createElement("div");
@@ -753,7 +739,6 @@
 
   function showGuestState() {
     csrf = "";
-    viewer = null;
     if (userLabel) userLabel.textContent = "";
     if (guest) guest.hidden = false;
     if (form) form.hidden = true;
@@ -761,7 +746,6 @@
 
   function showUserState(data) {
     csrf = String(data.csrf || "");
-    viewer = data.user || null;
     if (userLabel) userLabel.textContent = data.user?.name ? "Вы вошли как " + data.user.name : "";
     if (guest) guest.hidden = true;
     if (form) form.hidden = false;

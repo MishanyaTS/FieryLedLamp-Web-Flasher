@@ -142,8 +142,9 @@ async function loadManifest(board = selectedBoard) {
     const response = await fetch(board.manifestUrl, { cache: "no-store" });
     if (!response.ok) throw new Error(`Не удалось загрузить manifest.json для ${board.label} (${response.status})`);
 
-    manifest = await response.json();
-    validateManifest(manifest);
+    const loaded = await response.json();
+    validateManifest(loaded);
+    manifest = loaded;
 
     ui.firmwareName.textContent = manifest.name || SITE_CONFIG.projectName;
     ui.eraseAll.checked = Boolean(manifest.eraseAll);
@@ -362,7 +363,7 @@ function checkCompatibility(){
   if(!window.isSecureContext){ui.compatBanner.textContent="COM-порт недоступен: откройте сайт по HTTPS или localhost.";ui.compatBanner.classList.remove("hidden");}
   if(!("serial" in navigator)){ui.compatBanner.textContent="Этот браузер не поддерживает Web Serial. Используйте совместимый Chromium-браузер.";ui.compatBanner.classList.remove("hidden");ui.selectPortBtn.disabled=true;ui.flashBtn.disabled=true;return false;}return true;
 }
-ui.selectPortBtn.addEventListener("click",async()=>{if(isBusy)return;clearResult();try{await choosePort();ui.flashBtn.disabled=!manifest;}catch(e){if(e?.name==="NotFoundError"){log("Выбор COM-порта отменён.");return;}showResult("error",e?.message||String(e));log(`Ошибка выбора порта: ${e?.message||e}`);}});
+ui.selectPortBtn.addEventListener("click",async()=>{if(isBusy)return;clearResult();try{await choosePort();setBusy(false);}catch(e){if(e?.name==="NotFoundError"){log("Выбор COM-порта отменён.");return;}showResult("error",e?.message||String(e));log(`Ошибка выбора порта: ${e?.message||e}`);}});
 ui.flashBtn.addEventListener("click",flash);ui.clearLogBtn.addEventListener("click",()=>{ui.log.textContent="";});
 if(ui.saveSettings) ui.saveSettings.addEventListener("change",syncEraseAllState);
 if ("serial" in navigator) navigator.serial.addEventListener("disconnect", event => {

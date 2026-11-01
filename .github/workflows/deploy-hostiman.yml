@@ -7,7 +7,7 @@ on:
     paths:
       - "website/public/**"
       - "firmware/Version.txt"
-      - "website/shared/header/**"
+      - "website/shared/**"
       - "scripts/render-header.py"
       - "scripts/optimize-images.py"
       - ".github/workflows/deploy-hostiman.yml"

@@ -57,7 +57,6 @@
 .site-content .mqtt-command-row>span{font-size:13px;line-height:1.7;color:#9ca9ba}
 .site-content .mqtt-settings-list,.site-content .mqtt-checklist{gap:10px}
 .site-content .mqtt-settings-list>div,.site-content .mqtt-checklist>div{padding:15px;border-radius:11px;font-size:13px;line-height:1.75}
-.site-content .mqtt-wqtt-cta{padding:20px;border-radius:14px}
 
 /* Instruction */
 .site-content .manual-search-wrap{padding-top:0;padding-bottom:0}

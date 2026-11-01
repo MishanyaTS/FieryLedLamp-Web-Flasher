@@ -1,57 +1,24 @@
-# FieryLedLamp Site
+# Основной сайт Fiery Led Lamp
 
-Статический сайт для https://fieryledlamp.ru
+Сайт https://fieryledlamp.ru/ работает на HostiMan: статические страницы из `public/`, PHP API `public/api/index.php`, MySQL для аккаунтов, форума и статистики.
 
-Deploy command:
+Общая шапка и оформление находятся в `shared/`. Перед локальным просмотром после их изменения выполните из корня репозитория:
 
-```bash
-cd website && npx wrangler deploy
+```sh
+python3 scripts/render-header.py
+python3 scripts/render-header.py --check
 ```
 
-После первого успешного деплоя подключить Custom Domain `fieryledlamp.ru`.
+Публикацию выполняет `.github/workflows/deploy-hostiman.yml`. Инструкции Cloudflare Workers/D1 и старый Worker удалены: они не используются текущим сайтом.
 
+Настройка PHP, приватного файла конфигурации, MySQL и почты: `server/REGISTRATION_SETUP.md`. API поддерживает PHP mail() и Resend. Аккаунты и страницы администратора используют сессию пользователя; операции изменения проверяют CSRF-токен и права на сервере.
 
-## Регистрация пользователей
+Основная логика интерфейса разделена по страницам:
 
-Страница /register.html отправляет данные в /api/register.
+- `public/site.js` — статистика и кнопка прокрутки вверх.
+- `shared/header/header.js` — меню, поиск и состояние входа.
+- `public/scripts/account.js` — вход, регистрация, кабинет и почтовая рассылка администратора.
+- `public/forum.js` — форум и редактор сообщений.
+- `public/scripts/admin-users.js`, `admin-stats.js`, `instruction.js`, `versions.js` — соответствующие страницы.
 
-Для хранения регистраций используется Cloudflare D1. Создайте базу, например `fieryledlamp-users`, и подключите её к Worker с binding `DB`.
-
-После получения database_id добавьте D1 binding в `wrangler.jsonc`. Таблица `subscribers` создаётся автоматически при первой регистрации.
-
-
-## Доставка уведомлений
-
-Сайт поддерживает:
-- e-mail через Resend;
-- SMS через SMS.RU.
-
-Секреты и переменные Worker:
-- `ADMIN_USER` — логин администратора для запуска рассылки;
-- `ADMIN_PASSWORD` — пароль администратора;
-- `RESEND_API_KEY` — API key Resend;
-- `RESEND_FROM` — отправитель, например `FieryLedLamp <updates@fieryledlamp.ru>`;
-- `SMSRU_API_ID` — api_id SMS.RU;
-- `SMSRU_FROM` — необязательное согласованное имя отправителя SMS.RU.
-
-Проверка провайдеров:
-```
-GET /api/admin/providers
-```
-с HTTP Basic Auth.
-
-Запуск рассылки:
-```json
-POST /api/admin/notify
-{
-  "version": "v7.8.2",
-  "summary": "Краткое описание обновления",
-  "url": "https://firmware.fieryledlamp.ru",
-  "email": true,
-  "sms": true,
-  "dryRun": false
-}
-```
-
-Для предварительной проверки количества получателей используйте `"dryRun": true`.
-Повторный вызов с тем же номером версии не повторяет уже успешно отправленные сообщения.
+Перенаправление `discussions.html` оставлено для старых ссылок. Оно ведёт на `forum.html` с сохранением query string и фрагмента; старый `discussions.js` больше не нужен.
