@@ -1,6 +1,6 @@
 <!doctype html><html lang="ru"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b0d12">
-<meta name="description" content="Подключение Fiery Led Lamp: ESP32-S3, LED-матрица, RTC, TFT, TM1637, DFPlayer Mini и ИК-приёмник.">
+<meta name="description" content="Подключение Fiery Led Lamp: ESP32-S3, LED-матрица, RTC, TFT, TM1637, DFPlayer Mini, MAX98357A, MicroSD и ИК-приёмник.">
 <title>Подключение - Fiery Led Lamp</title><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/styles.css?v=deef21d834ac">
 <link rel="stylesheet" href="/page-ui.css?v=81192735aac3">
   <link rel="stylesheet" href="/header.css?v=shared-6f455a05daf5">
@@ -94,10 +94,11 @@
 <!-- SHARED_HEADER:END -->
 <main class="site-content">
 <section class="page-hero ui-hero"><div class="shell"><span class="eyebrow">АППАРАТНАЯ ЧАСТЬ</span><h1>Подключение</h1><p>Полная схема подключения Fiery Led Lamp и комплектующие для сборки.</p></div></section>
-<section class="section shell"><div class="section-head compact"><span class="eyebrow">СХЕМА</span><h2>Полная схема подключения</h2><p>Расширенная конфигурация с матрицей, DFPlayer, ИК-приёмником, и TFT дисплеем.</p></div>
+<section class="section shell"><div class="section-head compact"><span class="eyebrow">СХЕМА</span><h2>Полная схема подключения</h2><p>На иллюстрации показана конфигурация с DFPlayer Mini, ИК-приёмником и TFT-дисплеем. Подключение новых модулей MicroSD и MAX98357A приведено ниже.</p></div>
 <a class="scheme-frame" href="/images/fieryledlamp-connection.png" target="_blank" rel="noopener">
 <img src="/images/fieryledlamp-connection.png" alt="Схема подключения Fiery Led Lamp" loading="lazy"></a>
 <p class="scheme-hint">Нажмите на схему, чтобы открыть её в полном размере.</p>
+<div class="notice"><b>Новый вариант звука</b><p>Вместо DFPlayer Mini можно использовать отдельную плату MicroSD и цифровой усилитель MAX98357A. Это альтернативная звуковая конфигурация; для неё используются отдельная SPI-шина и интерфейс I2S. <a href="#audio-modules">Смотреть подключение новых модулей</a>.</p></div>
 <div class="notice warning"><b>Питание</b><p>Адресная матрица может потреблять значительный ток. Подбирайте блок питания и сечение проводов с запасом, а землю питания матрицы и ESP32 объединяйте.</p></div></section>
 <section class="section shell components-section">
 <div class="section-head compact"><span class="eyebrow">КОМПОНЕНТЫ</span><h2>Компоненты для сборки</h2></div>
@@ -115,6 +116,15 @@
 <article class="component-card">
   <div class="component-body"><span class="component-tag optional">Звук</span><h2>DFPlayer Mini</h2><p>MP3-модуль для звуков, будильника и голосовых сообщений. Работает с microSD и управляется по UART.</p><div class="component-specs"><span>UART</span><span>microSD</span><span>MP3</span></div><a class="btn primary component-buy" href="https://aliexpress.ru/item/1005008692398110.html" target="_blank" rel="noopener">AliExpress ↗</a></div>
 </article>
+
+<article class="component-card">
+  <div class="component-body"><span class="component-tag optional">Звук · I2S</span><h2>Усилитель MAX98357A</h2><p>Цифровой усилитель с интерфейсом I2S для воспроизведения музыки, будильника и голосовых сообщений с отдельной платы MicroSD. Подключается к ESP32-S3 и динамику.</p><div class="component-specs"><span>I2S</span><span>До 3 Вт</span><span>GPIO38 / 47 / 48</span></div><a class="btn primary component-buy" href="https://aliexpress.ru/item/1005009759175798.html" target="_blank" rel="noopener">AliExpress ↗</a></div>
+</article>
+
+<article class="component-card">
+  <div class="component-body"><span class="component-tag optional">Звук · память</span><h2>Плата расширения памяти MicroSD</h2><p>Слот карты памяти для музыкальных файлов и озвучивания времени и погоды. Использует отдельную SPI-шину, не занимая выводы TFT-дисплея.</p><div class="component-specs"><span>SPI</span><span>FAT32</span><span>GPIO39–42</span></div><a class="btn primary component-buy" href="https://aliexpress.ru/item/1005009166794342.html" target="_blank" rel="noopener">AliExpress ↗</a></div>
+</article>
+
 
 <article class="component-card">
   <div class="component-body"><span class="component-tag optional">Дисплей</span><h2>TFT ST7789 1.47″</h2><p>Цветной дисплей с разрешением 172×320 для времени, погоды, статусов и служебной информации.</p><div class="component-specs"><span>ST7789</span><span>172×320</span><span>SPI</span></div><a class="btn primary component-buy" href="https://aliexpress.ru/item/1005009269283547.html" target="_blank" rel="noopener">AliExpress ↗</a></div>
@@ -141,6 +151,15 @@
 </article>
 
 </div>
+</section>
+<section class="section shell" id="audio-modules">
+<div class="section-head compact"><span class="eyebrow">НОВЫЕ ЗВУКОВЫЕ МОДУЛИ</span><h2>Подключение MicroSD и MAX98357A</h2><p>Для ESP32-S3 N16R8 с актуальной прошивкой. Модуль MicroSD хранит файлы, усилитель MAX98357A воспроизводит звук через I2S.</p></div>
+<div class="components-grid">
+<article class="component-card"><div class="component-body"><span class="component-tag optional">Шина SPI</span><h2>Плата MicroSD</h2><p><b>SCK / CLK</b> → GPIO39<br><b>MOSI / DI</b> → GPIO40<br><b>MISO / DO</b> → GPIO41<br><b>CS</b> → GPIO42</p><p>Подключите GND к общей земле. Питание VCC выбирайте по характеристикам именно вашего модуля (3,3 В или 5 В), а не только по названию MicroSD.</p></div></article>
+<article class="component-card"><div class="component-body"><span class="component-tag optional">Шина I2S</span><h2>MAX98357A</h2><p><b>BCLK / BCK</b> → GPIO47<br><b>LRC / WS</b> → GPIO48<br><b>DIN</b> → GPIO38</p><p>Подключите VIN и GND к подходящему источнику питания и общей земле. Динамик подключается к выходам SPK+ и SPK− усилителя, а не к GND.</p></div></article>
+</div>
+<div class="notice"><b>Подготовка карты памяти</b><p>Для нового варианта используйте FAT32. Музыка для эффектов размещается в папках с двузначными номерами (<code>/01</code>, <code>/02</code> и т. д.), озвучивание времени — в <code>/time</code>, погоды — в <code>/weather</code>. Поддерживаются файлы MP3, WAV, AAC и M4A. Управление файлами доступно через «Настройки звука» → «Редактор microSD» в Web-интерфейсе лампы. <a href="/instruction.html#sound">Подробнее о настройках звука</a>.</p></div>
+<div class="notice warning"><b>Важно</b><p>DFPlayer Mini и связка MicroSD + MAX98357A — два альтернативных варианта. В «Настройках оборудования» включите именно подключённые устройства. Все модули должны иметь общую землю. На схеме выше показан прежний вариант с DFPlayer; ориентируйтесь на распиновку этой секции для новой связки.</p></div>
 </section>
 </main>
 <footer class="footer">
