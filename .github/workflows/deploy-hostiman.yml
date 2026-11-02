@@ -56,72 +56,8 @@ jobs:
         run: |
           unzip -t website/public/archives/time.zip > /dev/null
           unzip -t website/public/archives/weather.zip > /dev/null
-          unzip -Z1 website/public/archives/time.zip | grep -Eq '^time/[^/]+[.]mp3        run: php -l website/public/api/index.php
-
-      - name: Install lftp
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y lftp
-
-      - name: Optimize connection diagram
-        run: |
-          python3 -m venv .image-tools
-          .image-tools/bin/python -m pip install --disable-pip-version-check --quiet Pillow==11.3.0
-          .image-tools/bin/python scripts/optimize-images.py
-
-      - name: Deploy website/public to HostiMan
-        env:
-          FTP_HOST: ${{ secrets.HOSTIMAN_FTP_HOST }}
-          FTP_PORT: ${{ secrets.HOSTIMAN_FTP_PORT }}
-          FTP_USER: ${{ secrets.HOSTIMAN_FTP_USER }}
-          FTP_PASSWORD: ${{ secrets.HOSTIMAN_FTP_PASSWORD }}
-        run: |
-          lftp -u "$FTP_USER","$FTP_PASSWORD" -p "$FTP_PORT" "$FTP_HOST" <<'LFTP_COMMANDS'
-          set ftp:ssl-allow no
-          set ftp:passive-mode true
-          set net:max-retries 3
-          set net:timeout 20
-          set mirror:parallel-transfer-count 1
-          mirror --reverse --delete --verbose \
-            --exclude-glob .well-known/** \
-            --exclude-glob .htaccess \
-            website/public/ /
-          bye
-          LFTP_COMMANDS
-
-          unzip -Z1 website/public/archives/weather.zip | grep -Eq '^weather/[^/]+[.]mp3        run: php -l website/public/api/index.php
-
-      - name: Install lftp
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y lftp
-
-      - name: Optimize connection diagram
-        run: |
-          python3 -m venv .image-tools
-          .image-tools/bin/python -m pip install --disable-pip-version-check --quiet Pillow==11.3.0
-          .image-tools/bin/python scripts/optimize-images.py
-
-      - name: Deploy website/public to HostiMan
-        env:
-          FTP_HOST: ${{ secrets.HOSTIMAN_FTP_HOST }}
-          FTP_PORT: ${{ secrets.HOSTIMAN_FTP_PORT }}
-          FTP_USER: ${{ secrets.HOSTIMAN_FTP_USER }}
-          FTP_PASSWORD: ${{ secrets.HOSTIMAN_FTP_PASSWORD }}
-        run: |
-          lftp -u "$FTP_USER","$FTP_PASSWORD" -p "$FTP_PORT" "$FTP_HOST" <<'LFTP_COMMANDS'
-          set ftp:ssl-allow no
-          set ftp:passive-mode true
-          set net:max-retries 3
-          set net:timeout 20
-          set mirror:parallel-transfer-count 1
-          mirror --reverse --delete --verbose \
-            --exclude-glob .well-known/** \
-            --exclude-glob .htaccess \
-            website/public/ /
-          bye
-          LFTP_COMMANDS
-
+          unzip -Z1 website/public/archives/time.zip | grep -Eq '^time/[^/]+[.]mp3$'
+          unzip -Z1 website/public/archives/weather.zip | grep -Eq '^weather/[^/]+[.]mp3$'
 
       - name: Validate registration PHP
         run: php -l website/public/api/index.php
