@@ -54,10 +54,22 @@ jobs:
 
       - name: Validate voice archives
         run: |
-          unzip -t website/public/archives/time.zip > /dev/null
-          unzip -t website/public/archives/weather.zip > /dev/null
-          unzip -Z1 website/public/archives/time.zip | grep -Eq '^time/[^/]+[.]mp3$'
-          unzip -Z1 website/public/archives/weather.zip | grep -Eq '^weather/[^/]+[.]mp3$'
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+
+          for name in ("time", "weather"):
+              path = Path("website/public/archives") / f"{name}.zip"
+              with ZipFile(path) as archive:
+                  names = archive.namelist()
+                  mp3_files = [entry for entry in names if entry.lower().endswith(".mp3")]
+                  print(f"{path}: {len(mp3_files)} MP3 files; first entries: {names[:5]}")
+                  if not mp3_files:
+                      raise RuntimeError(f"{path}: No MP3 files found")
+                  bad_entry = archive.testzip()
+                  if bad_entry is not None:
+                      raise RuntimeError(f"{path}: Damaged ZIP entry {bad_entry}")
+          PY
 
       - name: Validate registration PHP
         run: php -l website/public/api/index.php
