@@ -104,3 +104,15 @@ jobs:
             website/public/ /
           bye
           LFTP_COMMANDS
+
+      - name: Verify archive download URLs
+        run: |
+          for archive in time weather; do
+            url="https://fieryledlamp.ru/archives/${archive}.zip"
+            status="$(curl --silent --show-error --location --head --retry 2 --max-time 25 --output /dev/null --write-out '%{http_code}' "$url")"
+            echo "$url - HTTP $status"
+            if [ "$status" != "200" ]; then
+              echo "::error::Archive download URL is unavailable: $url (HTTP $status)"
+              exit 1
+            fi
+          done
