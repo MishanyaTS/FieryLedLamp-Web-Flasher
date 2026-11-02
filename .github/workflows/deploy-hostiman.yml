@@ -81,6 +81,7 @@ jobs:
           set mirror:parallel-transfer-count 1
           mirror --reverse --delete --verbose \
             --exclude-glob .well-known/** \
+            --exclude-glob "archives/*.zip" \
             --exclude-glob .htaccess \
             website/public/ /
           bye

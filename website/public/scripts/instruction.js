@@ -28,3 +28,20 @@ const manualSearch = document.querySelector("#manualSearch");
     if (compact.matches && event.target.closest("a")) navigation.open = false;
   });
 })();
+
+/* При ручном размещении ZIP на сервере включаем кнопку скачивания. */
+(() => {
+  document.querySelectorAll("[data-voice-archive]").forEach(link => {
+    const status = link.parentElement.querySelector("[data-voice-archive-status]");
+    fetch(link.getAttribute("href"), {method: "HEAD", cache: "no-store"})
+      .then(response => {
+        if (!response.ok || (response.headers.get("content-type") || "").includes("text/html")) throw new Error("Not found");
+        link.hidden = false;
+        if (status) status.hidden = true;
+      })
+      .catch(() => {
+        link.hidden = true;
+        if (status) status.textContent = "Архив пока не загружен на сервер.";
+      });
+  });
+})();
