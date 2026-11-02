@@ -37,10 +37,12 @@ const manualSearch = document.querySelector("#manualSearch");
       .then(response => {
         if (!response.ok || (response.headers.get("content-type") || "").includes("text/html")) throw new Error("Not found");
         link.hidden = false;
+        link.style.display = "inline-flex";
         if (status) status.hidden = true;
       })
       .catch(() => {
         link.hidden = true;
+        link.style.display = "none";
         if (status) status.textContent = "Архив пока не загружен на сервер.";
       });
   });
