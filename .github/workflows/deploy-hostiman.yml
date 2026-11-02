@@ -56,7 +56,7 @@ jobs:
         run: |
           unzip -t website/public/archives/time.zip > /dev/null
           unzip -t website/public/archives/weather.zip > /dev/null
-          unzip -Z1 website/public/archives/time.zip | grep -Eq '^time/[^/]+\\.mp3        run: php -l website/public/api/index.php
+          unzip -Z1 website/public/archives/time.zip | grep -Eq '^time/[^/]+[.]mp3        run: php -l website/public/api/index.php
 
       - name: Install lftp
         run: |
@@ -89,7 +89,7 @@ jobs:
           bye
           LFTP_COMMANDS
 
-          unzip -Z1 website/public/archives/weather.zip | grep -Eq '^weather/[^/]+\\.mp3        run: php -l website/public/api/index.php
+          unzip -Z1 website/public/archives/weather.zip | grep -Eq '^weather/[^/]+[.]mp3        run: php -l website/public/api/index.php
 
       - name: Install lftp
         run: |
