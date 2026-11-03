@@ -173,7 +173,7 @@ async function queryPsramFromFirmware(port) {
       if (done) break;
       if (!value) continue;
       received += decoder.decode(value, {stream: true});
-      const match = received.match(/WEBFLASH_PSRAM:(\d+)(?:\r?\n|$)/);
+      const match = received.match(/WEBFLASH_PSRAM:(\d+)\r?\n/);
       if (match) {
         const bytes = Number(match[1]);
         if (Number.isSafeInteger(bytes) && bytes >= 0 && bytes <= 64 * 1024 * 1024) {
