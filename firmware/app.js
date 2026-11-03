@@ -134,7 +134,9 @@ function flashSizeFromJedecId(id) {
 function showDeviceDiagnostic(state, info = {}) {
   const chip = info.chip || "—";
   if (ui.preview) ui.preview.dataset.diagnostic = state;
-  if (ui.previewChip) ui.previewChip.textContent = chip;
+  // The main board graphic shows the selected board model, not the detected chip description.
+  const boardName = selectedBoard?.label || manifest?.board || "—";
+  if (ui.previewChip) ui.previewChip.textContent = boardName;
   if (ui.previewChipName) ui.previewChipName.textContent = chip;
   if (ui.previewFlash) ui.previewFlash.textContent = info.flash || "—";
   if (ui.previewPsram) ui.previewPsram.textContent = info.psram || "—";
