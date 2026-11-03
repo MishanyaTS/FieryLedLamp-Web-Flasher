@@ -132,12 +132,12 @@ function flashSizeFromJedecId(id) {
   return 2 ** capacityCode;
 }
 function showDeviceDiagnostic(state, info = {}) {
-  const chip = info.chip || "—";
+  // Do not confuse a selected firmware profile with an actually detected board.
+  const chip = String(info.chip || "");
+  const chipType = chip.match(/^ESP32(?:-[A-Z]\d+)?\b/i)?.[0] || "—";
   if (ui.preview) ui.preview.dataset.diagnostic = state;
-  // The main board graphic shows the selected board model, not the detected chip description.
-  const boardName = selectedBoard?.label || manifest?.board || "—";
-  if (ui.previewChip) ui.previewChip.textContent = boardName;
-  if (ui.previewChipName) ui.previewChipName.textContent = chip;
+  if (ui.previewChip) ui.previewChip.textContent = state === "ok" ? (info.board || "Не определена") : "—";
+  if (ui.previewChipName) ui.previewChipName.textContent = chipType;
   if (ui.previewFlash) ui.previewFlash.textContent = info.flash || "—";
   if (ui.previewPsram) ui.previewPsram.textContent = info.psram || "—";
   if (ui.previewFlashId) ui.previewFlashId.textContent = "Flash ID: " + (info.flashId || "—");
@@ -175,7 +175,7 @@ async function diagnoseSelectedPort(port) {
   let loader = null;
   let enteredLoader = false;
   let failure = null;
-  const found = {chip: "—", flash: "—", flashId: "—", psram: "—", psramNote: "PSRAM: определение…"};
+  const found = {chip: "—", board: null, flash: "—", flashId: "—", psram: "—", psramBytes: null, psramNote: "PSRAM: определение…"};
 
   diagnosticReady = false;
   setBusy(true);
@@ -207,6 +207,7 @@ async function diagnoseSelectedPort(port) {
       const ram = await readEmbeddedPsram(loader);
       if (ram.bytes != null) {
         found.psram = (ram.bytes / (1024 * 1024)) + " МБ";
+        found.psramBytes = ram.bytes;
         found.psramNote = ram.note;
         log("Диагностика: встроенная PSRAM " + found.psram + " (eFuse).");
         const expectedPsram = Number.parseInt(manifest?.psramSize || "", 10);
@@ -237,6 +238,20 @@ async function diagnoseSelectedPort(port) {
     }
     if (Number.isFinite(expectedMegabytes) && flashBytes !== expectedMegabytes * 1024 * 1024) {
       log("Внимание: Flash " + found.flash + " отличается от конфигурации " + expectedMegabytes + " МБ.");
+    }
+
+    // Board model is inferred from measured chip, Flash and PSRAM capacity.
+    // If PSRAM is unavailable or capacities differ, do not claim N16R8.
+    const expectedPsramMB = Number.parseInt(manifest?.psramSize || "", 10);
+    const psramMatches = Number.isFinite(expectedPsramMB) &&
+      found.psramBytes === expectedPsramMB * 1024 * 1024;
+    const flashMatches = Number.isFinite(expectedMegabytes) &&
+      flashBytes === expectedMegabytes * 1024 * 1024;
+    if (flashMatches && psramMatches) {
+      found.board = selectedBoard?.label || manifest?.board || null;
+      log("Диагностика: плата соответствует профилю " + found.board + ".");
+    } else {
+      log("Диагностика: модель платы не подтверждена по Flash и PSRAM.");
     }
   } catch (error) {
     failure = error;
@@ -270,9 +285,11 @@ async function diagnoseSelectedPort(port) {
   }
 
   diagnosticReady = true;
-  showDeviceDiagnostic("ok", {...found, message: found.psram !== "—"
-    ? "Чип, Flash и PSRAM определены. Плата готова к прошивке."
-    : "Чип и Flash проверены. PSRAM не определена. Плата готова к прошивке."});
+  showDeviceDiagnostic("ok", {...found, message: found.board
+    ? "Плата определена. Чип, Flash и PSRAM проверены."
+    : (found.psram !== "—"
+      ? "Чип, Flash и PSRAM определены, но модель платы не подтверждена."
+      : "Чип и Flash проверены. PSRAM не определена. Плата готова к прошивке.")});
   setPortConnected(true);
   ui.portText.textContent = portDescription(port) + " • проверен";
   log("Диагностика завершена. PSRAM: " + (found.psram !== "—" ? found.psram : "не определена") + ".");
