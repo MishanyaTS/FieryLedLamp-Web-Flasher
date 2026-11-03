@@ -87,9 +87,7 @@ function showResult(type, text) { ui.resultBox.className = `result ${type}`; ui.
 function friendlyFlasherError(error) {
   const message = String(error?.message || error || "Неизвестная ошибка");
   if (/Failed to execute ['"]open['"] on ['"]SerialPort['"]|Failed to open serial port/i.test(message)) {
-    return "Не удалось открыть COM-порт. Возможно, выбрана не та плата или порт занят другой программой. "
-      + "Проверьте подключение ESP32-S3 и USB-кабель, закройте Arduino IDE и монитор порта, "
-      + "переподключите плату и попробуйте снова.";
+    return "Не удалось открыть COM-порт. Возможно, выбрана не та плата или порт занят другой программой.";
   }
   return message;
 }
