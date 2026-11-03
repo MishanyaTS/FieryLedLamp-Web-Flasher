@@ -84,6 +84,15 @@ function setStep(index) {
   ui.steps.forEach((step, i) => { step.classList.toggle("active", i === index); step.classList.toggle("done", i < index); });
 }
 function showResult(type, text) { ui.resultBox.className = `result ${type}`; ui.resultBox.textContent = text; }
+function friendlyFlasherError(error) {
+  const message = String(error?.message || error || "Неизвестная ошибка");
+  if (/Failed to execute ['"]open['"] on ['"]SerialPort['"]|Failed to open serial port/i.test(message)) {
+    return "Не удалось открыть COM-порт. Возможно, выбрана не та плата или порт занят другой программой. "
+      + "Проверьте подключение ESP32-S3 и USB-кабель, закройте Arduino IDE и монитор порта, "
+      + "переподключите плату и попробуйте снова.";
+  }
+  return message;
+}
 function clearResult() { ui.resultBox.className = "result hidden"; ui.resultBox.textContent = ""; }
 function fmtBytes(bytes) {
   if (!Number.isFinite(bytes)) return "-";
@@ -205,11 +214,12 @@ async function diagnoseSelectedPort(port) {
   }
   if (failure) {
     diagnosticReady = false;
-    showDeviceDiagnostic("error", {...found, message: "Проверка не пройдена: " + (failure?.message || failure)});
+    const message = friendlyFlasherError(failure);
+    showDeviceDiagnostic("error", {...found, message: "Проверка не пройдена: " + message});
     setPortConnected(false);
     ui.portText.textContent = "Проверка не пройдена";
-    showResult("error", failure?.message || String(failure));
-    log("ОШИБКА диагностики: " + (failure?.message || failure));
+    showResult("error", message);
+    log("ОШИБКА диагностики: " + message);
     setStep(1);
     setBusy(false);
     throw failure;
@@ -473,13 +483,13 @@ async function flash(){
     if(ui.eraseAll.checked)log("Включена полная очистка Flash.");
     await loader.writeFlash(opts); setProgress(99,"Перезапуск…"); await rebootEsp32S3(transport,loader); await safeDisconnect(transport);transport=null;
     setProgress(100,"Прошивка успешно завершена");showResult("success","Готово. Плата прошита и перезапущена.");ui.steps.forEach(s=>{s.classList.remove("active");s.classList.add("done");});log("ГОТОВО: прошивка успешно завершена.");
-  }catch(e){await safeDisconnect(transport);const msg=e?.message||String(e);setProgress(0,"Ошибка прошивки");showResult("error",msg);log(`ОШИБКА: ${msg}`);}finally{setBusy(false);}
+  }catch(e){await safeDisconnect(transport);const msg=friendlyFlasherError(e);setProgress(0,"Ошибка прошивки");showResult("error",msg);log(`ОШИБКА: ${msg}`);}finally{setBusy(false);}
 }
 function checkCompatibility(){
   if(!window.isSecureContext){ui.compatBanner.textContent="COM-порт недоступен: откройте сайт по HTTPS или localhost.";ui.compatBanner.classList.remove("hidden");}
   if(!("serial" in navigator)){ui.compatBanner.textContent="Этот браузер не поддерживает Web Serial. Используйте совместимый Chromium-браузер.";ui.compatBanner.classList.remove("hidden");ui.selectPortBtn.disabled=true;ui.flashBtn.disabled=true;return false;}return true;
 }
-ui.selectPortBtn.addEventListener("click",async()=>{if(isBusy)return;clearResult();try{await choosePort();setBusy(false);}catch(e){if(e?.name==="NotFoundError"){log("Выбор COM-порта отменён.");return;}showResult("error",e?.message||String(e));log(`Ошибка выбора порта: ${e?.message||e}`);}});
+ui.selectPortBtn.addEventListener("click",async()=>{if(isBusy)return;clearResult();try{await choosePort();setBusy(false);}catch(e){if(e?.name==="NotFoundError"){log("Выбор COM-порта отменён.");return;}const msg=friendlyFlasherError(e);showResult("error",msg);log(`Ошибка выбора порта: ${msg}`);}});
 ui.flashBtn.addEventListener("click",flash);ui.clearLogBtn.addEventListener("click",()=>{ui.log.textContent="";});
 if(ui.saveSettings) ui.saveSettings.addEventListener("change",syncEraseAllState);
 if ("serial" in navigator) navigator.serial.addEventListener("disconnect", event => {
