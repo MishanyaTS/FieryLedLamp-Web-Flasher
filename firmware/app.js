@@ -134,7 +134,7 @@ function flashSizeFromJedecId(id) {
 function showDeviceDiagnostic(state, info = {}) {
   // Do not confuse a selected firmware profile with an actually detected board.
   const chip = String(info.chip || "");
-  const chipType = chip.match(/^ESP32(?:-[A-Z]\d+)?\b/i)?.[0] || "—";
+  const chipType = chip.replace(/^ESP32-S3\b\s*/i, "").trim() || "—";
   if (ui.preview) ui.preview.dataset.diagnostic = state;
   if (ui.previewChip) ui.previewChip.textContent = state === "ok" ? (info.board || "Не определена") : "—";
   if (ui.previewChipName) ui.previewChipName.textContent = chipType;
