@@ -59,7 +59,7 @@ const ui = {
   cfgFreq: $("cfgFreq"), cfgBaud: $("cfgBaud"), fileList: $("fileList"), log: $("log"),
   clearLogBtn: $("clearLogBtn"), previewFlash: $("previewFlash"), preview: document.querySelector(".flasher-preview"),
   previewChip: $("previewChip"), previewChipName: $("previewChipName"), previewPsram: $("previewPsram"),
-  previewDiagnostic: $("previewDiagnostic"), previewFlashId: $("previewFlashId"), previewPsramNote: $("previewPsramNote"),
+  previewDiagnostic: $("previewDiagnostic"), previewFlashId: $("previewFlashId"),
   steps: [$("step1"), $("step2"), $("step3")],
 };
 
@@ -142,8 +142,6 @@ function showDeviceDiagnostic(state, info = {}) {
   if (ui.previewPsram) ui.previewPsram.textContent = info.psram || "—";
   if (ui.previewFlashId) ui.previewFlashId.textContent = "Flash ID: " + (info.flashId || "—");
   if (ui.previewDiagnostic) ui.previewDiagnostic.textContent = info.message || "Выберите COM-порт для диагностики.";
-  if (ui.previewPsramNote) ui.previewPsramNote.textContent = info.psramNote ||
-    "Объём встроенной PSRAM определяется по eFuse ESP32-S3, независимо от прошивки.";
 }
 
 // ESP32-S3 stores the size of its embedded PSRAM in eFuse, readable from
