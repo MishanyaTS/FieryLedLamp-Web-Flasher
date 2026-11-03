@@ -137,28 +137,99 @@ function showDeviceDiagnostic(state, info = {}) {
   if (ui.previewChip) ui.previewChip.textContent = chip;
   if (ui.previewChipName) ui.previewChipName.textContent = chip;
   if (ui.previewFlash) ui.previewFlash.textContent = info.flash || "—";
-  if (ui.previewPsram) ui.previewPsram.textContent = state === "idle" ? "—" : ((manifest?.psramSize || "—") + "*");
+  if (ui.previewPsram) ui.previewPsram.textContent = info.psram || "—";
   if (ui.previewFlashId) ui.previewFlashId.textContent = "Flash ID: " + (info.flashId || "—");
   if (ui.previewDiagnostic) ui.previewDiagnostic.textContent = info.message || "Выберите COM-порт для диагностики.";
-  if (ui.previewPsramNote) {
-    ui.previewPsramNote.textContent = state === "idle"
-      ? "* PSRAM определяется только с помощью работающей прошивки."
-      : "* PSRAM: " + (manifest?.psramSize || "не указана") + " по конфигурации; аппаратно не проверена.";
-  }
+  if (ui.previewPsramNote) ui.previewPsramNote.textContent = info.psramNote ||
+    "PSRAM определяется через работающую прошивку. На пустой или старой плате может быть недоступна.";
 }
+
+// Try reading actual, initialized PSRAM from running Fiery Led Lamp firmware.
+// The ROM flasher does not expose external OPI PSRAM capacity like JEDEC Flash.
+// A missing response must NEVER be treated as 8 MB, or as missing hardware.
+async function queryPsramFromFirmware(port) {
+  let reader = null;
+  let opened = false;
+  let timeoutId = null;
+  try {
+    await port.open({baudRate: 115200});
+    opened = true;
+    try { await port.setSignals({dataTerminalReady: false, requestToSend: false}); } catch (_) {}
+    await delay(350);
+
+    const writer = port.writable.getWriter();
+    try {
+      await writer.write(new TextEncoder().encode("WEBFLASH_PSRAM\n"));
+    } finally {
+      writer.releaseLock();
+    }
+
+    reader = port.readable.getReader();
+    const decoder = new TextDecoder();
+    let received = "";
+    timeoutId = setTimeout(() => { reader?.cancel().catch(() => {}); }, 2200);
+    while (true) {
+      const {value, done} = await reader.read();
+      if (done) break;
+      if (!value) continue;
+      received += decoder.decode(value, {stream: true});
+      const match = received.match(/WEBFLASH_PSRAM:(\d+)(?:\r?\n|$)/);
+      if (match) {
+        const bytes = Number(match[1]);
+        if (Number.isSafeInteger(bytes) && bytes >= 0 && bytes <= 64 * 1024 * 1024) {
+          return {bytes};
+        }
+        return {bytes: null};
+      }
+      if (received.length > 4096) received = received.slice(-1024);
+    }
+  } catch (error) {
+    log("PSRAM: ответ прошивки недоступен (" + friendlyFlasherError(error) + ").");
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+    if (reader) {
+      try { await reader.cancel(); } catch (_) {}
+      try { reader.releaseLock(); } catch (_) {}
+    }
+    if (opened) {
+      try { await port.close(); } catch (_) {}
+    }
+    await delay(200);
+  }
+  return {bytes: null};
+}
+
 async function diagnoseSelectedPort(port) {
   let transport = null;
   let loader = null;
   let enteredLoader = false;
   let failure = null;
-  const found = {chip: "—", flash: "—", flashId: "—"};
+  const found = {chip: "—", flash: "—", flashId: "—", psram: "—", psramNote: "PSRAM: определение…"};
 
   diagnosticReady = false;
   setBusy(true);
   setStep(1);
-  showDeviceDiagnostic("checking", {message: "Диагностика ESP32-S3: определение чипа и Flash…"});
-  log("Аппаратная диагностика: подключение к ESP32-S3 на 115200 бод…");
+  showDeviceDiagnostic("checking", {...found, message: "Диагностика ESP32-S3: проверка PSRAM, чипа и Flash…"});
+  log("Аппаратная диагностика: проверка PSRAM, чипа и Flash…");
 
+  // Query running application BEFORE switching the chip into ROM loader mode.
+  const ram = await queryPsramFromFirmware(port);
+  if (ram.bytes != null) {
+    found.psram = ram.bytes > 0 ? (ram.bytes / (1024 * 1024)) + " МБ" : "Не найдена";
+    found.psramNote = ram.bytes > 0
+      ? "PSRAM: объём получен от работающей прошивки."
+      : "PSRAM не инициализирована работающей прошивкой.";
+    log("Диагностика: PSRAM " + found.psram + " (ответ прошивки).");
+    const requiredPsram = Number.parseInt(manifest?.psramSize || "", 10);
+    if (ram.bytes > 0 && Number.isFinite(requiredPsram) && ram.bytes < requiredPsram * 1024 * 1024) {
+      log("Внимание: доступная PSRAM меньше указанной в конфигурации " + requiredPsram + " МБ.");
+    }
+  } else {
+    found.psram = "—";
+    found.psramNote = "PSRAM: не определена. На плате нужна прошивка с поддержкой диагностики по USB.";
+    log("PSRAM: не определена (плата в режиме загрузчика, прошивка старая или не отвечает).");
+  }
+  showDeviceDiagnostic("checking", {...found, message: "Проверка чипа и Flash…"});
   try {
     const {ESPLoader, Transport} = await loadFlashingTools();
     if (selectedPort !== port) throw new Error("COM-порт изменился во время диагностики.");
@@ -224,10 +295,12 @@ async function diagnoseSelectedPort(port) {
   }
 
   diagnosticReady = true;
-  showDeviceDiagnostic("ok", {...found, message: "Чип и Flash проверены. Плата готова к прошивке."});
+  showDeviceDiagnostic("ok", {...found, message: ram.bytes != null
+    ? "Чип, Flash и PSRAM проверены. Плата готова к прошивке."
+    : "Чип и Flash проверены. PSRAM не определена. Плата готова к прошивке."});
   setPortConnected(true);
   ui.portText.textContent = portDescription(port) + " • проверен";
-  log("Диагностика пройдена. PSRAM: " + (manifest?.psramSize || "не указана") + " по конфигурации, аппаратно не проверена.");
+  log("Диагностика завершена. PSRAM: " + (ram.bytes != null ? found.psram : "не определена") + ".");
   setStep(2);
   clearResult();
   setBusy(false);
