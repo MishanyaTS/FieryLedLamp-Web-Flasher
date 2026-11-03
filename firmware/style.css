@@ -873,3 +873,60 @@ details.card{
 
 
 /* Fiery header artwork - supplied forum style, 2026-10-31 */
+
+
+/* Hardware diagnostic results in the upper-right firmware preview. */
+.site-content.ui-flasher .preview-meta{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+}
+.site-content.ui-flasher .preview-meta div{min-width:0;padding:10px 7px}
+.site-content.ui-flasher .preview-meta b{overflow-wrap:anywhere;font-size:12px}
+.site-content.ui-flasher .preview-diagnostic{
+  display:flex;
+  align-items:flex-start;
+  gap:9px;
+  margin-top:13px;
+  color:#c8d1df;
+  font-size:12px;
+  line-height:1.5;
+}
+.site-content.ui-flasher .preview-diagnostic-dot{
+  flex:0 0 8px;
+  height:8px;
+  margin-top:5px;
+  border-radius:50%;
+  background:#727e8b;
+  box-shadow:0 0 0 4px #727e8b18;
+}
+.site-content.ui-flasher .preview-extra{
+  margin-top:8px;
+  color:#96a8bb;
+  font-size:11px;
+  font-variant-numeric:tabular-nums;
+  overflow-wrap:anywhere;
+}
+.site-content.ui-flasher .preview-note{
+  margin-top:6px;
+  color:#8392a3;
+  font-size:10px;
+  line-height:1.55;
+}
+.site-content.ui-flasher .flasher-preview[data-diagnostic="ok"] .preview-diagnostic-dot{
+  background:#42cd87;
+  box-shadow:0 0 0 4px #42cd871c;
+}
+.site-content.ui-flasher .flasher-preview[data-diagnostic="checking"] .preview-diagnostic-dot{
+  background:#f6a44b;
+  box-shadow:0 0 0 4px #f6a44b1c;
+}
+.site-content.ui-flasher .flasher-preview[data-diagnostic="error"] .preview-diagnostic-dot{
+  background:#fa716c;
+  box-shadow:0 0 0 4px #fa716c1c;
+}
+@media(max-width:800px){
+  /* The diagnostic card is functional, so do not hide it on phones. */
+  .site-content.ui-flasher .flasher-preview{display:block;width:100%;max-width:620px}
+}
+@media(max-width:440px){
+  .site-content.ui-flasher .preview-meta b{font-size:11px}
+}

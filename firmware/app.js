@@ -57,13 +57,17 @@ const ui = {
   eraseAll: $("eraseAll"), saveSettings: $("saveSettings"),
   cfgChip: $("cfgChip"), cfgFlash: $("cfgFlash"), cfgPsram: $("cfgPsram"), cfgMode: $("cfgMode"),
   cfgFreq: $("cfgFreq"), cfgBaud: $("cfgBaud"), fileList: $("fileList"), log: $("log"),
-  clearLogBtn: $("clearLogBtn"), previewFlash: $("previewFlash"), preview: document.querySelector(".flasher-preview"), steps: [$("step1"), $("step2"), $("step3")],
+  clearLogBtn: $("clearLogBtn"), previewFlash: $("previewFlash"), preview: document.querySelector(".flasher-preview"),
+  previewChip: $("previewChip"), previewChipName: $("previewChipName"), previewPsram: $("previewPsram"),
+  previewDiagnostic: $("previewDiagnostic"), previewFlashId: $("previewFlashId"), previewPsramNote: $("previewPsramNote"),
+  steps: [$("step1"), $("step2"), $("step3")],
 };
 
 let manifest = null;
 let selectedBoard = SITE_CONFIG.board || null;
 let selectedPort = null;
 let isBusy = false;
+let diagnosticReady = false;
 
 function stamp() { return new Date().toLocaleTimeString("ru-RU", { hour12: false }); }
 function log(message = "") {
@@ -101,7 +105,7 @@ function setBusy(busy) {
   ui.selectPortBtn.disabled = busy;
   if (ui.saveSettings) ui.saveSettings.disabled = busy;
   syncEraseAllState();
-  ui.flashBtn.disabled = busy || !manifest || manifest.ready === false || !selectedBoard || !("serial" in navigator);
+  ui.flashBtn.disabled = busy || !diagnosticReady || !manifest || manifest.ready === false || !selectedBoard || !("serial" in navigator);
   ui.flashBtnText.textContent = busy ? "Прошивка…" : "Загрузить прошивку";
 }
 function portDescription(port) {
@@ -114,11 +118,123 @@ function setPortConnected(connected) {
   ui.portDot.classList.toggle("good", connected);
   if (ui.preview) ui.preview.dataset.connected = String(connected);
 }
+function flashSizeFromJedecId(id) {
+  const capacityCode = (id >>> 16) & 0xFF;
+  // JEDEC capacity is 2^N bytes. Ignore invalid and implausible values.
+  if (!id || id === 0xFFFFFF || capacityCode < 0x10 || capacityCode > 0x1B) return null;
+  return 2 ** capacityCode;
+}
+function showDeviceDiagnostic(state, info = {}) {
+  const chip = info.chip || "—";
+  if (ui.preview) ui.preview.dataset.diagnostic = state;
+  if (ui.previewChip) ui.previewChip.textContent = chip;
+  if (ui.previewChipName) ui.previewChipName.textContent = chip;
+  if (ui.previewFlash) ui.previewFlash.textContent = info.flash || "—";
+  if (ui.previewPsram) ui.previewPsram.textContent = state === "idle" ? "—" : ((manifest?.psramSize || "—") + "*");
+  if (ui.previewFlashId) ui.previewFlashId.textContent = "Flash ID: " + (info.flashId || "—");
+  if (ui.previewDiagnostic) ui.previewDiagnostic.textContent = info.message || "Выберите COM-порт для диагностики.";
+  if (ui.previewPsramNote) {
+    ui.previewPsramNote.textContent = state === "idle"
+      ? "* PSRAM определяется только с помощью работающей прошивки."
+      : "* PSRAM: " + (manifest?.psramSize || "не указана") + " по конфигурации; аппаратно не проверена.";
+  }
+}
+async function diagnoseSelectedPort(port) {
+  let transport = null;
+  let loader = null;
+  let enteredLoader = false;
+  let failure = null;
+  const found = {chip: "—", flash: "—", flashId: "—"};
+
+  diagnosticReady = false;
+  setBusy(true);
+  setStep(1);
+  showDeviceDiagnostic("checking", {message: "Диагностика ESP32-S3: определение чипа и Flash…"});
+  log("Аппаратная диагностика: подключение к ESP32-S3 на 115200 бод…");
+
+  try {
+    const {ESPLoader, Transport} = await loadFlashingTools();
+    if (selectedPort !== port) throw new Error("COM-порт изменился во время диагностики.");
+    transport = new Transport(port, true);
+    loader = new ESPLoader({
+      transport, baudrate: 115200, romBaudrate: 115200,
+      terminal: createTerminal(), debugLogging: false
+    });
+    const chipName = await loader.main();
+    enteredLoader = true;
+    found.chip = String(chipName || "—");
+    log("Диагностика: чип " + found.chip);
+
+    const expectedChip = String(manifest?.chip || "ESP32-S3").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const detectedChip = found.chip.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (!detectedChip.includes(expectedChip)) {
+      throw new Error("Подключён " + found.chip + ", а пакет предназначен для " + (manifest?.chip || "ESP32-S3") + ".");
+    }
+
+    const flashId = (await loader.readFlashId()) >>> 0;
+    found.flashId = "0x" + flashId.toString(16).toUpperCase().padStart(6, "0");
+    const flashBytes = flashSizeFromJedecId(flashId);
+    if (!flashBytes) throw new Error("Не удалось достоверно определить Flash по JEDEC ID " + found.flashId + ". Прошивка заблокирована.");
+    found.flash = (flashBytes / (1024 * 1024)) + " МБ";
+    log("Диагностика: Flash " + found.flash + ", JEDEC ID " + found.flashId);
+
+    const expectedMegabytes = Number.parseInt(manifest?.physicalFlashSize || "16MB", 10);
+    if (Number.isFinite(expectedMegabytes) && flashBytes < expectedMegabytes * 1024 * 1024) {
+      throw new Error("Flash " + found.flash + " меньше необходимых " + expectedMegabytes + " МБ. Прошивка заблокирована.");
+    }
+    if (Number.isFinite(expectedMegabytes) && flashBytes !== expectedMegabytes * 1024 * 1024) {
+      log("Внимание: Flash " + found.flash + " отличается от конфигурации " + expectedMegabytes + " МБ.");
+    }
+  } catch (error) {
+    failure = error;
+  } finally {
+    // Diagnosis enters the ROM loader. Return to the running firmware so
+    // WEBFLASH_BACKUP still works when the user starts flashing later.
+    if (enteredLoader) {
+      try {
+        await rebootEsp32S3(transport, loader);
+      } catch (resetError) {
+        if (!failure) failure = new Error("Диагностика завершена, но автоматический RESET не сработал: " + (resetError?.message || resetError));
+      }
+    }
+    if (transport) await safeDisconnect(transport);
+  }
+
+  if (selectedPort !== port && !failure) {
+    failure = new Error("Устройство переподключилось при RESET. Выберите COM-порт повторно.");
+  }
+  if (failure) {
+    diagnosticReady = false;
+    showDeviceDiagnostic("error", {...found, message: "Проверка не пройдена: " + (failure?.message || failure)});
+    setPortConnected(false);
+    ui.portText.textContent = "Проверка не пройдена";
+    showResult("error", failure?.message || String(failure));
+    log("ОШИБКА диагностики: " + (failure?.message || failure));
+    setStep(1);
+    setBusy(false);
+    throw failure;
+  }
+
+  diagnosticReady = true;
+  showDeviceDiagnostic("ok", {...found, message: "Чип и Flash проверены. Плата готова к прошивке."});
+  setPortConnected(true);
+  ui.portText.textContent = portDescription(port) + " • проверен";
+  log("Диагностика пройдена. PSRAM: " + (manifest?.psramSize || "не указана") + " по конфигурации, аппаратно не проверена.");
+  setStep(2);
+  clearResult();
+  setBusy(false);
+}
+
 async function choosePort() {
   if (!("serial" in navigator)) throw new Error("Этот браузер не поддерживает Web Serial.");
-  selectedPort = await navigator.serial.requestPort();
-  ui.portText.textContent = portDescription(selectedPort); setPortConnected(true); setStep(2);
-  log("COM-порт выбран пользователем."); return selectedPort;
+  const port = await navigator.serial.requestPort();
+  selectedPort = port;
+  diagnosticReady = false;
+  setPortConnected(false);
+  ui.portText.textContent = portDescription(port) + " • диагностика…";
+  log("COM-порт выбран пользователем.");
+  await diagnoseSelectedPort(port);
+  return port;
 }
 function validateManifest(m) {
   if (!m) throw new Error("Manifest платы пустой.");
@@ -150,7 +266,6 @@ async function loadManifest(board = selectedBoard) {
     ui.eraseAll.checked = Boolean(manifest.eraseAll);
     ui.cfgChip.textContent = manifest.chip || "-";
     ui.cfgFlash.textContent = `${manifest.physicalFlashSize || "-"} • KEEP`;
-    if (ui.previewFlash) ui.previewFlash.textContent = manifest.physicalFlashSize || "-";
     ui.cfgPsram.textContent = manifest.psramSize || "-";
     ui.cfgMode.textContent = `${(manifest.toolSpiMode || "QIO").toUpperCase()} • DoNotChgBin`;
     ui.cfgFreq.textContent = `${manifest.toolSpiSpeed || "80MHz"} • KEEP`;
@@ -333,7 +448,8 @@ async function safeDisconnect(t){if(!t)return;try{await t.disconnect();}catch(_)
 async function flash(){
   if(isBusy)return; clearResult(); setBusy(true); setProgress(0,"Подготовка прошивки…"); let transport=null;
   try{
-    if(!selectedPort)await choosePort(); setStep(2);
+    if(!selectedPort || !diagnosticReady) throw new Error("Сначала подключите плату и дождитесь успешной аппаратной диагностики.");
+    setStep(2);
     setProgress(1, "Подготовка инструментов прошивки…");
     const { ESPLoader, Transport } = await loadFlashingTools();
     const files=await loadFirmwareFiles(); const totalBytes=files.reduce((s,f)=>s+f.data.length,0); const writtenByFile=new Array(files.length).fill(0);
@@ -370,9 +486,11 @@ if ("serial" in navigator) navigator.serial.addEventListener("disconnect", event
   const port = event.port || event.target;
   if (!selectedPort || port !== selectedPort) return;
   selectedPort = null;
+  diagnosticReady = false;
+  showDeviceDiagnostic("idle", {message: "Устройство отключено. Выберите COM-порт для диагностики."});
   setPortConnected(false);
   ui.portText.textContent = "Порт отключён";
-  if (!isBusy) setStep(1);
+  if (!isBusy) { setStep(0); setBusy(false); }
   log("COM-порт отключён.");
 });
 (async function init(){
@@ -386,6 +504,7 @@ if ("serial" in navigator) navigator.serial.addEventListener("disconnect", event
   if (document.readyState === "complete") scheduleView();
   else addEventListener("load", scheduleView, { once: true });
   setStep(0);
+  showDeviceDiagnostic("idle");
   checkCompatibility();
   try{
     if (!selectedBoard) throw new Error("В config.js не настроена ESP32-S3 N16R8.");

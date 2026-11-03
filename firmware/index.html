@@ -7,7 +7,7 @@
   <meta name="description" content="Web Flasher Fiery Led Lamp - прошивка ESP32-S3 прямо из браузера." />
   <title>Прошивка Fiery Led Lamp</title>
   <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="./style.css?v=0be3589c21b2" />
+  <link rel="stylesheet" href="./style.css?v=hardware-diagnostics-20261103" />
   <link rel="stylesheet" href="./page-ui.css?v=81192735aac3">
   <link rel="stylesheet" href="./header.css?v=shared-6f455a05daf5" />
   <script src="./header.js?v=shared-6f455a05daf5" defer></script>
@@ -116,25 +116,31 @@
           <div id="compatBanner" class="banner hidden" role="alert"></div>
         </div>
 
-        <div class="flasher-preview" data-connected="false" aria-hidden="true">
+        <div class="flasher-preview" data-connected="false" data-diagnostic="idle" role="region" aria-label="Аппаратная диагностика платы ESP32-S3">
           <div class="preview-top">
             <div class="preview-orb"><span></span></div>
             <div>
               <small>FIERY LED LAMP</small>
-              <strong>Web Flasher</strong>
+              <strong>Аппаратная диагностика</strong>
             </div>
           </div>
           <div class="preview-board">
-            <span class="board-chip">ESP32-S3</span>
+            <span class="board-chip" id="previewChip">—</span>
             <div class="board-lines">
               <i></i><i></i><i></i><i></i><i></i>
             </div>
           </div>
           <div class="preview-meta">
-            <div><small>Режим</small><b>QIO</b></div>
-            <div><small>Flash</small><b id="previewFlash">-</b></div>
-            <div><small>Скорость</small><b>921600</b></div>
+            <div><small>Чип</small><b id="previewChipName">—</b></div>
+            <div><small>Flash</small><b id="previewFlash">—</b></div>
+            <div><small>PSRAM</small><b id="previewPsram">—</b></div>
           </div>
+          <div class="preview-diagnostic">
+            <span class="preview-diagnostic-dot" aria-hidden="true"></span>
+            <span id="previewDiagnostic" role="status" aria-live="polite">Выберите COM-порт для диагностики.</span>
+          </div>
+          <div class="preview-extra" id="previewFlashId">Flash ID: —</div>
+          <div class="preview-note" id="previewPsramNote">* PSRAM определяется только с помощью работающей прошивки.</div>
         </div>
       </div>
     </section>
@@ -294,6 +300,6 @@
   <button id="scrollToTopButton" class="scroll-to-top-button" type="button" aria-label="Наверх" title="Наверх">
     <span aria-hidden="true">↑</span>
   </button>
-  <script type="module" src="./app.js?v=1c7a1e520ce5"></script>
+  <script type="module" src="./app.js?v=hardware-diagnostics-20261103"></script>
 </body>
 </html>
