@@ -140,7 +140,7 @@
             <span id="previewDiagnostic" role="status" aria-live="polite">Выберите COM-порт для диагностики.</span>
           </div>
           <div class="preview-extra" id="previewFlashId">Flash ID: —</div>
-          <div class="preview-note" id="previewPsramNote">PSRAM определяется через работающую прошивку. На пустой или старой плате может быть недоступна.</div>
+          <div class="preview-note" id="previewPsramNote">Объём встроенной PSRAM определяется по eFuse ESP32-S3, независимо от прошивки.</div>
         </div>
       </div>
     </section>
@@ -300,6 +300,6 @@
   <button id="scrollToTopButton" class="scroll-to-top-button" type="button" aria-label="Наверх" title="Наверх">
     <span aria-hidden="true">↑</span>
   </button>
-  <script type="module" src="./app.js?v=board-chip-labels-20261103"></script>
+  <script type="module" src="./app.js?v=psram-efuse-20261103"></script>
 </body>
 </html>

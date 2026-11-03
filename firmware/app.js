@@ -143,62 +143,31 @@ function showDeviceDiagnostic(state, info = {}) {
   if (ui.previewFlashId) ui.previewFlashId.textContent = "Flash ID: " + (info.flashId || "—");
   if (ui.previewDiagnostic) ui.previewDiagnostic.textContent = info.message || "Выберите COM-порт для диагностики.";
   if (ui.previewPsramNote) ui.previewPsramNote.textContent = info.psramNote ||
-    "PSRAM определяется через работающую прошивку. На пустой или старой плате может быть недоступна.";
+    "Объём встроенной PSRAM определяется по eFuse ESP32-S3, независимо от прошивки.";
 }
 
-// Try reading actual, initialized PSRAM from running Fiery Led Lamp firmware.
-// The ROM flasher does not expose external OPI PSRAM capacity like JEDEC Flash.
-// A missing response must NEVER be treated as 8 MB, or as missing hardware.
-async function queryPsramFromFirmware(port) {
-  let reader = null;
-  let opened = false;
-  let timeoutId = null;
-  try {
-    await port.open({baudRate: 115200});
-    opened = true;
-    try { await port.setSignals({dataTerminalReady: false, requestToSend: false}); } catch (_) {}
-    await delay(350);
+// ESP32-S3 stores the size of its embedded PSRAM in eFuse, readable from
+// the ROM flasher without a running application or a USB protocol extension.
+// This reports package capacity, not whether the application initialized PSRAM.
+async function readEmbeddedPsram(loader) {
+  const code = typeof loader.chip?.getPsramCap === "function"
+    ? await loader.chip.getPsramCap(loader)
+    : ((await loader.readReg(0x60007000 + 0x44 + 0x10)) >>> 3) & 0x03;
 
-    const writer = port.writable.getWriter();
-    try {
-      await writer.write(new TextEncoder().encode("WEBFLASH_PSRAM\n"));
-    } finally {
-      writer.releaseLock();
-    }
-
-    reader = port.readable.getReader();
-    const decoder = new TextDecoder();
-    let received = "";
-    timeoutId = setTimeout(() => { reader?.cancel().catch(() => {}); }, 2200);
-    while (true) {
-      const {value, done} = await reader.read();
-      if (done) break;
-      if (!value) continue;
-      received += decoder.decode(value, {stream: true});
-      const match = received.match(/WEBFLASH_PSRAM:(\d+)\r?\n/);
-      if (match) {
-        const bytes = Number(match[1]);
-        if (Number.isSafeInteger(bytes) && bytes >= 0 && bytes <= 64 * 1024 * 1024) {
-          return {bytes};
-        }
-        return {bytes: null};
-      }
-      if (received.length > 4096) received = received.slice(-1024);
-    }
-  } catch (error) {
-    log("PSRAM: ответ прошивки недоступен (" + friendlyFlasherError(error) + ").");
-  } finally {
-    if (timeoutId) clearTimeout(timeoutId);
-    if (reader) {
-      try { await reader.cancel(); } catch (_) {}
-      try { reader.releaseLock(); } catch (_) {}
-    }
-    if (opened) {
-      try { await port.close(); } catch (_) {}
-    }
-    await delay(200);
-  }
-  return {bytes: null};
+  if (code === 1) return {
+    bytes: 8 * 1024 * 1024,
+    note: "PSRAM: встроенная 8 МБ по eFuse ESP32-S3. Работоспособность не проверяется."
+  };
+  if (code === 2) return {
+    bytes: 2 * 1024 * 1024,
+    note: "PSRAM: встроенная 2 МБ по eFuse ESP32-S3. Работоспособность не проверяется."
+  };
+  return {
+    bytes: null,
+    note: code === 0
+      ? "eFuse не указывает встроенную PSRAM. Внешняя PSRAM этим способом не определяется."
+      : "eFuse сообщает неизвестный тип PSRAM. Объём не определён."
+  };
 }
 
 async function diagnoseSelectedPort(port) {
@@ -211,27 +180,9 @@ async function diagnoseSelectedPort(port) {
   diagnosticReady = false;
   setBusy(true);
   setStep(1);
-  showDeviceDiagnostic("checking", {...found, message: "Диагностика ESP32-S3: проверка PSRAM, чипа и Flash…"});
-  log("Аппаратная диагностика: проверка PSRAM, чипа и Flash…");
+  showDeviceDiagnostic("checking", {...found, message: "Диагностика ESP32-S3: определение чипа, Flash и PSRAM…"});
+  log("Аппаратная диагностика: определение чипа, Flash и PSRAM без участия прошивки…");
 
-  // Query running application BEFORE switching the chip into ROM loader mode.
-  const ram = await queryPsramFromFirmware(port);
-  if (ram.bytes != null) {
-    found.psram = ram.bytes > 0 ? (ram.bytes / (1024 * 1024)) + " МБ" : "Не найдена";
-    found.psramNote = ram.bytes > 0
-      ? "PSRAM: объём получен от работающей прошивки."
-      : "PSRAM не инициализирована работающей прошивкой.";
-    log("Диагностика: PSRAM " + found.psram + " (ответ прошивки).");
-    const requiredPsram = Number.parseInt(manifest?.psramSize || "", 10);
-    if (ram.bytes > 0 && Number.isFinite(requiredPsram) && ram.bytes < requiredPsram * 1024 * 1024) {
-      log("Внимание: доступная PSRAM меньше указанной в конфигурации " + requiredPsram + " МБ.");
-    }
-  } else {
-    found.psram = "—";
-    found.psramNote = "PSRAM: не определена. На плате нужна прошивка с поддержкой диагностики по USB.";
-    log("PSRAM: не определена (плата в режиме загрузчика, прошивка старая или не отвечает).");
-  }
-  showDeviceDiagnostic("checking", {...found, message: "Проверка чипа и Flash…"});
   try {
     const {ESPLoader, Transport} = await loadFlashingTools();
     if (selectedPort !== port) throw new Error("COM-порт изменился во время диагностики.");
@@ -251,6 +202,28 @@ async function diagnoseSelectedPort(port) {
       throw new Error("Подключён " + found.chip + ", а пакет предназначен для " + (manifest?.chip || "ESP32-S3") + ".");
     }
 
+    // Direct ROM/eFuse inspection works even on blank boards and older firmware.
+    try {
+      const ram = await readEmbeddedPsram(loader);
+      if (ram.bytes != null) {
+        found.psram = (ram.bytes / (1024 * 1024)) + " МБ";
+        found.psramNote = ram.note;
+        log("Диагностика: встроенная PSRAM " + found.psram + " (eFuse).");
+        const expectedPsram = Number.parseInt(manifest?.psramSize || "", 10);
+        if (Number.isFinite(expectedPsram) && ram.bytes < expectedPsram * 1024 * 1024) {
+          log("Внимание: PSRAM меньше указанной в конфигурации (" + expectedPsram + " МБ).");
+        }
+      } else {
+        found.psram = "—";
+        found.psramNote = ram.note;
+        log("PSRAM: " + ram.note);
+      }
+    } catch (psramError) {
+      found.psram = "—";
+      found.psramNote = "Не удалось считать eFuse PSRAM. " + friendlyFlasherError(psramError);
+      log("PSRAM: " + found.psramNote);
+    }
+    showDeviceDiagnostic("checking", {...found, message: "Проверка Flash…"});
     const flashId = (await loader.readFlashId()) >>> 0;
     found.flashId = "0x" + flashId.toString(16).toUpperCase().padStart(6, "0");
     const flashBytes = flashSizeFromJedecId(flashId);
@@ -297,12 +270,12 @@ async function diagnoseSelectedPort(port) {
   }
 
   diagnosticReady = true;
-  showDeviceDiagnostic("ok", {...found, message: ram.bytes != null
-    ? "Чип, Flash и PSRAM проверены. Плата готова к прошивке."
+  showDeviceDiagnostic("ok", {...found, message: found.psram !== "—"
+    ? "Чип, Flash и PSRAM определены. Плата готова к прошивке."
     : "Чип и Flash проверены. PSRAM не определена. Плата готова к прошивке."});
   setPortConnected(true);
   ui.portText.textContent = portDescription(port) + " • проверен";
-  log("Диагностика завершена. PSRAM: " + (ram.bytes != null ? found.psram : "не определена") + ".");
+  log("Диагностика завершена. PSRAM: " + (found.psram !== "—" ? found.psram : "не определена") + ".");
   setStep(2);
   clearResult();
   setBusy(false);
