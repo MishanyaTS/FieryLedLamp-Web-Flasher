@@ -132,36 +132,53 @@
       <section id="add">
         <h2>1. Добавьте устройство в WQTT</h2>
         <p>Откройте WQTT → <strong>Устройства</strong> → добавьте новое устройство. Название делайте понятным: «Лампа», «Подсветка», «Цикл», «Звук».</p>
-        <div class="notice"><b>ID лампы</b><p>Вместо <code>&lt;ID&gt;</code> используйте значение <code>LedLamp_&lt;ID&gt;</code>, которое показывает Web-интерфейс Fiery Led Lamp в настройках MQTT.</p></div>
+        <div class="notice"><b>ID лампы</b><p>В примерах замените только <code>&lt;ID&gt;</code> на идентификатор своей лампы из настроек MQTT Fiery Led Lamp (например, <code>005C80B4</code>). Префикс <code>LedLamp_</code> уже указан в топиках. Если ваш базовый топик отличается от <code>Lamp</code>, замените и его.</p></div>
       </section>
 
       <section id="switches">
         <h2>2. Переключатели ВКЛ/ВЫКЛ</h2>
+        <p>Для правильного отображения состояния в WQTT укажите в полях команд <code>ON</code> и <code>OFF</code>, а в топике управления добавьте шаблон <code>&amp;&amp;ПРЕФИКС_%VALUE%</code>. Например, <code>P_%VALUE%</code> преобразуется в команды прошивки <code>P_ON</code> и <code>P_OFF</code>. Статусы из JSON при этом остаются <code>ON</code>/<code>OFF</code>.</p>
 
         <h3>Лампа</h3>
         <div class="mqtt-command-table">
-          <div class="mqtt-command-row"><code>Топик управления</code><span><code>Lamp/LedLamp_&lt;ID&gt;/cmnd</code></span></div>
+          <div class="mqtt-command-row"><code>Топик управления</code><span><code>Lamp/LedLamp_&lt;ID&gt;/cmnd&amp;&amp;P_%VALUE%</code></span></div>
+          <div class="mqtt-command-row"><code>Топик состояния</code><span><code>Lamp/LedLamp_&lt;ID&gt;/snd$.power</code></span></div>
+          <div class="mqtt-command-row"><code>Команда включить / выключить</code><span><code>ON</code> / <code>OFF</code></span></div>
+          <div class="mqtt-command-row"><code>Команда в прошивке</code><span><code>P_ON</code> / <code>P_OFF</code></span></div>
+        </div>
           <div class="mqtt-command-row"><code>Топик состояния</code><span><code>Lamp/LedLamp_&lt;ID&gt;/snd$.power</code></span></div>
           <div class="mqtt-command-row"><code>ВКЛ / ВЫКЛ</code><span><code>P_ON</code> / <code>P_OFF</code></span></div>
         </div>
 
         <h3>Подсветка</h3>
         <div class="mqtt-command-table">
-          <div class="mqtt-command-row"><code>Топик управления</code><span><code>Lamp/LedLamp_&lt;ID&gt;/cmnd</code></span></div>
+          <div class="mqtt-command-row"><code>Топик управления</code><span><code>Lamp/LedLamp_&lt;ID&gt;/cmnd&amp;&amp;LUMOS_%VALUE%</code></span></div>
+          <div class="mqtt-command-row"><code>Топик состояния</code><span><code>Lamp/LedLamp_&lt;ID&gt;/snd$.lumos</code></span></div>
+          <div class="mqtt-command-row"><code>Команда включить / выключить</code><span><code>ON</code> / <code>OFF</code></span></div>
+          <div class="mqtt-command-row"><code>Команда в прошивке</code><span><code>LUMOS_ON</code> / <code>LUMOS_OFF</code></span></div>
+        </div>
           <div class="mqtt-command-row"><code>Топик состояния</code><span><code>Lamp/LedLamp_&lt;ID&gt;/snd$.lumos</code></span></div>
           <div class="mqtt-command-row"><code>ВКЛ / ВЫКЛ</code><span><code>LUMOS_ON</code> / <code>LUMOS_OFF</code></span></div>
         </div>
 
         <h3>Цикл</h3>
         <div class="mqtt-command-table">
-          <div class="mqtt-command-row"><code>Топик управления</code><span><code>Lamp/LedLamp_&lt;ID&gt;/cmnd</code></span></div>
+          <div class="mqtt-command-row"><code>Топик управления</code><span><code>Lamp/LedLamp_&lt;ID&gt;/cmnd&amp;&amp;FAV_%VALUE%</code></span></div>
+          <div class="mqtt-command-row"><code>Топик состояния</code><span><code>Lamp/LedLamp_&lt;ID&gt;/snd$.cycle</code></span></div>
+          <div class="mqtt-command-row"><code>Команда включить / выключить</code><span><code>ON</code> / <code>OFF</code></span></div>
+          <div class="mqtt-command-row"><code>Команда в прошивке</code><span><code>FAV_ON</code> / <code>FAV_OFF</code></span></div>
+        </div>
           <div class="mqtt-command-row"><code>Топик состояния</code><span><code>Lamp/LedLamp_&lt;ID&gt;/snd$.cycle</code></span></div>
           <div class="mqtt-command-row"><code>ВКЛ / ВЫКЛ</code><span><code>FAV_ON</code> / <code>FAV_OFF</code></span></div>
         </div>
 
         <h3>Звук</h3>
         <div class="mqtt-command-table">
-          <div class="mqtt-command-row"><code>Топик управления</code><span><code>Lamp/LedLamp_&lt;ID&gt;/cmnd</code></span></div>
+          <div class="mqtt-command-row"><code>Топик управления</code><span><code>Lamp/LedLamp_&lt;ID&gt;/cmnd&amp;&amp;SO_%VALUE%</code></span></div>
+          <div class="mqtt-command-row"><code>Топик состояния</code><span><code>Lamp/LedLamp_&lt;ID&gt;/snd$.sound</code></span></div>
+          <div class="mqtt-command-row"><code>Команда включить / выключить</code><span><code>ON</code> / <code>OFF</code></span></div>
+          <div class="mqtt-command-row"><code>Команда в прошивке</code><span><code>SO_ON</code> / <code>SO_OFF</code></span></div>
+        </div>
           <div class="mqtt-command-row"><code>Топик состояния</code><span><code>Lamp/LedLamp_&lt;ID&gt;/snd$.sound</code></span></div>
           <div class="mqtt-command-row"><code>ВКЛ / ВЫКЛ</code><span><code>SO_ON</code> / <code>SO_OFF</code></span></div>
         </div>
@@ -169,14 +186,17 @@
 
       <section id="sliders">
         <h2>3. Ползунки</h2>
-        <p>Для ползунков команда прописывается прямо в топике управления через <code>&amp;&amp;</code>, а значение подставляется через <code>%VALUE%</code>.</p>
+        <p>Для ползунков команда прописывается прямо в топике управления через <code>&amp;&amp;</code>, а числовое значение подставляется через <code>%VALUE%</code>. У всех ползунков топик состояния указывает на соответствующее поле общего JSON <code>snd</code>.</p>
         <div class="mqtt-command-table">
           <div class="mqtt-command-row"><code>Яркость</code><span><b>Управление:</b> <code>Lamp/LedLamp_&lt;ID&gt;/cmnd&amp;&amp;BRI%VALUE%</code><br><b>Состояние:</b> <code>Lamp/LedLamp_&lt;ID&gt;/snd$.bri</code><br><b>Диапазон:</b> <code>1-100</code>, шаг <code>1</code></span></div>
           <div class="mqtt-command-row"><code>Скорость</code><span><b>Управление:</b> <code>Lamp/LedLamp_&lt;ID&gt;/cmnd&amp;&amp;SPD%VALUE%</code><br><b>Состояние:</b> <code>Lamp/LedLamp_&lt;ID&gt;/snd$.spd</code><br><b>Диапазон:</b> <code>1-255</code>, шаг <code>1</code></span></div>
           <div class="mqtt-command-row"><code>Масштаб</code><span><b>Управление:</b> <code>Lamp/LedLamp_&lt;ID&gt;/cmnd&amp;&amp;SCA%VALUE%</code><br><b>Состояние:</b> <code>Lamp/LedLamp_&lt;ID&gt;/snd$.sca</code><br><b>Диапазон:</b> <code>1-100</code>, шаг <code>1</code></span></div>
           <div class="mqtt-command-row"><code>Эффект</code><span><b>Управление:</b> <code>Lamp/LedLamp_&lt;ID&gt;/cmnd&amp;&amp;EFF%VALUE%</code><br><b>Состояние:</b> <code>Lamp/LedLamp_&lt;ID&gt;/snd$.effect</code><br><b>Диапазон:</b> <code>0-133</code>, шаг <code>1</code></span></div>
+          <div class="mqtt-command-row"><code>Яркость Подсветки (ЛЮМОС)</code><span><b>Управление:</b> <code>Lamp/LedLamp_&lt;ID&gt;/cmnd&amp;&amp;LUMOS_BRI%VALUE%</code><br><b>Состояние:</b> <code>Lamp/LedLamp_&lt;ID&gt;/snd$.lumos_brightness</code><br><b>Диапазон:</b> <code>1-100</code>, шаг <code>1</code></span></div>
+          <div class="mqtt-command-row"><code>Громкость</code><span><b>Управление:</b> <code>Lamp/LedLamp_&lt;ID&gt;/cmnd&amp;&amp;VOL%VALUE%</code><br><b>Состояние:</b> <code>Lamp/LedLamp_&lt;ID&gt;/snd$.vol</code><br><b>Диапазон:</b> <code>1-30</code>, шаг <code>1</code>. Статус <code>vol</code> доступен, если текущая прошивка публикует его при активном звуковом модуле.</span></div>
         </div>
-        <div class="notice"><b>Пример</b><p>При яркости <code>75</code> WQTT подставит значение в <code>BRI%VALUE%</code> и отправит команду <code>BRI75</code>.</p></div>
+        <div class="notice"><b>Пример</b><p>При яркости <code>75</code> WQTT подставит значение в <code>BRI%VALUE%</code> и отправит команду <code>BRI75</code>. Для яркости ЛЮМОС <code>50</code> будет отправлена команда <code>LUMOS_BRI50</code>.</p></div>
+        <div class="notice"><b>Проверка полей состояния</b><p>Если ползунок не показывает актуальное значение, откройте WebSocket-клиент WQTT и проверьте JSON, опубликованный лампой в <code>Lamp/LedLamp_&lt;ID&gt;/snd</code>. Поля <code>lumos_brightness</code> и <code>vol</code> должны присутствовать в сообщении, иначе настройка WQTT не сможет отобразить их.</p></div>
       </section>
 
       <section id="check">
