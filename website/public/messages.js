@@ -10,6 +10,8 @@
   const peerEl = document.getElementById("pmPeer");
   const form = document.getElementById("pmForm");
   const textEl = document.getElementById("pmText");
+  const rich = window.FieryPrivateEditor?.createEditor();
+  if (!rich) return;
   const sendEl = document.getElementById("pmSend");
   const unreadEl = document.getElementById("pmUnread");
   const counterEl = document.getElementById("pmCounter");
@@ -115,7 +117,9 @@
     data.messages.forEach(msg => {
       const mine = Number(msg.senderId) === meId;
       const bubble = node("article", "pm-bubble" + (mine ? " is-mine" : ""));
-      bubble.appendChild(node("div", "pm-bubble-text", msg.body));
+      const body = node("div", "pm-bubble-text");
+      body.innerHTML = window.FieryPrivateEditor.renderMarkup(msg.body);
+      bubble.appendChild(body);
       const meta = node("small", "pm-bubble-meta", shortDate(msg.createdAt) + (mine && msg.read ? " · прочитано" : ""));
       bubble.appendChild(meta);
       messagesEl.appendChild(bubble);
@@ -173,7 +177,7 @@
           ++searching;
           resultsEl.replaceChildren();
           searchEl.value = "";
-          openThread({ userId: user.id }).then(() => textEl.focus());
+          openThread({ userId: user.id }).then(() => rich.focus());
         });
         resultsEl.appendChild(item);
       });
@@ -197,24 +201,27 @@
     } catch (error) { status(error.message, true); }
   });
   document.getElementById("pmBack").addEventListener("click", () => root.classList.remove("has-thread"));
-  textEl.addEventListener("input", () => {
-    counterEl.textContent = textEl.value.length + " / 3000";
+  rich.onChange(value => {
+    counterEl.textContent = value.length + " / 3000";
   });
 
   form.addEventListener("submit", async event => {
     event.preventDefault();
-    if (!current || busy || !textEl.value.trim()) return;
+    const body = rich.getValue();
+    if (!current || busy || !body.trim()) return;
+    if (body.length > 3000) {
+      status("Сообщение не должно превышать 3000 символов с учётом оформления.", true);
+      return;
+    }
     busy = true;
     sendEl.disabled = true;
     status("");
-    const body = textEl.value.trim();
     try {
       const data = await request("pm-send", {
         method: "POST",
         data: current.threadId ? { threadId: current.threadId, body } : { userId: current.userId, body },
       });
-      textEl.value = "";
-      counterEl.textContent = "0 / 3000";
+      rich.clear();
       await openThread({ threadId: data.threadId }, true);
       await loadInbox();
     } catch (error) {
