@@ -252,8 +252,6 @@
       if (who && /^\d+$/.test(who)) {
         const uid = Number(who);
         if (uid > 0 && Number.isSafeInteger(uid)) {
-          const data = await request("pm-thread", {}, { user: String(uid) });
-          meId = Number(data.meId || 0);
           await openThread({ userId: uid });
         }
       }
