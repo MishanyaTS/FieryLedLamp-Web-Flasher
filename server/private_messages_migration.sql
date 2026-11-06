@@ -28,3 +28,18 @@ CREATE TABLE IF NOT EXISTS private_messages (
   CONSTRAINT fk_private_thread FOREIGN KEY (thread_id) REFERENCES private_message_threads(id) ON DELETE CASCADE,
   CONSTRAINT fk_private_sender FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS private_message_attachments (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  message_id BIGINT UNSIGNED NOT NULL,
+  user_id BIGINT UNSIGNED NOT NULL,
+  original_name VARCHAR(255) NOT NULL,
+  stored_name VARCHAR(100) NOT NULL,
+  mime_type VARCHAR(100) NOT NULL,
+  file_size INT UNSIGNED NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_private_attach_message (message_id),
+  CONSTRAINT fk_private_attach_message FOREIGN KEY (message_id) REFERENCES private_messages(id) ON DELETE CASCADE,
+  CONSTRAINT fk_private_attach_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
