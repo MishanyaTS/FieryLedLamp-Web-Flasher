@@ -53,3 +53,35 @@
  .pm-sidebar,.pm-conversation{border-radius:14px}
 }
 @media(min-width:781px){.pm-back{display:none!important}}
+
+/* Rich message editor: same controls as the forum, compact enough for conversations. */
+.pm-compose .pm-editor{background:#0b1017;border-radius:12px;overflow:visible}
+.pm-compose .forum-editor-toolbar{gap:5px;padding:9px;flex-wrap:wrap}
+.pm-compose .forum-tool,.pm-compose .forum-tool-select,.pm-compose .forum-color-tool{min-height:33px}
+.pm-compose .pm-rich-editor{min-height:112px;max-height:245px;overflow-y:auto;padding:13px 14px;outline:none;color:#f3ede5;font-size:14px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere}
+.pm-compose .pm-rich-editor:empty:before{content:attr(data-placeholder);color:#798594;pointer-events:none}
+.pm-compose .pm-rich-editor:focus{box-shadow:inset 0 0 0 1px rgba(255,152,64,.45)}
+.pm-compose .forum-tool.active{border-color:#ff9f4f;color:#ffe0bb;background:rgba(255,132,41,.18)}
+.pm-compose .forum-emoji-panel{top:47px}
+.pm-compose .pm-preview{margin-top:6px}
+.pm-compose .pm-preview .forum-message-preview-body{font-size:14px;color:#eee;overflow-wrap:anywhere}
+.pm-compose .pm-compose-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.pm-compose .pm-compose-actions button{min-width:120px}
+.pm-bubble .pm-bubble-text{white-space:normal;line-height:1.6;font-size:14px}
+.pm-bubble .pm-bubble-text .forum-quote{margin:8px 0;padding:8px 11px;border-left-color:#ff9040}
+.pm-bubble .pm-bubble-text .forum-spoiler{margin:7px 0}
+.pm-bubble .pm-bubble-text a{color:#ffbb86;text-decoration:underline;text-underline-offset:2px}
+.pm-remote-image{display:inline-block;margin:4px 0}
+@media(max-width:780px){
+ .pm-compose .forum-editor-toolbar{gap:4px;padding:7px}
+ .pm-compose .forum-tool-select{max-width:110px}
+ .pm-compose .forum-emoji-panel{grid-template-columns:repeat(5,36px);max-width:228px}
+ .pm-compose .pm-compose-actions{width:100%;justify-content:stretch}
+ .pm-compose .pm-compose-actions .btn{flex:1;min-width:0}
+ .pm-compose-foot{flex-wrap:wrap}
+}
+@media(max-width:430px){
+ .pm-compose{padding:12px}
+ .pm-compose .forum-tool{font-size:11px;padding:0 7px}
+ .pm-compose .forum-wide-tool{padding:0 7px}
+}
