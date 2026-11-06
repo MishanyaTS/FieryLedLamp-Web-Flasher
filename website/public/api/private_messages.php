@@ -73,7 +73,7 @@ function pm_total_unread(PDO $pdo, int $viewerId): int {
     return (int)$stmt->fetchColumn();
 }
 
-function private_messages_handle(PDO $pdo, string $action): never {
+function private_messages_handle(PDO $pdo, string $action, array $config): never {
     $me = require_user($pdo);
     $meId = (int)$me['id'];
     if (in_array($action, ['pm-send', 'pm-read'], true)) {
@@ -201,9 +201,10 @@ function private_messages_handle(PDO $pdo, string $action): never {
         if (!$recipientId || $recipientId === $meId) {
             json_response(['ok' => false, 'message' => 'Выберите получателя.'], 422);
         }
-        $recipient = $pdo->prepare('SELECT id FROM users WHERE id=? LIMIT 1');
+        $recipient = $pdo->prepare('SELECT id,email,email_verified_at,notify_messages FROM users WHERE id=? LIMIT 1');
         $recipient->execute([$recipientId]);
-        if (!$recipient->fetchColumn()) {
+        $recipientData = $recipient->fetch();
+        if (!$recipientData) {
             json_response(['ok' => false, 'message' => 'Получатель не найден.'], 404);
         }
 
@@ -223,6 +224,10 @@ function private_messages_handle(PDO $pdo, string $action): never {
                 VALUES (?,?) ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)');
             $stmt->execute([$low, $high]);
             $threadId = (int)$pdo->lastInsertId();
+            $stmtUnread = $pdo->prepare('SELECT COUNT(*) FROM private_messages
+                WHERE thread_id=? AND sender_id<>? AND read_at IS NULL');
+            $stmtUnread->execute([$threadId, $meId]);
+            $alreadyUnread = (int)$stmtUnread->fetchColumn() > 0;
             $stmt = $pdo->prepare('INSERT INTO private_messages(thread_id,sender_id,body) VALUES(?,?,?)');
             $stmt->execute([$threadId, $meId, $body]);
             $messageId = (int)$pdo->lastInsertId();
@@ -231,6 +236,21 @@ function private_messages_handle(PDO $pdo, string $action): never {
         } catch (Throwable $e) {
             if ($pdo->inTransaction()) $pdo->rollBack();
             json_response(['ok' => false, 'message' => 'Не удалось отправить сообщение.'], 503);
+        }
+        // Notify once for a newly unread conversation, rather than emailing on
+        // every subsequent message. Email contains no private message text.
+        if (!$alreadyUnread && !empty($recipientData['notify_messages']) && !empty($recipientData['email_verified_at'])) {
+            try {
+                $link = app_url($config) . '/messages.html?user=' . $meId;
+                $senderName = htmlspecialchars((string)$me['name'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $notice = '<p>Вам пришло новое личное сообщение от пользователя <b>' . $senderName . '</b> на сайте Fiery Led Lamp.</p>'
+                    . '<p>Чтобы прочитать сообщение, войдите в свой аккаунт на сайте.</p>';
+                send_email($config, (string)$recipientData['email'],
+                    'Новое личное сообщение - Fiery Led Lamp',
+                    email_layout('Новое личное сообщение', $notice, 'Открыть переписку', $link));
+            } catch (Throwable $e) {
+                // Successful message delivery must not depend on email service.
+            }
         }
         json_response(['ok' => true, 'threadId' => $threadId, 'messageId' => $messageId]);
     }
