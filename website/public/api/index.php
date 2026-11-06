@@ -1715,7 +1715,7 @@ function admin_notify(PDO $pdo, array $config): never {
     $version = trim((string)($d['version'] ?? ''));
     $title = trim((string)($d['title'] ?? ''));
     $summary = trim((string)($d['summary'] ?? ''));
-    $url = trim((string)($d['url'] ?? ''));
+    $url = app_url($config) . '/versions.html';
     $dry = !empty($d['dryRun']);
 
     if ($version === '' || text_length($version) > 80) {
@@ -1724,10 +1724,6 @@ function admin_notify(PDO $pdo, array $config): never {
     if ($title === '') {
         $title = 'Fiery Led Lamp - доступно обновление ' . $version;
     }
-    if (!filter_var($url, FILTER_VALIDATE_URL) || stripos($url, 'https://') !== 0) {
-        json_response(['ok' => false, 'message' => 'Укажите корректную HTTPS-ссылку.'], 422);
-    }
-
     $users = $pdo->query('SELECT id,name,email FROM users WHERE email_verified_at IS NOT NULL AND notify_updates=1 ORDER BY id')->fetchAll();
 
     if ($dry) {
@@ -1749,7 +1745,7 @@ function admin_notify(PDO $pdo, array $config): never {
         $unsub = app_url($config) . '/api/index.php?action=unsubscribe&id=' . (int)$u['id'] . '&token=' . urlencode(unsubscribe_token($config, (int)$u['id'], (string)$u['email']));
         $body = '<p style="color:#aeb7c4;line-height:1.6">Здравствуйте, ' . htmlspecialchars((string)$u['name'], ENT_QUOTES) . '!</p><p style="color:#aeb7c4;line-height:1.6">' . nl2br(htmlspecialchars($summary !== '' ? $summary : 'Доступна новая версия Fiery Led Lamp.', ENT_QUOTES)) . '</p><p style="color:#7e8998;font-size:12px">Не хотите получать письма? <a style="color:#ff9d69" href="' . htmlspecialchars($unsub, ENT_QUOTES) . '">Отключить уведомления</a>.</p>';
 
-        $ok = send_email($config, (string)$u['email'], $title, email_layout($version, $body, 'Открыть обновление', $url));
+        $ok = send_email($config, (string)$u['email'], $title, email_layout($version, $body, 'История версий', $url));
 
         $log = $pdo->prepare('INSERT INTO notification_log(user_id,version,status,error_text,sent_at) VALUES(?,?,?,?,?) ON DUPLICATE KEY UPDATE status=VALUES(status),error_text=VALUES(error_text),sent_at=VALUES(sent_at)');
         $log->execute([
