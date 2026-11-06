@@ -124,6 +124,14 @@
     renderPendingFiles();
   });
 
+  function readablePreview(value) {
+    return String(value || "")
+      .replace(/\[img\][\s\S]*?\[\/img\]/gi, "[изображение]")
+      .replace(/\[url=[^\]]+\]([\s\S]*?)\[\/url\]/gi, "$1")
+      .replace(/\[\/?(?:b|i|u|s|quote|font|size|color|spoiler)(?:=[^\]]*)?\]/gi, "")
+      .replace(/\s+/g, " ").trim();
+  }
+
   function renderInbox() {
     threadsEl.replaceChildren();
     if (!inbox.length) {
@@ -137,7 +145,7 @@
       button.appendChild(avatar(thread.other));
       const copy = node("span", "pm-thread-body");
       copy.appendChild(node("b", "", thread.other.name));
-      const last = thread.lastBody || "Новая переписка";
+      const last = readablePreview(thread.lastBody) || "Новая переписка";
       copy.appendChild(node("small", "", (thread.lastSenderId === meId ? "Вы: " : "") + last));
       button.appendChild(copy);
       if (thread.unread > 0) button.appendChild(node("span", "pm-thread-badge", thread.unread));
