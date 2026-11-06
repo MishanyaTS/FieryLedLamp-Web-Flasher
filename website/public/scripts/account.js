@@ -208,6 +208,7 @@
         document.querySelector("#accountCreated").textContent = data.user.createdAt || "-";
         document.querySelector("#notifyUpdates").checked = Boolean(data.user.notifyUpdates);
         document.querySelector("#notifyForum").checked = Boolean(data.user.notifyForum);
+        document.querySelector("#notifyMessages").checked = Boolean(data.user.notifyMessages);
         setAvatar(data.user.avatarUrl, data.user.name);
 
         const badge = document.querySelector("#verifyBadge");
@@ -272,7 +273,8 @@
           headers: { "x-csrf-token": csrf },
           body: JSON.stringify({
             notifyUpdates: document.querySelector("#notifyUpdates").checked,
-            notifyForum: document.querySelector("#notifyForum").checked
+            notifyForum: document.querySelector("#notifyForum").checked,
+            notifyMessages: document.querySelector("#notifyMessages").checked
           })
         }));
         statusBox("#preferencesStatus", "Настройки уведомлений сохранены.", "success");
