@@ -130,6 +130,15 @@ switch ($action) {
         require_method('GET');
         avatar_response($pdo);
         break;
+    case 'pm-users':
+    case 'pm-inbox':
+    case 'pm-thread':
+    case 'pm-unread':
+    case 'pm-read':
+    case 'pm-send':
+        require_once __DIR__ . '/private_messages.php';
+        private_messages_handle($pdo, $action);
+        break;
     case 'discussion-list':
         require_method('GET');
         discussion_list($pdo);
