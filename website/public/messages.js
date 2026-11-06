@@ -238,6 +238,7 @@
       }
       csrf = session.csrf;
       const self = await request("pm-inbox");
+      meId = Number(self.meId || 0);
       inbox = self.threads || [];
       const count = Number(self.unread || 0);
       unreadEl.textContent = "Новых: " + count;
@@ -255,12 +256,6 @@
           meId = Number(data.meId || 0);
           await openThread({ userId: uid });
         }
-      }
-      if (!meId) {
-        // A current-user id is needed for the direction/read indicator.
-        // The account API supplies it via a message-specific authenticated endpoint.
-        const identity = await request("pm-unread");
-        meId = Number(identity.meId || 0);
       }
     } catch (error) {
       access.textContent = error.message || "Не удалось загрузить сообщения.";
