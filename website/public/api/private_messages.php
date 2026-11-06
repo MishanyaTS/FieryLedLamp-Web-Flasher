@@ -11,7 +11,8 @@ function pm_ensure_schema(PDO $pdo): void {
     if (is_file($marker)) { $ready = true; return; }
 
     try {
-        $pdo->exec("CREATE TABLE IF NOT EXISTS private_message_threads (
+        if (!$pdo->query("SHOW TABLES LIKE 'private_message_threads'")->fetchColumn()) {
+            $pdo->exec("CREATE TABLE IF NOT EXISTS private_message_threads (
             id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
             user_low_id BIGINT UNSIGNED NOT NULL,
             user_high_id BIGINT UNSIGNED NOT NULL,
@@ -24,7 +25,9 @@ function pm_ensure_schema(PDO $pdo): void {
             CONSTRAINT fk_private_low FOREIGN KEY (user_low_id) REFERENCES users(id) ON DELETE CASCADE,
             CONSTRAINT fk_private_high FOREIGN KEY (user_high_id) REFERENCES users(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
-        $pdo->exec("CREATE TABLE IF NOT EXISTS private_messages (
+        }
+        if (!$pdo->query("SHOW TABLES LIKE 'private_messages'")->fetchColumn()) {
+            $pdo->exec("CREATE TABLE IF NOT EXISTS private_messages (
             id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
             thread_id BIGINT UNSIGNED NOT NULL,
             sender_id BIGINT UNSIGNED NOT NULL,
@@ -38,6 +41,7 @@ function pm_ensure_schema(PDO $pdo): void {
             CONSTRAINT fk_private_thread FOREIGN KEY (thread_id) REFERENCES private_message_threads(id) ON DELETE CASCADE,
             CONSTRAINT fk_private_sender FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        }
     } catch (Throwable $e) {
         json_response(['ok' => false, 'message' => 'Хранилище личных сообщений пока не настроено.'], 503);
     }
