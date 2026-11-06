@@ -90,7 +90,7 @@
 <!-- SHARED_HEADER:END --><main class="au-page au-account">
   <section class="ui-hero"><div class="au-wrap"><header class="au-heading">
       <div><span class="au-eyebrow">ЛИЧНЫЙ КАБИНЕТ</span><h1>Настройки аккаунта</h1><p>Профиль, уведомления и безопасность.</p></div>
-      <a class="au-text-link" href="/forum.html">Перейти на форум <span aria-hidden="true">↗</span></a>
+      <div class="au-hero-links"><a class="au-text-link" href="/messages.html">Личные сообщения <span aria-hidden="true">↗</span></a> <a class="au-text-link" href="/forum.html">Перейти на форум <span aria-hidden="true">↗</span></a></div>
     </header></div></section>
   <div class="au-wrap ui-content-body">
     <div id="accountLoading" class="au-loading" role="status">Загрузка профиля…</div>
@@ -106,6 +106,7 @@
           <button id="logoutButton" class="btn ghost au-logout" type="button">Выйти</button>
         </div>
         <div class="au-summary-tools">
+          <a class="btn ghost" href="/messages.html">Мои сообщения <span id="pmUnreadBadge" hidden></span></a>
           <details class="au-avatar-editor">
             <summary>Изменить аватар <span aria-hidden="true">⌄</span></summary>
             <div class="au-avatar-controls">
@@ -171,4 +172,4 @@
   </div>
   <div class="shell footer-bottom">Fiery Led Lamp · 2026</div>
 </footer><script src="/site.js?v=edbe3e5a7bf3" defer></script>
-<script src="/scripts/account.js?v=921f092a4411" defer></script></body></html>
+<script src="/scripts/account.js?v=921f092a4411" defer></script><script src="/messages-badge.js?v=1" defer></script></body></html>
