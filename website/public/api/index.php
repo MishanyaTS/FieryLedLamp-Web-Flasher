@@ -281,12 +281,13 @@ function schema_ready_file(string $schema): string {
 function ensure_account_settings_schema(PDO $pdo): void {
     static $ready = false;
     if ($ready) return;
-    $marker = schema_ready_file('account-settings-v1');
+    $marker = schema_ready_file('account-settings-v2');
     if (is_file($marker)) { $ready = true; return; }
     $complete = true;
 
     $columns = [
         'notify_forum' => "ALTER TABLE users ADD COLUMN notify_forum TINYINT(1) NOT NULL DEFAULT 0 AFTER notify_updates",
+        'notify_messages' => "ALTER TABLE users ADD COLUMN notify_messages TINYINT(1) NOT NULL DEFAULT 0 AFTER notify_forum",
         'avatar_file' => "ALTER TABLE users ADD COLUMN avatar_file VARCHAR(120) NULL AFTER notify_forum",
         'avatar_mime' => "ALTER TABLE users ADD COLUMN avatar_mime VARCHAR(100) NULL AFTER avatar_file",
     ];
@@ -318,7 +319,7 @@ function avatar_url(array $user): ?string {
 }
 
 function user_by_id(PDO $pdo, int $id): ?array {
-    $stmt = $pdo->prepare('SELECT id,name,email,email_verified_at,notify_updates,notify_forum,avatar_file,avatar_mime,is_admin,created_at FROM users WHERE id=? LIMIT 1');
+    $stmt = $pdo->prepare('SELECT id,name,email,email_verified_at,notify_updates,notify_forum,notify_messages,avatar_file,avatar_mime,is_admin,created_at FROM users WHERE id=? LIMIT 1');
     $stmt->execute([$id]);
     $row = $stmt->fetch();
     return $row ?: null;
@@ -955,6 +956,7 @@ function current_user_response(PDO $pdo): never {
             'verified' => !empty($u['email_verified_at']),
             'notifyUpdates' => (bool)$u['notify_updates'],
             'notifyForum' => (bool)$u['notify_forum'],
+            'notifyMessages' => (bool)$u['notify_messages'],
             'avatarUrl' => avatar_url($u),
             'isAdmin' => (bool)$u['is_admin'],
             'createdAt' => date('d.m.Y', strtotime((string)$u['created_at'])),
@@ -1447,8 +1449,11 @@ function update_preferences(PDO $pdo): never {
     $d = input_json();
     $notifyUpdates = !empty($d['notifyUpdates']) ? 1 : 0;
     $notifyForum = !empty($d['notifyForum']) ? 1 : 0;
-    $pdo->prepare('UPDATE users SET notify_updates=?,notify_forum=?,updated_at=NOW() WHERE id=?')
-        ->execute([$notifyUpdates, $notifyForum, (int)$u['id']]);
+    $notifyMessages = array_key_exists('notifyMessages', $d)
+        ? (!empty($d['notifyMessages']) ? 1 : 0)
+        : (int)$u['notify_messages'];
+    $pdo->prepare('UPDATE users SET notify_updates=?,notify_forum=?,notify_messages=?,updated_at=NOW() WHERE id=?')
+        ->execute([$notifyUpdates, $notifyForum, $notifyMessages, (int)$u['id']]);
     json_response(['ok' => true]);
 }
 
