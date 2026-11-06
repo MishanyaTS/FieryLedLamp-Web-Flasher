@@ -130,6 +130,7 @@ switch ($action) {
         require_method('GET');
         avatar_response($pdo);
         break;
+    case 'pm-file':
     case 'pm-users':
     case 'pm-inbox':
     case 'pm-thread':
