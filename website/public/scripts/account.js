@@ -443,7 +443,6 @@
             version: adminForm.version.value.trim(),
             title: adminForm.title.value.trim(),
             summary: adminForm.summary.value.trim(),
-            url: adminForm.url.value.trim(),
             dryRun
           })
         }));
