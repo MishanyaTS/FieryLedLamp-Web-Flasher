@@ -120,7 +120,7 @@ function private_messages_handle(PDO $pdo, string $action): never {
                 'unread' => (int)$row['unread_count'],
             ];
         }
-        json_response(['ok' => true, 'threads' => $threads, 'unread' => pm_total_unread($pdo, $meId)]);
+        json_response(['ok' => true, 'meId' => $meId, 'threads' => $threads, 'unread' => pm_total_unread($pdo, $meId)]);
     }
 
     if ($action === 'pm-thread') {
