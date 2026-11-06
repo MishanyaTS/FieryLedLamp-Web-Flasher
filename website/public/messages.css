@@ -85,3 +85,15 @@
  .pm-compose .forum-tool{font-size:11px;padding:0 7px}
  .pm-compose .forum-wide-tool{padding:0 7px}
 }
+
+
+.pm-attachment-editor{display:flex;align-items:center;flex-wrap:wrap;gap:10px;color:#bfc7d4}
+.pm-attachment-editor .forum-attach-button{min-height:36px}
+.pm-file-preview{display:flex;flex-wrap:wrap;gap:7px}
+.pm-pending-file{display:inline-flex;align-items:center;gap:9px;min-width:0;max-width:100%;border:1px solid #354356;border-radius:9px;background:#1a2430;padding:5px 8px;color:#d6dee9;font-size:12px}
+.pm-pending-file span{overflow:hidden;max-width:240px;text-overflow:ellipsis;white-space:nowrap}
+.pm-pending-file button{cursor:pointer;background:transparent;border:0;color:#ffaf7a;font-size:20px;line-height:1}
+.pm-attachments{display:flex;flex-direction:column;gap:5px;margin-top:9px;border-top:1px solid rgba(255,255,255,.1);padding-top:7px}
+.pm-attachments .pm-attachment{font-size:12px;overflow-wrap:anywhere;text-decoration:none;color:#ffbf86}
+.pm-attachments .pm-attachment:hover{text-decoration:underline}
+@media(max-width:480px){.pm-pending-file span{max-width:180px}.pm-attachment-editor small{line-height:1.45}}
