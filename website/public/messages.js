@@ -104,8 +104,9 @@
     renderInbox();
   }
 
-  function renderMessages(data) {
-    const nearBottom = messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight < 80;
+  function renderMessages(data, forceScroll = false) {
+    const previousTop = messagesEl.scrollTop;
+    const nearBottom = messagesEl.scrollHeight - previousTop - messagesEl.clientHeight < 80;
     messagesEl.replaceChildren();
     if (!data.messages || !data.messages.length) {
       messagesEl.appendChild(node("p", "pm-muted", "Сообщений пока нет. Напишите первым."));
@@ -119,7 +120,8 @@
       bubble.appendChild(meta);
       messagesEl.appendChild(bubble);
     });
-    if (nearBottom || opening > 0) messagesEl.scrollTop = messagesEl.scrollHeight;
+    if (forceScroll || nearBottom) messagesEl.scrollTop = messagesEl.scrollHeight;
+    else messagesEl.scrollTop = previousTop;
   }
 
   async function openThread(target, quiet = false) {
@@ -137,10 +139,10 @@
       document.getElementById("pmPrivacy").textContent = "Личная переписка · только два участника";
       form.hidden = false;
       root.classList.add("has-thread");
-      renderMessages(data);
+      renderMessages(data, !quiet);
       renderInbox();
       const unread = (data.messages || []).some(m => Number(m.senderId) !== meId && !m.read);
-      if (unread && data.threadId) {
+      if (data.threadId && (unread || !quiet)) {
         await request("pm-read", { method: "POST", data: { threadId: data.threadId } });
         await loadInbox();
       }
