@@ -41,6 +41,7 @@
   if (!posts) return;
 
   let csrf = "";
+  let viewerId = 0;
   let currentPage = Math.max(1, Number(new URLSearchParams(location.search).get("page")) || 1);
   let replyToId = 0;
   let editingId = 0;
@@ -610,6 +611,13 @@
       reply.addEventListener("click", () => startReply(item, false));
 
       actions.append(like, reply);
+      if (Number(item.userId) !== viewerId) {
+        const pm = document.createElement("a");
+        pm.className = "forum-action";
+        pm.href = "/messages.html?user=" + encodeURIComponent(String(item.userId));
+        pm.textContent = "✉ Личное сообщение";
+        actions.appendChild(pm);
+      }
 
       if (item.canEdit) {
         const edit = actionButton("✎ Изменить");
@@ -701,6 +709,7 @@
       const data = await response.json();
       if (!response.ok || !data.ok) throw new Error(data.message || "Не удалось загрузить сообщения.");
 
+      viewerId = Number(data.viewer?.id || 0);
       posts.replaceChildren();
 
       const pagination = data.pagination || { page: 1, pages: 1, total: 0, pageSize: 20 };
