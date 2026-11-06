@@ -6,6 +6,7 @@ CREATE TABLE users (
   email_verified_at DATETIME NULL,
   notify_updates TINYINT(1) NOT NULL DEFAULT 0,
   notify_forum TINYINT(1) NOT NULL DEFAULT 0,
+  notify_messages TINYINT(1) NOT NULL DEFAULT 0,
   avatar_file VARCHAR(120) NULL,
   avatar_mime VARCHAR(100) NULL,
   is_admin TINYINT(1) NOT NULL DEFAULT 0,
