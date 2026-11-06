@@ -354,7 +354,7 @@ function private_messages_handle(PDO $pdo, string $action, array $config): never
             $stmt->execute([$low, $high]);
             $threadId = (int)$pdo->lastInsertId();
             $stmtUnread = $pdo->prepare('SELECT COUNT(*) FROM private_messages
-                WHERE thread_id=? AND sender_id<>? AND read_at IS NULL');
+                WHERE thread_id=? AND sender_id=? AND read_at IS NULL');
             $stmtUnread->execute([$threadId, $meId]);
             $alreadyUnread = (int)$stmtUnread->fetchColumn() > 0;
             $stmt = $pdo->prepare('INSERT INTO private_messages(thread_id,sender_id,body) VALUES(?,?,?)');
