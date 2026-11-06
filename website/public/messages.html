@@ -161,6 +161,14 @@
             </div>
             <div id="pmText" class="forum-rich-editor pm-rich-editor" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Текст личного сообщения" data-placeholder="Напишите личное сообщение…"></div>
           </div>
+          <div class="forum-attachment-editor pm-attachment-editor">
+            <label class="forum-attach-button">
+              <input id="pmFiles" type="file" multiple accept=".jpg,.jpeg,.png,.webp,.gif,.pdf,.txt,.zip,image/jpeg,image/png,image/webp,image/gif,application/pdf,text/plain,application/zip">
+              <span>📎 Прикрепить файлы</span>
+            </label>
+            <small>До 5 файлов: JPG, PNG, WEBP, GIF, PDF, TXT или ZIP. До 10 МБ каждый.</small>
+          </div>
+          <div id="pmFilePreview" class="forum-files-preview pm-file-preview"></div>
           <div id="pmPreview" class="forum-message-preview pm-preview" hidden>
             <div class="forum-message-preview-head">Предпросмотр личного сообщения</div>
             <div id="pmPreviewBody" class="forum-post-body forum-message-preview-body"></div>
@@ -182,4 +190,4 @@
   <div class="shell footer-bottom">Fiery Led Lamp · 2026</div>
 </footer><script src="/site.js?v=edbe3e5a7bf3" defer></script>
 <script src="/messages-editor.js?v=1" defer></script>
-<script src="/messages.js?v=3" defer></script></body></html>
+<script src="/messages.js?v=4" defer></script></body></html>
