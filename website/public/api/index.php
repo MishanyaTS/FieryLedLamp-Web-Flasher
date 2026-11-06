@@ -137,7 +137,7 @@ switch ($action) {
     case 'pm-read':
     case 'pm-send':
         require_once __DIR__ . '/private_messages.php';
-        private_messages_handle($pdo, $action);
+        private_messages_handle($pdo, $action, $config);
         break;
     case 'discussion-list':
         require_method('GET');
