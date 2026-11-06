@@ -2,7 +2,7 @@
   <script src="/header.js?v=shared-6f455a05daf5" defer></script>
   
   <link rel="stylesheet" href="/page-ui.css?v=81192735aac3">
-<link rel="stylesheet" href="/messages.css?v=1">
+<link rel="stylesheet" href="/messages.css?v=2">
 </head><body><!-- SHARED_HEADER:START -->
 <header class="fl-header" data-main-base="/" data-search-index="/header-search.json?v=shared-6f455a05daf5" data-auth="local">
   <svg class="fl-symbols" xmlns="http://www.w3.org/2000/svg" width="0" height="0" aria-hidden="true" focusable="false">
@@ -117,8 +117,55 @@
         </div>
         <form id="pmForm" class="pm-compose" hidden>
           <label for="pmText">Сообщение</label>
-          <textarea id="pmText" rows="3" maxlength="3000" placeholder="Напишите личное сообщение…" required></textarea>
-          <div class="pm-compose-foot"><small id="pmCounter">0 / 3000</small><button id="pmSend" type="submit" class="btn primary">Отправить</button></div>
+          <div class="forum-editor pm-editor">
+            <div class="forum-editor-toolbar" aria-label="Форматирование личного сообщения">
+              <button class="forum-tool pm-format" type="button" data-format="b" aria-pressed="false" title="Жирный"><b>B</b></button>
+              <button class="forum-tool pm-format" type="button" data-format="i" aria-pressed="false" title="Курсив"><i>I</i></button>
+              <button class="forum-tool pm-format" type="button" data-format="u" aria-pressed="false" title="Подчёркнутый"><u>U</u></button>
+              <button class="forum-tool pm-format" type="button" data-format="s" aria-pressed="false" title="Зачёркнутый"><s>S</s></button>
+              <span class="forum-tool-separator"></span>
+              <select id="pmFont" class="forum-tool-select" aria-label="Шрифт">
+                <option value="">Шрифт</option>
+                <option value="Arial">Arial</option>
+                <option value="Verdana">Verdana</option>
+                <option value="Georgia">Georgia</option>
+                <option value="Tahoma">Tahoma</option>
+                <option value="Trebuchet MS">Trebuchet</option>
+                <option value="Courier New">Courier New</option>
+              </select>
+              <select id="pmSize" class="forum-tool-select forum-size-select" aria-label="Размер шрифта">
+                <option value="">Размер</option>
+                <option value="12">12</option>
+                <option value="14">14</option>
+                <option value="16">16</option>
+                <option value="18">18</option>
+                <option value="20">20</option>
+                <option value="24">24</option>
+                <option value="28">28</option>
+                <option value="32">32</option>
+              </select>
+              <label class="forum-color-tool" title="Цвет текста"><span>A</span><input id="pmColor" type="color" value="#ff9b62" aria-label="Цвет текста"></label>
+              <span class="forum-tool-separator"></span>
+              <button id="pmEmojiButton" class="forum-tool forum-emoji-button" type="button" title="Смайлы">☺</button>
+              <button id="pmLinkButton" class="forum-tool forum-wide-tool" type="button" title="Вставить ссылку">🔗 Ссылка</button>
+              <button id="pmImageButton" class="forum-tool forum-wide-tool" type="button" title="Вставить изображение по ссылке">▣ Изображение</button>
+              <button id="pmSpoilerButton" class="forum-tool forum-wide-tool" type="button" title="Вставить спойлер">▾ Спойлер</button>
+              <button id="pmQuoteButton" class="forum-tool forum-wide-tool" type="button" title="Цитата">❝ Цитата</button>
+            </div>
+            <div id="pmEmojiPanel" class="forum-emoji-panel" hidden>
+              <button type="button">😀</button><button type="button">😄</button><button type="button">😂</button><button type="button">😉</button>
+              <button type="button">😊</button><button type="button">😍</button><button type="button">🤔</button><button type="button">😎</button>
+              <button type="button">👍</button><button type="button">👎</button><button type="button">👏</button><button type="button">🔥</button>
+              <button type="button">❤️</button><button type="button">💡</button><button type="button">✅</button><button type="button">⚠️</button>
+              <button type="button">🎉</button><button type="button">🚀</button><button type="button">🙏</button><button type="button">🤝</button>
+            </div>
+            <div id="pmText" class="forum-rich-editor pm-rich-editor" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Текст личного сообщения" data-placeholder="Напишите личное сообщение…"></div>
+          </div>
+          <div id="pmPreview" class="forum-message-preview pm-preview" hidden>
+            <div class="forum-message-preview-head">Предпросмотр личного сообщения</div>
+            <div id="pmPreviewBody" class="forum-post-body forum-message-preview-body"></div>
+          </div>
+          <div class="pm-compose-foot"><small id="pmCounter">0 / 3000</small><div class="pm-compose-actions"><button id="pmPreviewButton" type="button" class="btn ghost">Предпросмотр</button><button id="pmSend" type="submit" class="btn primary">Отправить</button></div></div>
         </form>
         <p id="pmStatus" class="pm-status" role="status" aria-live="polite"></p>
       </section>
@@ -134,4 +181,4 @@
   </div>
   <div class="shell footer-bottom">Fiery Led Lamp · 2026</div>
 </footer><script src="/site.js?v=edbe3e5a7bf3" defer></script>
-<script src="/messages.js?v=1" defer></script></body></html>
+<script src="/messages.js?v=2" defer></script></body></html>
