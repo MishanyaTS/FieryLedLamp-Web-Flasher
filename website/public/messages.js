@@ -232,7 +232,7 @@
       if (!response.ok || !session.ok || !session.csrf) {
         access.replaceChildren(node("span", "", "Для личных сообщений необходимо войти в аккаунт. "));
         const link = node("a", "", "Войти");
-        link.href = "/login.html?next=%2Fmessages.html";
+        link.href = "/login.html?next=" + encodeURIComponent(location.pathname + location.search)";
         access.appendChild(link);
         return;
       }
