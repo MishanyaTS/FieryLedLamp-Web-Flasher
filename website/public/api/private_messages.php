@@ -7,7 +7,7 @@ declare(strict_types=1);
 function pm_ensure_schema(PDO $pdo): void {
     static $ready = false;
     if ($ready) return;
-    $marker = schema_ready_file('private-messages-v1');
+    $marker = schema_ready_file('private-messages-v2');
     if (is_file($marker)) { $ready = true; return; }
 
     try {
@@ -42,11 +42,132 @@ function pm_ensure_schema(PDO $pdo): void {
             CONSTRAINT fk_private_sender FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
         }
+        if (!$pdo->query("SHOW TABLES LIKE 'private_message_attachments'")->fetchColumn()) {
+            $pdo->exec("CREATE TABLE IF NOT EXISTS private_message_attachments (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                message_id BIGINT UNSIGNED NOT NULL,
+                user_id BIGINT UNSIGNED NOT NULL,
+                original_name VARCHAR(255) NOT NULL,
+                stored_name VARCHAR(100) NOT NULL,
+                mime_type VARCHAR(100) NOT NULL,
+                file_size INT UNSIGNED NOT NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY(id),
+                KEY idx_private_attach_message (message_id),
+                CONSTRAINT fk_private_attach_message FOREIGN KEY (message_id) REFERENCES private_messages(id) ON DELETE CASCADE,
+                CONSTRAINT fk_private_attach_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        }
     } catch (Throwable $e) {
         json_response(['ok' => false, 'message' => 'Хранилище личных сообщений пока не настроено.'], 503);
     }
     @file_put_contents($marker, "ready\n", LOCK_EX);
     $ready = true;
+}
+
+
+function pm_input(): array {
+    $type = (string)($_SERVER['CONTENT_TYPE'] ?? '');
+    if (stripos($type, 'multipart/form-data') === 0) return $_POST;
+    return input_json();
+}
+
+function pm_file_dir(): string {
+    $dir = dirname(__DIR__, 2) . '/fieryledlamp-private/private_message_files';
+    if (!is_dir($dir) && !@mkdir($dir, 0750, true) && !is_dir($dir)) {
+        throw new RuntimeException('Недоступно хранилище личных вложений.');
+    }
+    return $dir;
+}
+
+function pm_save_files(PDO $pdo, int $messageId, int $userId, array &$savedFiles): void {
+    $upload = $_FILES['files'] ?? null;
+    if (!$upload) return;
+    $names = $upload['name'] ?? [];
+    if (!is_array($names)) $names = [$names];
+    if (!$names || count($names) > 5) throw new RuntimeException('Можно прикрепить не больше 5 файлов.');
+    $extensions = ['jpg','jpeg','png','webp','gif','pdf','txt','zip'];
+    $mimeFor = [
+        'jpg'=>['image/jpeg'], 'jpeg'=>['image/jpeg'],
+        'png'=>['image/png'], 'webp'=>['image/webp'],
+        'gif'=>['image/gif'], 'pdf'=>['application/pdf'],
+        'txt'=>['text/plain','application/octet-stream'],
+        'zip'=>['application/zip','application/x-zip-compressed','application/octet-stream']
+    ];
+    $total = 0;
+    $errorList = is_array($upload['error']) ? $upload['error'] : [$upload['error']];
+    $tmpList = is_array($upload['tmp_name']) ? $upload['tmp_name'] : [$upload['tmp_name']];
+    $sizeList = is_array($upload['size']) ? $upload['size'] : [$upload['size']];
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    foreach ($names as $i => $original) {
+        $error = (int)($errorList[$i] ?? UPLOAD_ERR_NO_FILE);
+        if ($error !== UPLOAD_ERR_OK) throw new RuntimeException('Не удалось загрузить вложение. Проверьте размер файла.');
+        $tmp = (string)($tmpList[$i] ?? '');
+        $size = (int)($sizeList[$i] ?? 0);
+        $total += $size;
+        if ($size < 1 || $size > 10 * 1024 * 1024 || $total > 30 * 1024 * 1024) {
+            throw new RuntimeException('Файл до 10 МБ, суммарно не более 30 МБ.');
+        }
+        if (!is_uploaded_file($tmp)) throw new RuntimeException('Недопустимое вложение.');
+        $name = trim(str_replace(["\r","\n","/","\\"], ' ', (string)$original));
+        $name = function_exists('mb_substr') ? mb_substr($name, 0, 180, 'UTF-8') : substr($name, 0, 180);
+        $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+        if ($name === '' || !in_array($ext, $extensions, true)) {
+            throw new RuntimeException('Разрешены JPG, PNG, WEBP, GIF, PDF, TXT и ZIP.');
+        }
+        $mime = (string)($finfo->file($tmp) ?: 'application/octet-stream');
+        if (!in_array($mime, $mimeFor[$ext], true)) {
+            throw new RuntimeException('Тип вложения не соответствует расширению файла.');
+        }
+        $stored = bin2hex(random_bytes(20)) . '.' . $ext;
+        $path = pm_file_dir() . '/' . $stored;
+        if (!move_uploaded_file($tmp, $path)) throw new RuntimeException('Не удалось сохранить вложение.');
+        $savedFiles[] = $path;
+        $stmt = $pdo->prepare('INSERT INTO private_message_attachments
+            (message_id,user_id,original_name,stored_name,mime_type,file_size)
+            VALUES(?,?,?,?,?,?)');
+        $stmt->execute([$messageId, $userId, $name, $stored, $mime, $size]);
+    }
+}
+
+function pm_attachment_map(PDO $pdo, array $ids): array {
+    if (!$ids) return [];
+    $ph = implode(',', array_fill(0, count($ids), '?'));
+    $stmt = $pdo->prepare("SELECT id,message_id,original_name,file_size FROM private_message_attachments
+        WHERE message_id IN ($ph) ORDER BY id ASC");
+    $stmt->execute($ids);
+    $result = [];
+    foreach ($stmt->fetchAll() as $row) {
+        $result[(int)$row['message_id']][] = [
+            'id' => (int)$row['id'],
+            'name' => (string)$row['original_name'],
+            'size' => (int)$row['file_size'],
+            'url' => '/api/index.php?action=pm-file&id=' . (int)$row['id'],
+        ];
+    }
+    return $result;
+}
+
+function pm_download(PDO $pdo, int $viewerId): never {
+    $fileId = max(0, (int)($_GET['id'] ?? 0));
+    $stmt = $pdo->prepare('SELECT a.original_name,a.stored_name,a.mime_type,a.file_size
+        FROM private_message_attachments a
+        JOIN private_messages m ON m.id=a.message_id
+        JOIN private_message_threads t ON t.id=m.thread_id
+        WHERE a.id=? AND (t.user_low_id=? OR t.user_high_id=?) LIMIT 1');
+    $stmt->execute([$fileId, $viewerId, $viewerId]);
+    $row = $stmt->fetch();
+    if (!$row) json_response(['ok' => false, 'message' => 'Вложение недоступно.'], 404);
+    $path = pm_file_dir() . '/' . basename((string)$row['stored_name']);
+    if (!is_file($path)) json_response(['ok' => false, 'message' => 'Файл не найден.'], 404);
+    if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
+    header('Content-Type: application/octet-stream');
+    header('Content-Length: ' . filesize($path));
+    header('Content-Disposition: attachment; filename="file"; filename*=UTF-8' . "'" . "'" . rawurlencode((string)$row['original_name']));
+    header('X-Content-Type-Options: nosniff');
+    header('Cache-Control: private, no-store');
+    readfile($path);
+    exit;
 }
 
 function pm_public_user(array $row): array {
@@ -83,6 +204,10 @@ function private_messages_handle(PDO $pdo, string $action, array $config): never
         require_method('GET');
     }
     pm_ensure_schema($pdo);
+
+    if ($action === 'pm-file') {
+        pm_download($pdo, $meId);
+    }
 
     if ($action === 'pm-users') {
         $query = trim((string)($_GET['q'] ?? ''));
@@ -155,13 +280,16 @@ function private_messages_handle(PDO $pdo, string $action, array $config): never
             $stmt = $pdo->prepare('SELECT id,sender_id,body,created_at,read_at FROM private_messages
                 WHERE thread_id=? ORDER BY id DESC LIMIT 100');
             $stmt->execute([(int)$thread['id']]);
-            foreach (array_reverse($stmt->fetchAll()) as $m) {
+            $list = array_reverse($stmt->fetchAll());
+            $filesByMessage = pm_attachment_map($pdo, array_map(static fn($m) => (int)$m['id'], $list));
+            foreach ($list as $m) {
                 $messages[] = [
                     'id' => (int)$m['id'],
                     'senderId' => (int)$m['sender_id'],
                     'body' => (string)$m['body'],
                     'createdAt' => (string)$m['created_at'],
                     'read' => !empty($m['read_at']),
+                    'attachments' => $filesByMessage[(int)$m['id']] ?? [],
                 ];
             }
         }
@@ -185,7 +313,7 @@ function private_messages_handle(PDO $pdo, string $action, array $config): never
     }
 
     if ($action === 'pm-send') {
-        $input = input_json();
+        $input = pm_input();
         $body = trim((string)($input['body'] ?? ''));
         $body = preg_replace("/\r\n?|\n/u", "\n", $body) ?? $body;
         if (text_length($body) < 1 || text_length($body) > 3000) {
@@ -216,6 +344,7 @@ function private_messages_handle(PDO $pdo, string $action, array $config): never
             json_response(['ok' => false, 'message' => 'Достигнут дневной лимит личных сообщений.'], 429);
         }
 
+        $savedFiles = [];
         try {
             $pdo->beginTransaction();
             $low = min($meId, $recipientId);
@@ -231,11 +360,14 @@ function private_messages_handle(PDO $pdo, string $action, array $config): never
             $stmt = $pdo->prepare('INSERT INTO private_messages(thread_id,sender_id,body) VALUES(?,?,?)');
             $stmt->execute([$threadId, $meId, $body]);
             $messageId = (int)$pdo->lastInsertId();
+            pm_save_files($pdo, $messageId, $meId, $savedFiles);
             $pdo->prepare('UPDATE private_message_threads SET updated_at=NOW() WHERE id=?')->execute([$threadId]);
             $pdo->commit();
         } catch (Throwable $e) {
             if ($pdo->inTransaction()) $pdo->rollBack();
-            json_response(['ok' => false, 'message' => 'Не удалось отправить сообщение.'], 503);
+            foreach ($savedFiles as $file) @unlink($file);
+            $message = $e instanceof RuntimeException ? $e->getMessage() : 'Не удалось отправить сообщение.';
+            json_response(['ok' => false, 'message' => $message], 422);
         }
         // Notify once for a newly unread conversation, rather than emailing on
         // every subsequent message. Email contains no private message text.
