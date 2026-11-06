@@ -16,6 +16,9 @@
   const unreadEl = document.getElementById("pmUnread");
   const counterEl = document.getElementById("pmCounter");
   const statusEl = document.getElementById("pmStatus");
+  const filesEl = document.getElementById("pmFiles");
+  const filePreviewEl = document.getElementById("pmFilePreview");
+  let pendingFiles = [];
   let csrf = "";
   let meId = 0;
   let current = null;
@@ -27,14 +30,15 @@
 
   async function request(action, options = {}, query = {}) {
     const params = new URLSearchParams({ action, ...query });
+    const formData = options.formData || null;
     const response = await fetch("/api/index.php?" + params.toString(), {
       method: options.method || "GET",
       credentials: "same-origin",
       cache: "no-store",
       headers: options.method === "POST"
-        ? { "content-type": "application/json", "X-CSRF-Token": csrf }
+        ? (formData ? { "X-CSRF-Token": csrf } : { "content-type": "application/json", "X-CSRF-Token": csrf })
         : {},
-      body: options.method === "POST" ? JSON.stringify(options.data || {}) : undefined,
+      body: options.method === "POST" ? (formData || JSON.stringify(options.data || {})) : undefined,
     });
     const result = await response.json().catch(() => ({}));
     if (!response.ok || !result.ok) {
@@ -73,6 +77,52 @@
     if (!value) return "";
     return String(value).slice(5, 16).replace("-", ".");
   }
+
+  function formatSize(value) {
+    const size = Number(value || 0);
+    if (size < 1024) return size + " Б";
+    if (size < 1024 * 1024) return (size / 1024).toFixed(1) + " КБ";
+    return (size / (1024 * 1024)).toFixed(1) + " МБ";
+  }
+
+  function renderPendingFiles() {
+    if (!filePreviewEl) return;
+    filePreviewEl.replaceChildren();
+    pendingFiles.forEach((file, index) => {
+      const item = node("div", "pm-pending-file");
+      item.appendChild(node("span", "", file.name + " · " + formatSize(file.size)));
+      const remove = node("button", "", "×");
+      remove.type = "button";
+      remove.setAttribute("aria-label", "Удалить вложение " + file.name);
+      remove.addEventListener("click", () => {
+        pendingFiles.splice(index, 1);
+        renderPendingFiles();
+      });
+      item.appendChild(remove);
+      filePreviewEl.appendChild(item);
+    });
+  }
+
+  filesEl?.addEventListener("change", () => {
+    const accepted = new Set(["jpg","jpeg","png","webp","gif","pdf","txt","zip"]);
+    const added = [...(filesEl.files || [])];
+    for (const file of added) {
+      const ext = file.name.toLowerCase().split(".").pop();
+      if (!accepted.has(ext) || file.size > 10 * 1024 * 1024 || !file.size) {
+        status("Разрешены JPG, PNG, WEBP, GIF, PDF, TXT и ZIP до 10 МБ.", true);
+        continue;
+      }
+      if (pendingFiles.length >= 5) {
+        status("Можно прикрепить не более 5 файлов.", true);
+        break;
+      }
+      if (!pendingFiles.some(x => x.name === file.name && x.size === file.size && x.lastModified === file.lastModified)) {
+        pendingFiles.push(file);
+      }
+    }
+    filesEl.value = "";
+    renderPendingFiles();
+  });
 
   function renderInbox() {
     threadsEl.replaceChildren();
@@ -120,6 +170,16 @@
       const body = node("div", "pm-bubble-text");
       body.innerHTML = window.FieryPrivateEditor.renderMarkup(msg.body);
       bubble.appendChild(body);
+      if (Array.isArray(msg.attachments) && msg.attachments.length) {
+        const files = node("div", "pm-attachments");
+        msg.attachments.forEach(file => {
+          const link = node("a", "pm-attachment", "📎 " + file.name + " (" + formatSize(file.size) + ")");
+          link.href = file.url;
+          link.setAttribute("download", file.name);
+          files.appendChild(link);
+        });
+        bubble.appendChild(files);
+      }
       const meta = node("small", "pm-bubble-meta", shortDate(msg.createdAt) + (mine && msg.read ? " · прочитано" : ""));
       bubble.appendChild(meta);
       messagesEl.appendChild(bubble);
@@ -217,11 +277,15 @@
     sendEl.disabled = true;
     status("");
     try {
-      const data = await request("pm-send", {
-        method: "POST",
-        data: current.threadId ? { threadId: current.threadId, body } : { userId: current.userId, body },
-      });
+      const formData = new FormData();
+      formData.append("body", body);
+      if (current.threadId) formData.append("threadId", String(current.threadId));
+      else formData.append("userId", String(current.userId));
+      pendingFiles.forEach(file => formData.append("files[]", file, file.name));
+      const data = await request("pm-send", { method: "POST", formData });
       rich.clear();
+      pendingFiles = [];
+      renderPendingFiles();
       await openThread({ threadId: data.threadId }, true);
       await loadInbox();
     } catch (error) {
