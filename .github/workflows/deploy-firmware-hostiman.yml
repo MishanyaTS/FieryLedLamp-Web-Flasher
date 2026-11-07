@@ -27,8 +27,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
 
       - name: Build shared site header
         run: python3 scripts/render-header.py
@@ -61,233 +59,30 @@ jobs:
           mkdir -p .deploy-firmware
           cp -a firmware/. .deploy-firmware/
 
-      - name: Deploy firmware folder as site root
+      - name: Install lftp
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lftp
+
+      # Strict synchronization: GitHub's firmware/ is the source of truth.
+      # Removed files, folders and ZIPs (including those in /update) are
+      # removed from HostiMan. Only hosting-managed SSL and .htaccess survive.
+      - name: Sync firmware site with HostiMan (including deletions)
         env:
           FTP_HOST: ${{ secrets.HOSTIMAN_FTP_HOST }}
           FTP_PORT: ${{ secrets.HOSTIMAN_FTP_PORT }}
           FTP_USER: ${{ secrets.HOSTIMAN_FIRMWARE_FTP_USER }}
           FTP_PASSWORD: ${{ secrets.HOSTIMAN_FIRMWARE_FTP_PASSWORD }}
-          DEPLOY_BEFORE_SHA: ${{ github.event.before }}
-          DEPLOY_AFTER_SHA: ${{ github.sha }}
         run: |
-          python3 - <<'PY'
-          import ftplib
-          import io
-          import os
-          import posixpath
-          import subprocess
-          from pathlib import Path
-
-          host = os.environ["FTP_HOST"]
-          port = int(os.environ.get("FTP_PORT", "21"))
-          user = os.environ["FTP_USER"]
-          password = os.environ["FTP_PASSWORD"]
-          local_root = Path(".deploy-firmware")
-          deployed_sha_file = "/.fiery-firmware-deployed-sha"
-          preserve = {".well-known", ".htaccess", ".fiery-firmware-deployed-sha"}
-
-          ftp = ftplib.FTP(timeout=30)
-          ftp.connect(host, port)
-          ftp.login(user, password)
-          ftp.set_pasv(True)
-
-          def list_dir(path):
-              try:
-                  return [(name, facts) for name, facts in ftp.mlsd(path)
-                          if name not in (".", "..") and facts.get("type") not in ("cdir", "pdir")]
-              except Exception:
-                  names = ftp.nlst(path)
-                  out = []
-                  for name in names:
-                      base = posixpath.basename(name.rstrip("/"))
-                      if base in (".", ".."):
-                          continue
-                      out.append((base, {"type": "unknown"}))
-                  return out
-
-          def ensure_dir(remote_dir):
-              if remote_dir in ("", "/"):
-                  return
-              parts = [p for p in remote_dir.split("/") if p]
-              cur = ""
-              for part in parts:
-                  cur += "/" + part
-                  try:
-                      ftp.mkd(cur)
-                  except ftplib.error_perm as e:
-                      if not str(e).startswith("550"):
-                          raise
-
-          def upload_file(local_file, remote_file):
-              ensure_dir(posixpath.dirname(remote_file))
-              with local_file.open("rb") as fh:
-                  ftp.storbinary(f"STOR {remote_file}", fh, blocksize=1024 * 256)
-              print(f"Uploaded {remote_file}")
-
-          def remote_type(path):
-              try:
-                  old = ftp.pwd()
-                  ftp.cwd(path)
-                  ftp.cwd(old)
-                  return "dir"
-              except Exception:
-                  return "file"
-
-          def delete_file_checked(remote):
-              try:
-                  ftp.delete(remote)
-                  print(f"Removed file {remote}")
-                  return True
-              except ftplib.error_perm as error:
-                  # "550" can be either absent or access denied. Verify the
-                  # parent listing rather than hiding a failed deletion.
-                  parent = posixpath.dirname(remote)
-                  try:
-                      exists = any(
-                          name == posixpath.basename(remote)
-                          for name, _ in list_dir(parent)
-                      )
-                  except ftplib.error_perm:
-                      if remote_type(parent) == "dir":
-                          raise RuntimeError(
-                              f"Cannot verify removal of {remote}: {error}"
-                          ) from error
-                      exists = False
-                  if exists:
-                      raise RuntimeError(
-                          f"Failed to remove {remote}: {error}"
-                      ) from error
-                  print(f"Already absent: {remote}")
-                  return False
-
-          def delete_tree(remote_path):
-              if posixpath.basename(remote_path.rstrip("/")) in preserve:
-                  return
-              if remote_type(remote_path) == "dir":
-                  for name, facts in list_dir(remote_path):
-                      delete_tree(posixpath.join(remote_path, name))
-                  try:
-                      ftp.rmd(remote_path)
-                      print(f"Removed dir {remote_path}")
-                  except ftplib.error_perm as error:
-                      if remote_type(remote_path) == "dir":
-                          raise RuntimeError(
-                              f"Failed to remove directory {remote_path}: {error}"
-                          ) from error
-              else:
-                  delete_file_checked(remote_path)
-
-          local_paths = set()
-          local_dirs = {"/"}
-
-          for p in local_root.rglob("*"):
-              rel = p.relative_to(local_root).as_posix()
-              remote = "/" + rel
-              if p.is_dir():
-                  local_dirs.add(remote)
-                  ensure_dir(remote)
-              else:
-                  local_paths.add(remote)
-                  upload_file(p, remote)
-
-          # Remove stale files/directories from the FTP root.
-          def clean_remote(remote_dir="/"):
-              for name, facts in list_dir(remote_dir):
-                  remote = posixpath.join(remote_dir.rstrip("/"), name)
-                  if not remote.startswith("/"):
-                      remote = "/" + remote
-                  if name in preserve and remote_dir == "/":
-                      continue
-                  # Version archives can be uploaded manually through HostiMan.
-                  # Never delete archived Web Flasher releases or OTA updates.
-                  if remote in ("/update", "/new_version"):
-                      continue
-                  is_dir = facts.get("type") == "dir"
-                  if facts.get("type") == "unknown":
-                      is_dir = remote_type(remote) == "dir"
-
-                  if is_dir:
-                      if remote not in local_dirs:
-                          delete_tree(remote)
-                      else:
-                          clean_remote(remote)
-                  elif remote not in local_paths:
-                      delete_file_checked(remote)
-
-          clean_remote("/")
-
-          # /update and /new_version may contain live ZIPs uploaded directly
-          # to HostiMan. Delete only files removed from GitHub since the last
-          # SUCCESSFUL deploy, preserving server-only archives and folders.
-          after = os.environ.get("DEPLOY_AFTER_SHA", "").strip()
-          before = os.environ.get("DEPLOY_BEFORE_SHA", "").strip()
-          try:
-              deployed_sha = bytearray()
-              ftp.retrbinary(
-                  "RETR " + deployed_sha_file, deployed_sha.extend
-              )
-              previous = deployed_sha.decode("ascii").strip()
-              if len(previous) == 40 and all(c in "0123456789abcdef" for c in previous):
-                  before = previous
-                  print(f"Previous successful deployment: {before}")
-          except ftplib.error_perm:
-              print("No previous deployment marker; using GitHub push range.")
-          deleted_paths = []
-          if before and before != "0" * 40 and after:
-              result = subprocess.run(
-                  ["git", "diff", "--no-renames", "--diff-filter=D",
-                   "--name-only", "-z", before, after, "--", "firmware/"],
-                  stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True
-              )
-              deleted_paths = [
-                  p.decode("utf-8", errors="surrogateescape")
-                  for p in result.stdout.split(b"\0") if p
-              ]
-          else:
-              print("No previous GitHub revision available; ordinary site cleanup still ran.")
-
-          removed = []
-          for git_path in deleted_paths:
-              if not git_path.startswith("firmware/"):
-                  continue
-              rel = git_path[len("firmware/"):]
-              # Only server-only-archive directories need this extra cleanup;
-              # ordinary site files are handled by clean_remote above.
-              if not rel.startswith(("update/", "new_version/")):
-                  continue
-              parts = rel.split("/")
-              if not parts or any(p in ("", ".", "..") for p in parts):
-                  raise RuntimeError(f"Unsafe Git path: {git_path!r}")
-              remote = "/" + rel
-              if remote in local_paths or remote in local_dirs:
-                  continue
-              delete_file_checked(remote)
-              removed.append(remote)
-
-          # Remove only now-empty parent directories. rmd fails harmlessly when
-          # a version folder contains a manual update.zip or other live files.
-          parents = set()
-          for remote in removed:
-              directory = posixpath.dirname(remote)
-              while directory not in ("/", "/update", "/new_version", ""):
-                  parents.add(directory)
-                  directory = posixpath.dirname(directory)
-          for directory in sorted(parents, key=lambda p: p.count("/"), reverse=True):
-              try:
-                  ftp.rmd(directory)
-                  print(f"Removed empty directory {directory}")
-              except ftplib.error_perm:
-                  pass
-
-          # Save the commit only after uploads and deletions finish successfully.
-          # A later manual run compares against this commit, not against the
-          # immediately preceding push, so rapid pushes cannot lose deletions.
-          if after:
-              ftp.storbinary(
-                  "STOR " + deployed_sha_file,
-                  io.BytesIO((after + "\n").encode("ascii"))
-              )
-              print(f"Deployment checkpoint saved: {after}")
-
-          ftp.quit()
-          PY
+          lftp -u "$FTP_USER","$FTP_PASSWORD" -p "$FTP_PORT" "$FTP_HOST" <<'LFTP_COMMANDS'
+          set ftp:ssl-allow no
+          set ftp:passive-mode true
+          set net:max-retries 3
+          set net:timeout 20
+          set mirror:parallel-transfer-count 1
+          mirror --reverse --delete --verbose \
+            --exclude-glob .well-known/** \
+            --exclude-glob .htaccess \
+            .deploy-firmware/ /
+          bye
+          LFTP_COMMANDS
