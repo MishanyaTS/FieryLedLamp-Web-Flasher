@@ -133,24 +133,49 @@ jobs:
               except Exception:
                   return "file"
 
+          def delete_file_checked(remote):
+              try:
+                  ftp.delete(remote)
+                  print(f"Removed file {remote}")
+                  return True
+              except ftplib.error_perm as error:
+                  # "550" can be either absent or access denied. Verify the
+                  # parent listing rather than hiding a failed deletion.
+                  parent = posixpath.dirname(remote)
+                  try:
+                      exists = any(
+                          name == posixpath.basename(remote)
+                          for name, _ in list_dir(parent)
+                      )
+                  except ftplib.error_perm:
+                      if remote_type(parent) == "dir":
+                          raise RuntimeError(
+                              f"Cannot verify removal of {remote}: {error}"
+                          ) from error
+                      exists = False
+                  if exists:
+                      raise RuntimeError(
+                          f"Failed to remove {remote}: {error}"
+                      ) from error
+                  print(f"Already absent: {remote}")
+                  return False
+
           def delete_tree(remote_path):
               if posixpath.basename(remote_path.rstrip("/")) in preserve:
                   return
               if remote_type(remote_path) == "dir":
                   for name, facts in list_dir(remote_path):
-                      child = posixpath.join(remote_path, name)
-                      delete_tree(child)
+                      delete_tree(posixpath.join(remote_path, name))
                   try:
                       ftp.rmd(remote_path)
                       print(f"Removed dir {remote_path}")
-                  except Exception:
-                      pass
+                  except ftplib.error_perm as error:
+                      if remote_type(remote_path) == "dir":
+                          raise RuntimeError(
+                              f"Failed to remove directory {remote_path}: {error}"
+                          ) from error
               else:
-                  try:
-                      ftp.delete(remote_path)
-                      print(f"Removed file {remote_path}")
-                  except Exception:
-                      pass
+                  delete_file_checked(remote_path)
 
           local_paths = set()
           local_dirs = {"/"}
@@ -187,11 +212,7 @@ jobs:
                       else:
                           clean_remote(remote)
                   elif remote not in local_paths:
-                      try:
-                          ftp.delete(remote)
-                          print(f"Removed stale file {remote}")
-                      except Exception:
-                          pass
+                      delete_file_checked(remote)
 
           clean_remote("/")
 
@@ -240,30 +261,8 @@ jobs:
               remote = "/" + rel
               if remote in local_paths or remote in local_dirs:
                   continue
-              try:
-                  ftp.delete(remote)
-                  print(f"Removed Git-deleted file {remote}")
-                  removed.append(remote)
-              except ftplib.error_perm as error:
-                  # FTP 550 can mean both "not found" and "permission denied".
-                  # Verify the parent listing instead of silently hiding errors.
-                  parent = posixpath.dirname(remote)
-                  try:
-                      still_exists = any(
-                          name == posixpath.basename(remote)
-                          for name, _ in list_dir(parent)
-                      )
-                  except ftplib.error_perm:
-                      if remote_type(parent) == "dir":
-                          raise RuntimeError(
-                              f"Cannot verify removal of {remote}: {error}"
-                          ) from error
-                      still_exists = False
-                  if still_exists:
-                      raise RuntimeError(
-                          f"Failed to delete Git-deleted file {remote}: {error}"
-                      ) from error
-                  print(f"Already absent: {remote}")
+              delete_file_checked(remote)
+              removed.append(remote)
 
           # Remove only now-empty parent directories. rmd fails harmlessly when
           # a version folder contains a manual update.zip or other live files.
