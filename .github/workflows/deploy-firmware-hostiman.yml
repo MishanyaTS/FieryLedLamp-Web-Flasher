@@ -156,6 +156,10 @@ jobs:
                       remote = "/" + remote
                   if name in preserve and remote_dir == "/":
                       continue
+                  # Version archives can be uploaded manually through HostiMan.
+                  # Never delete archived Web Flasher releases or OTA updates.
+                  if remote in ("/update", "/new_version"):
+                      continue
                   is_dir = facts.get("type") == "dir"
                   if facts.get("type") == "unknown":
                       is_dir = remote_type(remote) == "dir"
