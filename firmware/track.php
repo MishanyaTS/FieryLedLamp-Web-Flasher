@@ -1,9 +1,8 @@
 <?php
 declare(strict_types=1);
 
-// Temporary same-origin statistics endpoint for firmware.fieryledlamp.ru.
-// It writes directly to the same MySQL analytics tables used by fieryledlamp.ru.
-// This avoids HTTP Basic Auth on the main site while it is temporarily protected.
+// Same-origin statistics endpoint for firmware.fieryledlamp.ru.
+// Uses the same MySQL analytics tables as fieryledlamp.ru.
 
 function pixel(): never {
     header('Content-Type: image/gif');
