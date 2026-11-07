@@ -287,12 +287,16 @@ background:linear-gradient(180deg,#131821,#0e1219);border-color:#283141;box-shad
 .stats-card strong{display:block;margin-top:7px;color:#f5f7fa;font-size:27px;line-height:1;font-weight:800}
 .stats-section{margin-top:20px;padding:21px;border:1px solid #283141;border-radius:20px;background:linear-gradient(180deg,#121720,#0d1118)}
 .stats-section-head{display:flex;justify-content:space-between;align-items:end;gap:15px;margin-bottom:18px}
-.stats-firmware-table-wrap{overflow-x:auto}
-.stats-firmware-table{min-width:480px}
-.stats-firmware-table th:not(:first-child),.stats-firmware-table td:not(:first-child){text-align:right;font-variant-numeric:tabular-nums}
-.stats-firmware-table td:first-child{font-weight:700}
-.stats-firmware-table td strong{color:#ffac69}
-.stats-firmware-note{margin-top:12px!important;color:#8793a5!important;line-height:1.5}
+.stats-period-description{margin:0 0 14px;color:#8793a5;font-size:12px;line-height:1.55}
+.stats-firmware-head{align-items:center}
+.stats-version-picker{display:grid;gap:7px;min-width:min(100%,265px);color:#8e9aab;font-size:11px;font-weight:750}
+.stats-version-picker select{min-height:44px;width:100%;padding:0 14px;border:1px solid #394354;border-radius:11px;background:#111823;color:#f5f7fb;font:inherit;font-size:14px;font-weight:750;cursor:pointer;color-scheme:dark}
+.stats-version-picker select:focus-visible{outline:2px solid #ff8b45;outline-offset:2px}
+.stats-version-picker select:disabled{opacity:.55;cursor:not-allowed}
+.stats-firmware-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.stats-firmware-cards .stats-card strong{font-variant-numeric:tabular-nums}
+.stats-firmware-cards .stats-card:last-child strong{color:#ffb57d}
+.stats-firmware-note{margin-top:14px!important;color:#8793a5!important;line-height:1.5}
 .stats-section h2{margin:0;font-size:22px}.stats-section p{margin:4px 0 0;color:#7f8a99;font-size:12px}
 .stats-period{display:flex;gap:18px;flex-wrap:wrap}.stats-period div{min-width:130px}.stats-period small,.stats-period strong{display:block}.stats-period small{color:#788393}.stats-period strong{margin-top:3px;font-size:21px}
 .stats-chart{height:210px;display:flex;align-items:stretch;gap:4px;padding-top:15px;border-top:1px solid #283141;overflow-x:auto}
@@ -306,6 +310,8 @@ background:linear-gradient(180deg,#131821,#0e1219);border-color:#283141;box-shad
 .stats-table-wrap{overflow:auto;border:1px solid #283141;border-radius:14px;background:#0b0f15}
 .stats-table{width:100%;border-collapse:collapse;font-size:12px}.stats-table th,.stats-table td{padding:10px 12px;border-bottom:1px solid #222a35;text-align:left}.stats-table th{color:#788393;font-weight:700}.stats-table td:last-child,.stats-table th:last-child{text-align:right}.stats-table tr:last-child td{border-bottom:0}
 .stats-privacy{margin-top:16px;color:#697483;font-size:11px;line-height:1.5}
+@media(max-width:680px){.stats-firmware-head{align-items:stretch;flex-direction:column}.stats-version-picker{width:100%;min-width:0}.stats-firmware-cards{gap:8px}.stats-firmware-cards .stats-card{padding:12px}.stats-firmware-cards .stats-card strong{font-size:22px}}
+@media(max-width:390px){.stats-firmware-cards{grid-template-columns:1fr}}
 @media(max-width:1050px){.stats-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.stats-tables{grid-template-columns:1fr}}
 @media(max-width:560px){.stats-toolbar{align-items:flex-start;flex-direction:column}.stats-cards{grid-template-columns:1fr 1fr}.stats-card strong{font-size:23px}.stats-section{padding:16px}}
 
