@@ -516,7 +516,7 @@ function track_download_and_redirect(PDO $pdo, array $config): never {
     exit;
 }
 
-function analytics_totals(PDO $pdo): array {
+function analytics_totals(PDO $pdo, string $from): array {
     $keys = [
         'page_view' => 'pageViews', 'firmware_page_view' => 'flasherViews',
         'app_windows_download' => 'windowsDownloads', 'app_ios_download' => 'iosDownloads',
@@ -525,8 +525,10 @@ function analytics_totals(PDO $pdo): array {
     $totals = array_fill_keys(array_values($keys), 0);
     $totals['firmwareDownloadsN16R8'] = 0;
     $totals['firmwareOtaDownloads'] = 0;
-    $rows = $pdo->query('SELECT event_type,item,SUM(event_count) AS cnt
-        FROM analytics_counters GROUP BY event_type,item')->fetchAll();
+    $stmt = $pdo->prepare('SELECT event_type,item,SUM(event_count) AS cnt
+        FROM analytics_counters WHERE stat_date>=? GROUP BY event_type,item');
+    $stmt->execute([$from]);
+    $rows = $stmt->fetchAll();
     foreach ($rows as $row) {
         $event = (string)$row['event_type'];
         if (isset($keys[$event])) $totals[$keys[$event]] += (int)$row['cnt'];
@@ -652,13 +654,24 @@ function admin_stats(PDO $pdo): never {
     $from = date('Y-m-d', time() - (($days - 1) * 86400));
 
     try {
-        $counts = user_counts($pdo);
-        $totals = analytics_totals($pdo) + [
-            'registrations' => $counts['all'],
-            'verifiedUsers' => $counts['verified'],
-            'subscribers' => $counts['verifiedSubscribers'],
-            'uniqueVisitors' => (int)$pdo->query('SELECT COUNT(DISTINCT visitor_hash) FROM analytics_unique_visitors')->fetchColumn(),
-        ];
+        // Every card in "Общая статистика" follows the selected date range.
+        $totals = analytics_totals($pdo, $from);
+
+        // User status is not a timestamped event in this schema. Count current
+        // verified/subscribed status among accounts registered in the period.
+        $stmt = $pdo->prepare("SELECT COUNT(*) AS registrations,
+            COALESCE(SUM(CASE WHEN email_verified_at IS NOT NULL THEN 1 ELSE 0 END),0) AS verified,
+            COALESCE(SUM(CASE WHEN notify_updates=1 AND email_verified_at IS NOT NULL THEN 1 ELSE 0 END),0) AS subscribers
+            FROM users WHERE created_at>=?");
+        $stmt->execute([$from . ' 00:00:00']);
+        $userPeriod = $stmt->fetch();
+        $totals['registrations'] = (int)($userPeriod['registrations'] ?? 0);
+        $totals['verifiedUsers'] = (int)($userPeriod['verified'] ?? 0);
+        $totals['subscribers'] = (int)($userPeriod['subscribers'] ?? 0);
+
+        $stmt = $pdo->prepare('SELECT COUNT(DISTINCT visitor_hash) FROM analytics_unique_visitors WHERE stat_date>=?');
+        $stmt->execute([$from]);
+        $totals['uniqueVisitors'] = (int)$stmt->fetchColumn();
 
         $stmt = $pdo->prepare("SELECT stat_date,event_type,item,SUM(event_count) AS cnt
             FROM analytics_counters
@@ -760,17 +773,10 @@ function admin_stats(PDO $pdo): never {
         $stmt->execute([$from]);
         $topPages = $stmt->fetchAll();
 
-        $stmt = $pdo->prepare('SELECT COUNT(DISTINCT visitor_hash) FROM analytics_unique_visitors WHERE stat_date>=?');
-        $stmt->execute([$from]);
-        $periodUnique = (int)$stmt->fetchColumn();
-
-        $stmt = $pdo->prepare("SELECT COALESCE(SUM(event_count),0) FROM analytics_counters WHERE stat_date>=? AND event_type IN ('page_view','firmware_page_view')");
-        $stmt->execute([$from]);
-        $periodVisits = (int)$stmt->fetchColumn();
-
-        $stmt = $pdo->prepare('SELECT COUNT(*) FROM users WHERE created_at>=?');
-        $stmt->execute([$from . ' 00:00:00']);
-        $periodRegistrations = (int)$stmt->fetchColumn();
+        // Keep the period summary and the cards in agreement.
+        $periodUnique = $totals['uniqueVisitors'];
+        $periodVisits = $totals['pageViews'] + $totals['flasherViews'];
+        $periodRegistrations = $totals['registrations'];
 
         json_response([
             'ok' => true,
