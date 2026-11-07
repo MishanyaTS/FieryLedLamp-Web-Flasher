@@ -42,15 +42,15 @@
   function renderFirmwareVersions(statRows, catalog) {
     const versions = new Map();
     const ensure = raw => {
-      const version = String(raw || "").replace(/^v(?=\\d)/i, "");
-      if (!version || !/^(?:\\d+(?:\\.\\d+){0,3}|legacy)$/.test(version)) return;
+      const version = String(raw || "").replace(/^v(?=\d)/i, "");
+      if (!version || !/^(?:\d+(?:\.\d+){0,3}|legacy)$/.test(version)) return;
       if (!versions.has(version)) versions.set(version, { version, webFlasher: 0, ota: 0 });
     };
     (catalog?.versions || []).forEach(row => ensure(row.version));
     (catalog?.otaVersions || []).forEach(version => ensure(version));
     for (const row of statRows) {
       ensure(row.version);
-      const version = String(row.version || "").replace(/^v(?=\\d)/i, "");
+      const version = String(row.version || "").replace(/^v(?=\d)/i, "");
       const entry = versions.get(version);
       if (!entry) continue;
       entry.webFlasher += Number(row.webFlasher) || 0;
