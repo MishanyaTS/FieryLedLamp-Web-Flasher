@@ -1,0 +1,38 @@
+{
+  "name": "FieryLedLamp - ESP32-S3 N16R8",
+  "version": "ESP32-S3 N16R8",
+  "board": "ESP32-S3 N16R8",
+  "chip": "ESP32-S3",
+  "baudRate": 921600,
+  "eraseAll": false,
+  "compress": true,
+  "doNotChangeBin": true,
+  "toolSpiMode": "QIO",
+  "toolSpiSpeed": "80MHz",
+  "physicalFlashSize": "16MB",
+  "psramSize": "8MB",
+  "ready": true,
+  "files": [
+    {
+      "name": "bootloader.bin",
+      "address": "0x00000000"
+    },
+    {
+      "name": "partitions.bin",
+      "address": "0x00008000"
+    },
+    {
+      "name": "boot_app0.bin",
+      "address": "0x0000E000"
+    },
+    {
+      "name": "firmware.bin",
+      "address": "0x00010000"
+    },
+    {
+      "name": "littlefs.bin",
+      "address": "0x00C90000"
+    }
+  ],
+  "settingsBackupBaudRate": 115200
+}
