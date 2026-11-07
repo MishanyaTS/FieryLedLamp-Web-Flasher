@@ -84,7 +84,7 @@
     const select = document.querySelector("#firmwareVersionSelect");
     if (!select) return;
     // Keep the chosen version when the time period or catalog is refreshed.
-    const previous = selectedFirmwareVersion || select.value;
+    const previous = selectedFirmwareVersion;
     select.replaceChildren();
     if (!rows.length) {
       const option = document.createElement("option");
