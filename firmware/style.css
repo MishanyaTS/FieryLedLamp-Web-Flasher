@@ -300,6 +300,23 @@ a{color:inherit}
   border-top:1px solid #272f3b;
   border-bottom:1px solid #272f3b
 }
+.firmware-version-field{width:100%}
+.firmware-version-field .label{display:block;margin-bottom:8px}
+.version-select{
+  display:block;
+  width:min(100%,450px);
+  min-height:46px;
+  padding:10px 14px;
+  color:#f7f8fb;
+  background:#151b26;
+  border:1px solid #41495a;
+  border-radius:11px;
+  font-weight:780;
+  cursor:pointer;
+  color-scheme:dark
+}
+.version-select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.version-select:disabled{opacity:.55;cursor:not-allowed}
 .btn{
   border:1px solid transparent;
   border-radius:13px;
