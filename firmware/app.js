@@ -52,7 +52,7 @@ const $ = (id) => document.getElementById(id);
 const ui = {
   compatBanner: $("compatBanner"), selectPortBtn: $("selectPortBtn"), flashBtn: $("flashBtn"),
   flashBtnText: $("flashBtnText"), portDot: $("portDot"), portText: $("portText"),
-  firmwareName: $("firmwareName"), progressLabel: $("progressLabel"),
+  versionSelect: $("versionSelect"), progressLabel: $("progressLabel"),
   progressPercent: $("progressPercent"), progressBar: $("progressBar"), resultBox: $("resultBox"),
   eraseAll: $("eraseAll"), saveSettings: $("saveSettings"),
   cfgChip: $("cfgChip"), cfgFlash: $("cfgFlash"), cfgPsram: $("cfgPsram"), cfgMode: $("cfgMode"),
@@ -64,6 +64,7 @@ const ui = {
 };
 
 let manifest = null;
+let releases = [];
 let selectedBoard = SITE_CONFIG.board || null;
 let selectedPort = null;
 let isBusy = false;
@@ -110,6 +111,7 @@ function syncEraseAllState() {
 function setBusy(busy) {
   isBusy = busy;
   ui.selectPortBtn.disabled = busy;
+  if (ui.versionSelect) ui.versionSelect.disabled = busy || !releases.length;
   if (ui.saveSettings) ui.saveSettings.disabled = busy;
   syncEraseAllState();
   ui.flashBtn.disabled = busy || !diagnosticReady || !manifest || manifest.ready === false || !selectedBoard || !("serial" in navigator);
@@ -322,7 +324,8 @@ async function loadManifest(board = selectedBoard) {
   selectedBoard = board;
   manifest = null;
   clearResult();
-  ui.firmwareName.textContent = "Загрузка конфигурации…";
+  renderFileList([]);
+  setProgress(0, "Готово к работе");
   setBusy(true);
 
   try {
@@ -333,7 +336,6 @@ async function loadManifest(board = selectedBoard) {
     validateManifest(loaded);
     manifest = loaded;
 
-    ui.firmwareName.textContent = manifest.name || SITE_CONFIG.projectName;
     ui.eraseAll.checked = Boolean(manifest.eraseAll);
     ui.cfgChip.textContent = manifest.chip || "-";
     ui.cfgFlash.textContent = `${manifest.physicalFlashSize || "-"} • KEEP`;
@@ -351,11 +353,68 @@ async function loadManifest(board = selectedBoard) {
     }
 
     renderFileList(manifest.files);
-    log(`Выбрана плата: ${board.label}. Конфигурация загружена.`);
+    log(`Выбрана ${board.releaseLabel || board.label}. Конфигурация загружена.`);
   } finally {
     setBusy(false);
   }
 }
+// Numbered folders are discovered on the server; the selected release controls
+// both the manifest (flash addresses) and the update.zip archive.
+async function loadSelectedRelease(release) {
+  const board = { ...SITE_CONFIG.board, ...release, releaseLabel: release.label };
+  if (selectedPort && selectedBoard?.firmwareZipUrl !== board.firmwareZipUrl) {
+    diagnosticReady = false;
+    setPortConnected(false);
+    ui.portText.textContent = "Повторите выбор COM-порта";
+    showDeviceDiagnostic("idle", {
+      message: "Версия изменена. Выберите COM-порт повторно для аппаратной диагностики."
+    });
+    setStep(0);
+  }
+  await loadManifest(board);
+}
+
+async function loadReleaseList() {
+  const base = SITE_CONFIG.board;
+  if (!base) throw new Error("В config.js не настроена ESP32-S3 N16R8.");
+
+  let items;
+  try {
+    const response = await fetch(SITE_CONFIG.versionsUrl || "./update/versions.php", { cache: "no-store" });
+    if (!response.ok) throw new Error("HTTP " + response.status);
+    const data = await response.json();
+    if (!Array.isArray(data.versions)) throw new Error("Некорректный список версий.");
+    items = data.versions;
+  } catch (error) {
+    // Keeps the existing web flasher usable while versions.php is being deployed.
+    log("Список версий недоступен (" + (error?.message || error) + "). Используется прежний пакет.");
+    items = [{
+      version: "legacy",
+      label: "Текущая прошивка",
+      manifestUrl: base.manifestUrl,
+      firmwareZipUrl: base.firmwareZipUrl
+    }];
+  }
+
+  releases = items.filter(item =>
+    item && typeof item.version === "string" && item.version.length > 0 &&
+    typeof item.label === "string" &&
+    typeof item.manifestUrl === "string" &&
+    typeof item.firmwareZipUrl === "string"
+  );
+  if (!releases.length) throw new Error("На сервере пока нет доступных версий прошивки.");
+
+  ui.versionSelect.replaceChildren();
+  for (const release of releases) {
+    const option = document.createElement("option");
+    option.value = release.version;
+    option.textContent = release.label;
+    ui.versionSelect.appendChild(option);
+  }
+  ui.versionSelect.value = releases[0].version;
+  await loadSelectedRelease(releases[0]);
+}
+
 function renderFileList(files, sizes = new Map()) {
   ui.fileList.innerHTML = "";
   files.forEach((f) => {
@@ -550,6 +609,18 @@ function checkCompatibility(){
   if(!window.isSecureContext){ui.compatBanner.textContent="COM-порт недоступен: откройте сайт по HTTPS или localhost.";ui.compatBanner.classList.remove("hidden");}
   if(!("serial" in navigator)){ui.compatBanner.textContent="Этот браузер не поддерживает Web Serial. Используйте совместимый Chromium-браузер.";ui.compatBanner.classList.remove("hidden");ui.selectPortBtn.disabled=true;ui.flashBtn.disabled=true;return false;}return true;
 }
+ui.versionSelect.addEventListener("change", async () => {
+  if (isBusy) return;
+  const release = releases.find(item => item.version === ui.versionSelect.value);
+  if (!release) return;
+  try {
+    await loadSelectedRelease(release);
+  } catch (error) {
+    const message = error?.message || String(error);
+    showResult("error", message);
+    log("ОШИБКА загрузки версии: " + message);
+  }
+});
 ui.selectPortBtn.addEventListener("click",async()=>{if(isBusy)return;clearResult();try{await choosePort();setBusy(false);}catch(e){if(e?.name==="NotFoundError"){log("Выбор COM-порта отменён.");return;}const msg=friendlyFlasherError(e);showResult("error",msg);log(`Ошибка выбора порта: ${msg}`);}});
 ui.flashBtn.addEventListener("click",flash);ui.clearLogBtn.addEventListener("click",()=>{ui.log.textContent="";});
 if(ui.saveSettings) ui.saveSettings.addEventListener("change",syncEraseAllState);
@@ -579,9 +650,13 @@ if ("serial" in navigator) navigator.serial.addEventListener("disconnect", event
   checkCompatibility();
   try{
     if (!selectedBoard) throw new Error("В config.js не настроена ESP32-S3 N16R8.");
-    await loadManifest(selectedBoard);
+    await loadReleaseList();
   }catch(e){
-    ui.firmwareName.textContent="Ошибка конфигурации";
+    ui.versionSelect.replaceChildren();
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "Версии недоступны";
+    ui.versionSelect.appendChild(option);
     showResult("error",e?.message||String(e));
     log(`ОШИБКА: ${e?.message||e}`);
     setBusy(false);
