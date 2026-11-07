@@ -441,7 +441,6 @@ async function loadFirmwareFiles() {
   log(`Загрузка update.zip для ${selectedBoard.label}: ${firmwareZipUrl}`); setProgress(3,"Загрузка update.zip…");
   const response = await fetch(firmwareZipUrl, {cache:"no-store"});
   if (!response.ok) throw new Error(`Не удалось загрузить update.zip (${response.status}).`);
-  trackAnalytics("firmware_download", selectedBoard?.id || "update.zip", "/");
   const zipBytes = new Uint8Array(await response.arrayBuffer());
   if (!zipBytes.length) throw new Error("update.zip пустой.");
   log(`update.zip загружен: ${fmtBytes(zipBytes.length)}.`); setProgress(10,"Распаковка update.zip…");
@@ -453,7 +452,11 @@ async function loadFirmwareFiles() {
     const address=Number.parseInt(f.address,0); if(address===0) validateBootloader(data);
     files.push({data,address,path:f.name}); sizes.set(f.name,data.length); log(`${f.name}: ${fmtBytes(data.length)} → ${fmtAddress(address)}`);
   }
-  renderFileList(manifest.files,sizes); return files;
+  renderFileList(manifest.files,sizes);
+  // Count a validated archive download, tagged with the selected release.
+  const version = String(selectedBoard?.version || "legacy");
+  trackAnalytics("firmware_download", "v:" + version, "/");
+  return files;
 }
 function createTerminal(){return{clean(){},writeLine(d){if(d!=null)log(d);},write(d){if(d!=null&&String(d).trim())log(d);}};}
 function delay(ms){return new Promise(resolve=>setTimeout(resolve,ms));}
