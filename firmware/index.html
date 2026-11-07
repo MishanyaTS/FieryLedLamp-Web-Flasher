@@ -7,7 +7,7 @@
   <meta name="description" content="Web Flasher Fiery Led Lamp - прошивка ESP32-S3 прямо из браузера." />
   <title>Прошивка Fiery Led Lamp</title>
   <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="./style.css?v=hardware-diagnostics-20261103" />
+  <link rel="stylesheet" href="./style.css?v=firmware-version-select-20261108" />
   <link rel="stylesheet" href="./page-ui.css?v=81192735aac3">
   <link rel="stylesheet" href="./header.css?v=shared-6f455a05daf5" />
   <script src="./header.js?v=shared-6f455a05daf5" defer></script>
@@ -166,9 +166,11 @@
           </div>
 
           <div class="firmware-summary">
-            <div>
-              <div class="label">Прошивка</div>
-              <div class="value" id="firmwareName">Загрузка конфигурации…</div>
+            <div class="firmware-version-field">
+              <label class="label" for="versionSelect">Прошивка</label>
+              <select class="version-select" id="versionSelect" aria-label="Выберите версию прошивки" disabled>
+                <option value="">Загрузка списка версий…</option>
+              </select>
             </div>
           </div>
 
@@ -299,6 +301,6 @@
   <button id="scrollToTopButton" class="scroll-to-top-button" type="button" aria-label="Наверх" title="Наверх">
     <span aria-hidden="true">↑</span>
   </button>
-  <script type="module" src="./app.js?v=hide-psram-notes-20261103"></script>
+  <script type="module" src="./app.js?v=firmware-version-select-20261108"></script>
 </body>
 </html>
