@@ -81,7 +81,7 @@ try {
             $stmt->execute([
                 'firmware_ota_download',
                 'v:' . ltrim($version, 'vV'),
-                '/new_version/update/' . $version . '/update.zip',
+                '/update/' . $version . '/update.zip',
                 'XX',
                 'Неизвестно',
             ]);

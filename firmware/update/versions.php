@@ -65,7 +65,7 @@ if (!$releases && is_file($base . '/update.zip') && is_file($defaultManifest)) {
 
 // OTA releases may be published separately under /new_version/update.
 $otaVersions = [];
-$otaRoot = dirname(__DIR__) . '/new_version/update';
+$otaRoot = dirname(__DIR__) . '/update';
 if (is_dir($otaRoot)) {
     foreach (new DirectoryIterator($otaRoot) as $entry) {
         if (!$entry->isDir() || $entry->isDot() || $entry->isLink()) continue;
