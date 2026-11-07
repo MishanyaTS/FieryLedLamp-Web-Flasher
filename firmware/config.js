@@ -7,6 +7,7 @@ export const SITE_CONFIG = {
   projectName: "Fiery Led Lamp",
   pageTitle: "Прошивка",
   baudRate: 921600,
+  versionsUrl: "./update/versions.php",
 
   board: {
     id: "n16r8",
