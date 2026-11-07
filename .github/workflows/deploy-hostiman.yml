@@ -18,7 +18,8 @@ permissions:
 
 concurrency:
   group: deploy-hostiman
-  cancel-in-progress: true
+  # Let a running FTP mirror finish; interrupted uploads may leave partial assets.
+  cancel-in-progress: false
 
 jobs:
   deploy:
