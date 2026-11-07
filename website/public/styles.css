@@ -287,13 +287,20 @@ background:linear-gradient(180deg,#131821,#0e1219);border-color:#283141;box-shad
 .stats-card strong{display:block;margin-top:7px;color:#f5f7fa;font-size:27px;line-height:1;font-weight:800}
 .stats-section{margin-top:20px;padding:21px;border:1px solid #283141;border-radius:20px;background:linear-gradient(180deg,#121720,#0d1118)}
 .stats-section-head{display:flex;justify-content:space-between;align-items:end;gap:15px;margin-bottom:18px}
+.stats-firmware-table-wrap{overflow-x:auto}
+.stats-firmware-table{min-width:480px}
+.stats-firmware-table th:not(:first-child),.stats-firmware-table td:not(:first-child){text-align:right;font-variant-numeric:tabular-nums}
+.stats-firmware-table td:first-child{font-weight:700}
+.stats-firmware-table td strong{color:#ffac69}
+.stats-firmware-note{margin-top:12px!important;color:#8793a5!important;line-height:1.5}
 .stats-section h2{margin:0;font-size:22px}.stats-section p{margin:4px 0 0;color:#7f8a99;font-size:12px}
 .stats-period{display:flex;gap:18px;flex-wrap:wrap}.stats-period div{min-width:130px}.stats-period small,.stats-period strong{display:block}.stats-period small{color:#788393}.stats-period strong{margin-top:3px;font-size:21px}
 .stats-chart{height:210px;display:flex;align-items:stretch;gap:4px;padding-top:15px;border-top:1px solid #283141;overflow-x:auto}
 .stats-day{min-width:18px;flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:6px}
 .stats-day-bars{position:relative;width:100%;height:168px;display:flex;align-items:flex-end;justify-content:center}
 .stats-bar.visits{display:block;width:min(14px,70%);min-height:2px;border-radius:5px 5px 2px 2px;background:linear-gradient(180deg,#ff8c52,#ff5a20)}
-.stats-marker{position:absolute;right:1px;width:5px;height:5px;border-radius:50%}.stats-marker.registrations{top:4px;background:#61d98c}.stats-marker.firmware{top:12px;background:#62a8ff}.stats-marker.apps{top:20px;background:#c988ff}
+.stats-marker{position:absolute;right:1px;width:5px;height:5px;border-radius:50%}.stats-marker.registrations{top:4px;background:#61d98c}
+.stats-marker.ota{top:20px;background:#70aeff}.stats-marker.firmware{top:12px;background:#62a8ff}.stats-marker.apps{top:20px;background:#c988ff}
 .stats-day>span{font-size:9px;color:#687384;white-space:nowrap;transform:rotate(-45deg);transform-origin:center}
 .stats-tables{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
 .stats-table-wrap{overflow:auto;border:1px solid #283141;border-radius:14px;background:#0b0f15}
