@@ -524,14 +524,19 @@ function analytics_totals(PDO $pdo): array {
     ];
     $totals = array_fill_keys(array_values($keys), 0);
     $totals['firmwareDownloadsN16R8'] = 0;
+    $totals['firmwareOtaDownloads'] = 0;
     $rows = $pdo->query('SELECT event_type,item,SUM(event_count) AS cnt
         FROM analytics_counters GROUP BY event_type,item')->fetchAll();
     foreach ($rows as $row) {
         $event = (string)$row['event_type'];
         if (isset($keys[$event])) $totals[$keys[$event]] += (int)$row['cnt'];
         // Historical empty/update.zip items also belong to N16R8.
-        if ($event === 'firmware_download' && in_array((string)$row['item'], ['n16r8', 'update.zip', ''], true)) {
+        if ($event === 'firmware_download' && (in_array((string)$row['item'], ['n16r8', 'update.zip', ''], true)
+            || preg_match('/^v:(?:[0-9]+(?:\\.[0-9]+){0,3}|legacy)$/', (string)$row['item']))) {
             $totals['firmwareDownloadsN16R8'] += (int)$row['cnt'];
+        }
+        if ($event === 'firmware_ota_download') {
+            $totals['firmwareOtaDownloads'] += (int)$row['cnt'];
         }
     }
     return $totals;
@@ -657,7 +662,7 @@ function admin_stats(PDO $pdo): never {
 
         $stmt = $pdo->prepare("SELECT stat_date,event_type,item,SUM(event_count) AS cnt
             FROM analytics_counters
-            WHERE stat_date>=? AND event_type IN ('page_view','firmware_page_view','registration','firmware_download','app_windows_download','app_ios_download','app_android_click')
+            WHERE stat_date>=? AND event_type IN ('page_view','firmware_page_view','registration','firmware_download','firmware_ota_download','app_windows_download','app_ios_download','app_android_click')
             GROUP BY stat_date,event_type,item ORDER BY stat_date");
         $stmt->execute([$from]);
         $rows = $stmt->fetchAll();
@@ -671,6 +676,7 @@ function admin_stats(PDO $pdo): never {
                 'registrations'=>0,
                 'firmware'=>0,
                 'firmwareN16R8'=>0,
+                'firmwareOta'=>0,
                 'apps'=>0
             ];
         }
@@ -688,10 +694,14 @@ function admin_stats(PDO $pdo): never {
                     break;
                 case 'firmware_download':
                     $item = (string)($row['item'] ?? '');
-                    if ($item === 'n16r8' || $item === 'update.zip' || $item === '') {
+                    if ($item === 'n16r8' || $item === 'update.zip' || $item === ''
+                        || preg_match('/^v:(?:[0-9]+(?:\\.[0-9]+){0,3}|legacy)$/', $item)) {
                         $daily[$date]['firmware'] += $count;
                         $daily[$date]['firmwareN16R8'] += $count;
                     }
+                    break;
+                case 'firmware_ota_download':
+                    $daily[$date]['firmwareOta'] += $count;
                     break;
                 case 'app_windows_download':
                 case 'app_ios_download':
@@ -700,6 +710,34 @@ function admin_stats(PDO $pdo): never {
                     break;
             }
         }
+
+        // Count each firmware release separately in the selected time window.
+        // Older Web Flasher events had no version, so they are kept in "legacy".
+        $stmt = $pdo->prepare("SELECT event_type,item,SUM(event_count) AS cnt
+            FROM analytics_counters
+            WHERE stat_date>=? AND event_type IN ('firmware_download','firmware_ota_download')
+            GROUP BY event_type,item");
+        $stmt->execute([$from]);
+        $firmwareVersionsById = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $item = (string)$row['item'];
+            $version = preg_match('/^v:([0-9]+(?:\\.[0-9]+){0,3})$/', $item, $matches)
+                ? $matches[1] : 'legacy';
+            if (!isset($firmwareVersionsById[$version])) {
+                $firmwareVersionsById[$version] = [
+                    'version' => $version,
+                    'webFlasher' => 0,
+                    'ota' => 0,
+                ];
+            }
+            $key = $row['event_type'] === 'firmware_ota_download' ? 'ota' : 'webFlasher';
+            $firmwareVersionsById[$version][$key] += (int)$row['cnt'];
+        }
+        uksort($firmwareVersionsById, static function (string $a, string $b): int {
+            if ($a === 'legacy') return 1;
+            if ($b === 'legacy') return -1;
+            return version_compare($b, $a);
+        });
 
         $stmt = $pdo->prepare("SELECT country_code,country_name,SUM(event_count) AS cnt
             FROM analytics_counters
@@ -748,6 +786,7 @@ function admin_stats(PDO $pdo): never {
             'countries' => $countries,
             'registrationCountries' => $registrationCountries,
             'topPages' => $topPages,
+            'firmwareVersions' => array_values($firmwareVersionsById),
             'privacy' => 'IP-адреса не сохраняются. Для определения страны IP передаётся сервису ipwho.is и кэшируется только страна.',
         ]);
     } catch (Throwable $e) {
