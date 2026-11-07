@@ -19,7 +19,7 @@ foreach (new DirectoryIterator($base) as $entry) {
     }
 
     $version = $entry->getFilename();
-    if (!preg_match('/^v?[0-9]+(?:\\.[0-9]+){0,3}(?:-[A-Za-z0-9][A-Za-z0-9.-]*)?$/D', $version)) {
+    if (!preg_match('/^v?[0-9]+(?:\.[0-9]+){0,3}(?:-[A-Za-z0-9][A-Za-z0-9.-]*)?$/D', $version)) {
         continue;
     }
 
@@ -40,8 +40,8 @@ foreach (new DirectoryIterator($base) as $entry) {
 
     $segment = rawurlencode($version);
     $releases[] = [
-        'version' => $version,
-        'label' => 'Версия ' . $version,
+        'version' => ltrim($version, 'vV'),
+        'label' => 'Версия ' . ltrim($version, 'vV'),
         'manifestUrl' => is_file($localManifest)
             ? './update/' . $segment . '/manifest.json'
             : './update/manifest.json',
@@ -63,25 +63,25 @@ if (!$releases && is_file($base . '/update.zip') && is_file($defaultManifest)) {
     ];
 }
 
-// OTA releases may be published separately under /new_version/update.
+// Both Web Flasher and OTA use archives from the same /update/<version>/ directory.
 $otaVersions = [];
-$otaRoot = dirname(__DIR__) . '/update';
+$otaRoot = $base;
 if (is_dir($otaRoot)) {
     foreach (new DirectoryIterator($otaRoot) as $entry) {
         if (!$entry->isDir() || $entry->isDot() || $entry->isLink()) continue;
         $version = $entry->getFilename();
-        if (!preg_match('/^v?[0-9]+(?:\\.[0-9]+){0,3}$/D', $version)) continue;
+        if (!preg_match('/^v?[0-9]+(?:\.[0-9]+){0,3}$/D', $version)) continue;
         $zip = $entry->getPathname() . '/update.zip';
         if (is_file($zip) && filesize($zip) > 0) $otaVersions[] = ltrim($version, 'vV');
     }
 
-    // The existing OTA release can also live directly in /new_version/update.
+    // Legacy root-level update.zip can also be used during migration.
     if (is_file($otaRoot . '/update.zip') && filesize($otaRoot . '/update.zip') > 0
         && is_file($otaRoot . '/version.txt')) {
         foreach (file($otaRoot . '/version.txt', FILE_IGNORE_NEW_LINES) ?: [] as $line) {
             $line = trim((string)$line);
-            if (preg_match('/^(?:version|версия)\\s*[:=]\\s*v?([0-9]+(?:\\.[0-9]+){0,3})/iu', $line, $match)
-                || preg_match('/^v?([0-9]+(?:\\.[0-9]+){0,3})(?:\\s*\\||\\s|$)/i', $line, $match)) {
+            if (preg_match('/^(?:version|версия)\s*[:=]\s*v?([0-9]+(?:\.[0-9]+){0,3})/iu', $line, $match)
+                || preg_match('/^v?([0-9]+(?:\.[0-9]+){0,3})(?:\s*\||\s|$)/i', $line, $match)) {
                 $otaVersions[] = $match[1];
                 break;
             }
