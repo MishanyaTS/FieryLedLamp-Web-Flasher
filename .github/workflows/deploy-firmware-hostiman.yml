@@ -17,7 +17,7 @@ permissions:
 
 concurrency:
   group: deploy-firmware-hostiman
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -27,6 +27,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - name: Build shared site header
         run: python3 scripts/render-header.py
@@ -43,6 +45,16 @@ jobs:
           test -n "$FTP_USER" || { echo "Missing HOSTIMAN_FIRMWARE_FTP_USER"; exit 1; }
           test -n "$FTP_PASSWORD" || { echo "Missing HOSTIMAN_FIRMWARE_FTP_PASSWORD"; exit 1; }
 
+      - name: Validate firmware site before upload
+        run: |
+          test -s firmware/index.html
+          test -s firmware/app.js
+          test -s firmware/config.js
+          test -s firmware/update/versions.php
+          test -s firmware/update/download.php
+          php -l firmware/update/versions.php
+          php -l firmware/update/download.php
+
       - name: Prepare firmware site
         run: |
           rm -rf .deploy-firmware
@@ -55,11 +67,14 @@ jobs:
           FTP_PORT: ${{ secrets.HOSTIMAN_FTP_PORT }}
           FTP_USER: ${{ secrets.HOSTIMAN_FIRMWARE_FTP_USER }}
           FTP_PASSWORD: ${{ secrets.HOSTIMAN_FIRMWARE_FTP_PASSWORD }}
+          DEPLOY_BEFORE_SHA: ${{ github.event.before }}
+          DEPLOY_AFTER_SHA: ${{ github.sha }}
         run: |
           python3 - <<'PY'
           import ftplib
           import os
           import posixpath
+          import subprocess
           from pathlib import Path
 
           host = os.environ["FTP_HOST"]
@@ -177,5 +192,69 @@ jobs:
                           pass
 
           clean_remote("/")
+
+          # The /update and /new_version folders may also contain large ZIPs
+          # uploaded directly to HostiMan, not committed to GitHub. A blanket
+          # mirror --delete would remove those live releases. Instead, remove
+          # ONLY files explicitly deleted from GitHub in this push.
+          before = os.environ.get("DEPLOY_BEFORE_SHA", "").strip()
+          after = os.environ.get("DEPLOY_AFTER_SHA", "").strip()
+          deleted_paths = []
+          if before and before != "0" * 40 and after:
+              result = subprocess.run(
+                  ["git", "diff", "--no-renames", "--diff-filter=D",
+                   "--name-only", "-z", before, after, "--", "firmware/"],
+                  stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True
+              )
+              deleted_paths = [
+                  p.decode("utf-8", errors="surrogateescape")
+                  for p in result.stdout.split(b"\0") if p
+              ]
+          else:
+              print("No push comparison available; ordinary stale file cleanup still ran.")
+
+          removed = []
+          for git_path in deleted_paths:
+              if not git_path.startswith("firmware/"):
+                  continue
+              rel = git_path[len("firmware/"):]
+              # Only server-only-archive directories need this extra cleanup;
+              # ordinary site files are handled by clean_remote above.
+              if not rel.startswith(("update/", "new_version/")):
+                  continue
+              parts = rel.split("/")
+              if not parts or any(p in ("", ".", "..") for p in parts):
+                  raise RuntimeError(f"Unsafe Git path: {git_path!r}")
+              remote = "/" + rel
+              if remote in local_paths or remote in local_dirs:
+                  continue
+              try:
+                  ftp.delete(remote)
+                  print(f"Removed Git-deleted file {remote}")
+                  removed.append(remote)
+              except ftplib.error_perm as error:
+                  # Missing already-removed files are fine, permission errors aren't.
+                  try:
+                      ftp.size(remote)
+                  except ftplib.error_perm:
+                      print(f"Already absent: {remote} ({error})")
+                  else:
+                      raise
+
+          # Remove only now-empty parent directories. rmd fails harmlessly when
+          # a version folder contains a manual update.zip or other live files.
+          parents = set()
+          for remote in removed:
+              directory = posixpath.dirname(remote)
+              while directory not in ("/", "/update", "/new_version", ""):
+                  parents.add(directory)
+                  directory = posixpath.dirname(directory)
+          for directory in sorted(parents, key=lambda p: p.count("/"), reverse=True):
+              try:
+                  ftp.rmd(directory)
+                  print(f"Removed empty directory {directory}")
+              except ftplib.error_perm:
+                  pass
+
           ftp.quit()
           PY
