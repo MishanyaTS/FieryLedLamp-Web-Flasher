@@ -26,6 +26,7 @@
     if (el) el.textContent = value;
   };
   let statsCsrf = "";
+  let statsLoadId = 0;
 
   function renderRows(targetId, rows, nameKey) {
     const target = document.querySelector(targetId);
@@ -130,6 +131,7 @@
   }
 
   async function loadStats() {
+    const loadId = ++statsLoadId;
     try {
       const me = await parse(await api("me"));
       statsCsrf = me.csrf || "";
@@ -149,7 +151,12 @@
         return response.json();
       }).catch(() => null);
       const data = await parse(await api("admin-stats&days=" + encodeURIComponent(days)));
-      renderStats(data, await catalogRequest);
+      if (loadId !== statsLoadId) return;
+      // Do not delay the admin page while the other subdomain responds.
+      renderStats(data, { versions: [], otaVersions: [] });
+      catalogRequest.then(catalog => {
+        if (loadId === statsLoadId) renderFirmwareVersions(data.firmwareVersions || [], catalog);
+      });
     } catch (error) {
       setText("#statsLoading", error.message);
     }
