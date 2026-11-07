@@ -233,13 +233,25 @@ jobs:
                   print(f"Removed Git-deleted file {remote}")
                   removed.append(remote)
               except ftplib.error_perm as error:
-                  # Missing already-removed files are fine, permission errors aren't.
+                  # FTP 550 can mean both "not found" and "permission denied".
+                  # Verify the parent listing instead of silently hiding errors.
+                  parent = posixpath.dirname(remote)
                   try:
-                      ftp.size(remote)
+                      still_exists = any(
+                          name == posixpath.basename(remote)
+                          for name, _ in list_dir(parent)
+                      )
                   except ftplib.error_perm:
-                      print(f"Already absent: {remote} ({error})")
-                  else:
-                      raise
+                      if remote_type(parent) == "dir":
+                          raise RuntimeError(
+                              f"Cannot verify removal of {remote}: {error}"
+                          ) from error
+                      still_exists = False
+                  if still_exists:
+                      raise RuntimeError(
+                          f"Failed to delete Git-deleted file {remote}: {error}"
+                      ) from error
+                  print(f"Already absent: {remote}")
 
           # Remove only now-empty parent directories. rmd fails harmlessly when
           # a version folder contains a manual update.zip or other live files.
