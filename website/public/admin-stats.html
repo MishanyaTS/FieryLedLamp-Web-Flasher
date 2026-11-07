@@ -127,32 +127,36 @@
     <div id="statsLoading" class="stats-loading">Загрузка статистики…</div>
 
     <div id="statsContent" hidden>
+      <p class="stats-period-description">Все показатели ниже относятся к выбранному периоду. «Подтверждены» и «Подписчики» показывают текущее состояние пользователей, зарегистрированных за этот период.</p>
       <div class="stats-cards">
         <div class="stats-card"><span>Посещения сайта</span><strong id="statPageViews">0</strong></div>
         <div class="stats-card"><span>Посещения Web Flasher</span><strong id="statFlasherViews">0</strong></div>
         <div class="stats-card"><span>Уникальные посетители</span><strong id="statUnique">0</strong></div>
         <div class="stats-card"><span>Регистрации</span><strong id="statRegistrations">0</strong></div>
-        <div class="stats-card"><span>Подтверждены</span><strong id="statVerified">0</strong></div>
-        <div class="stats-card"><span>Подписчики</span><strong id="statSubscribers">0</strong></div>
-        <div class="stats-card"><span>Web Flasher · прошивки</span><strong id="statFirmwareN16R8">0</strong></div>
-        <div class="stats-card"><span>Автообновление · прошивки</span><strong id="statFirmwareOta">0</strong></div>
+        <div class="stats-card"><span>Подтверждены среди новых</span><strong id="statVerified">0</strong></div>
+        <div class="stats-card"><span>Подписчики среди новых</span><strong id="statSubscribers">0</strong></div>
         <div class="stats-card"><span>Windows</span><strong id="statWindows">0</strong></div>
         <div class="stats-card"><span>iOS</span><strong id="statIos">0</strong></div>
         <div class="stats-card"><span>Android / RuStore</span><strong id="statAndroid">0</strong></div>
       </div>
 
       <section class="stats-section">
-        <div class="stats-section-head">
+        <div class="stats-section-head stats-firmware-head">
           <div>
             <h2>Скачивания прошивки по версиям</h2>
-            <p>Отдельно через Web Flasher и автоматическое обновление. Данные за выбранный период.</p>
+            <p>Выберите версию для просмотра скачиваний за указанный выше период.</p>
           </div>
+          <label class="stats-version-picker" for="firmwareVersionSelect">
+            <span>Версия прошивки</span>
+            <select id="firmwareVersionSelect" aria-label="Выберите версию прошивки" disabled>
+              <option value="">Загрузка версий…</option>
+            </select>
+          </label>
         </div>
-        <div class="stats-table-wrap stats-firmware-table-wrap">
-          <table class="stats-table stats-firmware-table">
-            <thead><tr><th>Версия</th><th>Web Flasher</th><th>Автообновление</th><th>Всего</th></tr></thead>
-            <tbody id="firmwareVersionRows"><tr><td colspan="4">Загрузка версий…</td></tr></tbody>
-          </table>
+        <div class="stats-firmware-cards">
+          <div class="stats-card"><span>Web Flasher</span><strong id="firmwareVersionWeb">0</strong></div>
+          <div class="stats-card"><span>Автообновление</span><strong id="firmwareVersionOta">0</strong></div>
+          <div class="stats-card"><span>Всего</span><strong id="firmwareVersionTotal">0</strong></div>
         </div>
         <p id="firmwareStatsNote" class="stats-firmware-note">Считаются загрузки архивов; успешное завершение прошивки отдельно не учитывается.</p>
       </section>
