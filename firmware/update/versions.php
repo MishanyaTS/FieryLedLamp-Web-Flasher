@@ -6,6 +6,8 @@ declare(strict_types=1);
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('X-Content-Type-Options: nosniff');
+// Public list of releases is used by the administrator statistics page.
+header('Access-Control-Allow-Origin: *');
 
 $base = __DIR__;
 $defaultManifest = $base . '/manifest.json';
@@ -61,4 +63,31 @@ if (!$releases && is_file($base . '/update.zip') && is_file($defaultManifest)) {
     ];
 }
 
-echo json_encode(['versions' => $releases], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+// OTA releases may be published separately under /new_version/update.
+$otaVersions = [];
+$otaRoot = dirname(__DIR__) . '/new_version/update';
+if (is_dir($otaRoot)) {
+    foreach (new DirectoryIterator($otaRoot) as $entry) {
+        if (!$entry->isDir() || $entry->isDot() || $entry->isLink()) continue;
+        $version = $entry->getFilename();
+        if (!preg_match('/^v?[0-9]+(?:\\.[0-9]+){0,3}$/D', $version)) continue;
+        $zip = $entry->getPathname() . '/update.zip';
+        if (is_file($zip) && filesize($zip) > 0) $otaVersions[] = ltrim($version, 'vV');
+    }
+
+    // The existing OTA release can also live directly in /new_version/update.
+    if (is_file($otaRoot . '/update.zip') && filesize($otaRoot . '/update.zip') > 0
+        && is_file($otaRoot . '/version.txt')) {
+        foreach (file($otaRoot . '/version.txt', FILE_IGNORE_NEW_LINES) ?: [] as $line) {
+            $line = trim((string)$line);
+            if (preg_match('/^(?:version|версия)\\s*[:=]\\s*v?([0-9]+(?:\\.[0-9]+){0,3})/iu', $line, $match)
+                || preg_match('/^v?([0-9]+(?:\\.[0-9]+){0,3})(?:\\s*\\||\\s|$)/i', $line, $match)) {
+                $otaVersions[] = $match[1];
+                break;
+            }
+        }
+    }
+}
+$otaVersions = array_values(array_unique($otaVersions));
+usort($otaVersions, static fn(string $a, string $b): int => version_compare($b, $a));
+echo json_encode(['versions' => $releases, 'otaVersions' => $otaVersions], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
