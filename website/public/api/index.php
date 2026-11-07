@@ -534,7 +534,7 @@ function analytics_totals(PDO $pdo, string $from): array {
         if (isset($keys[$event])) $totals[$keys[$event]] += (int)$row['cnt'];
         // Historical empty/update.zip items also belong to N16R8.
         if ($event === 'firmware_download' && (in_array((string)$row['item'], ['n16r8', 'update.zip', ''], true)
-            || preg_match('/^v:(?:[0-9]+(?:\\.[0-9]+){0,3}|legacy)$/', (string)$row['item']))) {
+            || preg_match('/^v:(?:[0-9]+(?:\.[0-9]+){0,3}|legacy)$/', (string)$row['item']))) {
             $totals['firmwareDownloadsN16R8'] += (int)$row['cnt'];
         }
         if ($event === 'firmware_ota_download') {
@@ -708,7 +708,7 @@ function admin_stats(PDO $pdo): never {
                 case 'firmware_download':
                     $item = (string)($row['item'] ?? '');
                     if ($item === 'n16r8' || $item === 'update.zip' || $item === ''
-                        || preg_match('/^v:(?:[0-9]+(?:\\.[0-9]+){0,3}|legacy)$/', $item)) {
+                        || preg_match('/^v:(?:[0-9]+(?:\.[0-9]+){0,3}|legacy)$/', $item)) {
                         $daily[$date]['firmware'] += $count;
                         $daily[$date]['firmwareN16R8'] += $count;
                     }
@@ -734,7 +734,7 @@ function admin_stats(PDO $pdo): never {
         $firmwareVersionsById = [];
         foreach ($stmt->fetchAll() as $row) {
             $item = (string)$row['item'];
-            $version = preg_match('/^v:([0-9]+(?:\\.[0-9]+){0,3})$/', $item, $matches)
+            $version = preg_match('/^v:([0-9]+(?:\.[0-9]+){0,3})$/', $item, $matches)
                 ? $matches[1] : 'legacy';
             if (!isset($firmwareVersionsById[$version])) {
                 $firmwareVersionsById[$version] = [
