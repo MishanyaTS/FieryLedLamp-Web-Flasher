@@ -39,7 +39,52 @@
     ).join("");
   }
 
-  function renderStats(data) {
+  function renderFirmwareVersions(statRows, catalog) {
+    const versions = new Map();
+    const ensure = raw => {
+      const version = String(raw || "").replace(/^v(?=\\d)/i, "");
+      if (!version || !/^(?:\\d+(?:\\.\\d+){0,3}|legacy)$/.test(version)) return;
+      if (!versions.has(version)) versions.set(version, { version, webFlasher: 0, ota: 0 });
+    };
+    (catalog?.versions || []).forEach(row => ensure(row.version));
+    (catalog?.otaVersions || []).forEach(version => ensure(version));
+    for (const row of statRows) {
+      ensure(row.version);
+      const version = String(row.version || "").replace(/^v(?=\\d)/i, "");
+      const entry = versions.get(version);
+      if (!entry) continue;
+      entry.webFlasher += Number(row.webFlasher) || 0;
+      entry.ota += Number(row.ota) || 0;
+    }
+
+    const rows = [...versions.values()].sort((a, b) => {
+      if (a.version === "legacy") return 1;
+      if (b.version === "legacy") return -1;
+      const partsA = a.version.split(".").map(Number);
+      const partsB = b.version.split(".").map(Number);
+      for (let i = 0; i < Math.max(partsA.length, partsB.length); i++) {
+        const delta = (partsB[i] || 0) - (partsA[i] || 0);
+        if (delta) return delta;
+      }
+      return 0;
+    });
+
+    const tbody = document.querySelector("#firmwareVersionRows");
+    if (!tbody) return;
+    tbody.innerHTML = rows.length ? rows.map(row =>
+      "<tr><td>" + (row.version === "legacy" ? "Ранее · версия неизвестна" : "Версия " + esc(row.version)) +
+      "</td><td>" + num(row.webFlasher) + "</td><td>" + num(row.ota) +
+      "</td><td><strong>" + num(row.webFlasher + row.ota) + "</strong></td></tr>"
+    ).join("") : '<tr><td colspan="4">Пока нет опубликованных версий и скачиваний</td></tr>';
+
+    const note = document.querySelector("#firmwareStatsNote");
+    if (note) note.textContent =
+      "Считаются запросы на загрузку архивов, а не успешные прошивки. " +
+      "Старые события без номера версии сохранены отдельно." +
+      (catalog ? "" : " Не удалось получить список версий с сайта прошивки — показаны зарегистрированные скачивания.");
+  }
+
+  function renderStats(data, catalog = null) {
     setText("#statPageViews", num(data.totals.pageViews));
     setText("#statFlasherViews", num(data.totals.flasherViews));
     setText("#statUnique", num(data.totals.uniqueVisitors));
@@ -47,6 +92,7 @@
     setText("#statVerified", num(data.totals.verifiedUsers));
     setText("#statSubscribers", num(data.totals.subscribers));
     setText("#statFirmwareN16R8", num(data.totals.firmwareDownloadsN16R8));
+    setText("#statFirmwareOta", num(data.totals.firmwareOtaDownloads));
     setText("#statWindows", num(data.totals.windowsDownloads));
     setText("#statIos", num(data.totals.iosDownloads));
     setText("#statAndroid", num(data.totals.androidClicks));
@@ -58,6 +104,7 @@
     renderRows("#countryRows", data.countries, "country_name");
     renderRows("#registrationCountryRows", data.registrationCountries, "country_name");
     renderRows("#pageRows", data.topPages, "path");
+    renderFirmwareVersions(data.firmwareVersions || [], catalog);
 
     const chart = document.querySelector("#statsChart");
     const max = Math.max(1, ...data.daily.map(row => Number(row.visits) || 0));
@@ -70,6 +117,7 @@
         const firmwareTitle = 'ESP32-S3 N16R8: ' + num(row.firmwareN16R8);
         markers += '<i class="stats-marker firmware" title="' + esc(firmwareTitle) + '"></i>';
       }
+      if (row.firmwareOta) markers += '<i class="stats-marker ota" title="Автообновление: ' + num(row.firmwareOta) + '"></i>';
       if (row.apps) markers += '<i class="stats-marker apps" title="Приложения: ' + num(row.apps) + '"></i>';
       return '<div class="stats-day" title="' + esc(row.date) + ': ' + num(row.visits) + ' посещений">' +
         '<div class="stats-day-bars"><i class="stats-bar visits" style="height:' + height + '%"></i>' + markers + '</div>' +
@@ -90,8 +138,18 @@
         return;
       }
       const days = document.querySelector("#statsDays").value;
+      // This public catalog is served by firmware.fieryledlamp.ru.
+      // Missing catalog never hides the counters already stored in MySQL.
+      const catalogRequest = fetch("https://firmware.fieryledlamp.ru/update/versions.php", {
+        cache: "no-store",
+        mode: "cors",
+        signal: typeof AbortSignal.timeout === "function" ? AbortSignal.timeout(4000) : undefined
+      }).then(response => {
+        if (!response.ok) throw new Error("HTTP " + response.status);
+        return response.json();
+      }).catch(() => null);
       const data = await parse(await api("admin-stats&days=" + encodeURIComponent(days)));
-      renderStats(data);
+      renderStats(data, await catalogRequest);
     } catch (error) {
       setText("#statsLoading", error.message);
     }
