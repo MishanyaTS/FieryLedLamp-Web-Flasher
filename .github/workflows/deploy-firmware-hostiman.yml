@@ -72,6 +72,7 @@ jobs:
         run: |
           python3 - <<'PY'
           import ftplib
+          import io
           import os
           import posixpath
           import subprocess
@@ -82,7 +83,8 @@ jobs:
           user = os.environ["FTP_USER"]
           password = os.environ["FTP_PASSWORD"]
           local_root = Path(".deploy-firmware")
-          preserve = {".well-known", ".htaccess"}
+          deployed_sha_file = "/.fiery-firmware-deployed-sha"
+          preserve = {".well-known", ".htaccess", ".fiery-firmware-deployed-sha"}
 
           ftp = ftplib.FTP(timeout=30)
           ftp.connect(host, port)
@@ -193,12 +195,22 @@ jobs:
 
           clean_remote("/")
 
-          # The /update and /new_version folders may also contain large ZIPs
-          # uploaded directly to HostiMan, not committed to GitHub. A blanket
-          # mirror --delete would remove those live releases. Instead, remove
-          # ONLY files explicitly deleted from GitHub in this push.
-          before = os.environ.get("DEPLOY_BEFORE_SHA", "").strip()
+          # /update and /new_version may contain live ZIPs uploaded directly
+          # to HostiMan. Delete only files removed from GitHub since the last
+          # SUCCESSFUL deploy, preserving server-only archives and folders.
           after = os.environ.get("DEPLOY_AFTER_SHA", "").strip()
+          before = os.environ.get("DEPLOY_BEFORE_SHA", "").strip()
+          try:
+              deployed_sha = bytearray()
+              ftp.retrbinary(
+                  "RETR " + deployed_sha_file, deployed_sha.extend
+              )
+              previous = deployed_sha.decode("ascii").strip()
+              if len(previous) == 40 and all(c in "0123456789abcdef" for c in previous):
+                  before = previous
+                  print(f"Previous successful deployment: {before}")
+          except ftplib.error_perm:
+              print("No previous deployment marker; using GitHub push range.")
           deleted_paths = []
           if before and before != "0" * 40 and after:
               result = subprocess.run(
@@ -211,7 +223,7 @@ jobs:
                   for p in result.stdout.split(b"\0") if p
               ]
           else:
-              print("No push comparison available; ordinary stale file cleanup still ran.")
+              print("No previous GitHub revision available; ordinary site cleanup still ran.")
 
           removed = []
           for git_path in deleted_paths:
@@ -267,6 +279,16 @@ jobs:
                   print(f"Removed empty directory {directory}")
               except ftplib.error_perm:
                   pass
+
+          # Save the commit only after uploads and deletions finish successfully.
+          # A later manual run compares against this commit, not against the
+          # immediately preceding push, so rapid pushes cannot lose deletions.
+          if after:
+              ftp.storbinary(
+                  "STOR " + deployed_sha_file,
+                  io.BytesIO((after + "\n").encode("ascii"))
+              )
+              print(f"Deployment checkpoint saved: {after}")
 
           ftp.quit()
           PY
