@@ -27,6 +27,8 @@
   };
   let statsCsrf = "";
   let statsLoadId = 0;
+  let selectedFirmwareVersion = "";
+  let firmwareVersionCounters = new Map();
 
   function renderRows(targetId, rows, nameKey) {
     const target = document.querySelector(targetId);
@@ -38,6 +40,14 @@
     target.innerHTML = rows.map(row =>
       '<tr><td>' + esc(row[nameKey] || "Неизвестно") + '</td><td>' + num(row.cnt) + '</td></tr>'
     ).join("");
+  }
+
+  function showSelectedFirmwareVersion() {
+    const selector = document.querySelector("#firmwareVersionSelect");
+    const current = firmwareVersionCounters.get(selector?.value);
+    setText("#firmwareVersionWeb", num(current?.webFlasher ?? 0));
+    setText("#firmwareVersionOta", num(current?.ota ?? 0));
+    setText("#firmwareVersionTotal", num((current?.webFlasher ?? 0) + (current?.ota ?? 0)));
   }
 
   function renderFirmwareVersions(statRows, catalog) {
@@ -70,19 +80,35 @@
       return 0;
     });
 
-    const tbody = document.querySelector("#firmwareVersionRows");
-    if (!tbody) return;
-    tbody.innerHTML = rows.length ? rows.map(row =>
-      "<tr><td>" + (row.version === "legacy" ? "Ранее · версия неизвестна" : "Версия " + esc(row.version)) +
-      "</td><td>" + num(row.webFlasher) + "</td><td>" + num(row.ota) +
-      "</td><td><strong>" + num(row.webFlasher + row.ota) + "</strong></td></tr>"
-    ).join("") : '<tr><td colspan="4">Пока нет опубликованных версий и скачиваний</td></tr>';
+    firmwareVersionCounters = versions;
+    const select = document.querySelector("#firmwareVersionSelect");
+    if (!select) return;
+    // Keep the chosen version when the time period or catalog is refreshed.
+    const previous = selectedFirmwareVersion || select.value;
+    select.replaceChildren();
+    if (!rows.length) {
+      const option = document.createElement("option");
+      option.textContent = "Версий пока нет";
+      option.value = "";
+      select.appendChild(option);
+      select.disabled = true;
+    } else {
+      for (const row of rows) {
+        const option = document.createElement("option");
+        option.value = row.version;
+        option.textContent = row.version === "legacy" ? "Ранее (версия неизвестна)" : "Версия " + row.version;
+        select.appendChild(option);
+      }
+      select.disabled = false;
+      select.value = versions.has(previous) ? previous : rows[0].version;
+    }
+    showSelectedFirmwareVersion();
 
     const note = document.querySelector("#firmwareStatsNote");
     if (note) note.textContent =
-      "Считаются запросы на загрузку архивов, а не успешные прошивки. " +
-      "Старые события без номера версии сохранены отдельно." +
-      (catalog ? "" : " Не удалось получить список версий с сайта прошивки — показаны зарегистрированные скачивания.");
+      "Считаются загрузки архивов, а не успешные прошивки. " +
+      "Ранние события без номера версии сохранены отдельно." +
+      (catalog ? "" : " Список опубликованных версий сейчас недоступен — показаны зарегистрированные скачивания.");
   }
 
   function renderStats(data, catalog = null) {
@@ -92,8 +118,6 @@
     setText("#statRegistrations", num(data.totals.registrations));
     setText("#statVerified", num(data.totals.verifiedUsers));
     setText("#statSubscribers", num(data.totals.subscribers));
-    setText("#statFirmwareN16R8", num(data.totals.firmwareDownloadsN16R8));
-    setText("#statFirmwareOta", num(data.totals.firmwareOtaDownloads));
     setText("#statWindows", num(data.totals.windowsDownloads));
     setText("#statIos", num(data.totals.iosDownloads));
     setText("#statAndroid", num(data.totals.androidClicks));
@@ -158,9 +182,14 @@
         if (loadId === statsLoadId) renderFirmwareVersions(data.firmwareVersions || [], catalog);
       });
     } catch (error) {
-      setText("#statsLoading", error.message);
+      if (loadId === statsLoadId) setText("#statsLoading", error.message);
     }
   }
+
+  document.querySelector("#firmwareVersionSelect")?.addEventListener("change", event => {
+    selectedFirmwareVersion = event.target.value;
+    showSelectedFirmwareVersion();
+  });
 
   document.querySelector("#statsDays")?.addEventListener("change", () => {
     document.querySelector("#statsContent").hidden = true;
