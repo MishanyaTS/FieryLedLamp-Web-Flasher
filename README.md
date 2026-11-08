@@ -65,27 +65,9 @@ update/
 
 Проверяйте PHP и скачивание в рабочем окружении HostiMan до переноса публичных пользователей. Через загрузку бинарного ZIP необходимо убедиться, что сервер отправляет корректный `Content-Length` и не применяет HTTP-сжатие.
 
-## Предпросмотр и ручная публикация
-
-**Обычные изменения `main` больше НЕ отправляются на HostiMan.** После каждого коммита GitHub Actions запускает `.github/workflows/preview.yml` (действие **Preview sites (automatic)**). Оно проверяет Python/JS/PHP, собирает обе страницы и сохраняет архив **preview-site-<SHA коммита>** во вкладке Actions → Preview sites (automatic) → последний запуск → Artifacts. Архив хранится 30 дней. Для технического предпросмотра и проверки сборки не нужны FTP-пароли.
-
-**Предпросмотр прямо в браузере (дополнительная однократная настройка):**
-
-1. В GitHub откройте Settings → Pages и выберите **Build and deployment → Source → GitHub Actions**.
-2. Затем Settings → Secrets and variables → Actions → Variables → **New repository variable**. Название: `FIERY_PAGES_PREVIEW_ENABLED`, значение: `true`.
-3. Откройте Actions → **Preview sites (automatic)** и выберите **Run workflow** для `main`. После успешного запуска будут доступны:
-   - основной сайт: `https://mishanyats.github.io/FieryLedLamp-Web-Flasher/`
-   - Web Flasher: `https://mishanyats.github.io/FieryLedLamp-Web-Flasher/firmware/`
-
-GitHub Pages требует подходящего тарифа для **приватных** репозиториев; при GitHub Free Pages обычно доступны только публичным репозиториям. **Не делайте репозиторий публичным только ради предпросмотра**, поскольку он содержит серверный код. Если Pages недоступен, автоматический ZIP предпросмотра в Actions продолжит собираться без публикации на сервер.
-
-**Важно:** ссылки Pages общедоступны. В предпросмотр включаются только HTML/CSS/JS/изображения, без PHP, приватных настроек, BIN, ZIP, EXE и IPA. Аккаунты, форум, ЛС, статистика и физическая прошивка в статическом варианте не работают; для проверки этих функций нужно отдельное тестовое PHP-окружение с тестовой БД.
-
-**Как выпустить проверенную версию:** зайдите в Actions → **Deploy website to HostiMan** (основной сайт) или **Deploy firmware site to HostiMan** (Web Flasher) → **Run workflow**, выберите ветку `main`, отметьте подтверждение проверки предпросмотра и нажмите кнопку запуска. Каждый workflow откажется отправлять файлы, если для **точно этого SHA** отсутствует действующий архив предпросмотра. После этого запускается обычная синхронизация FTP на Hostiman.
-
 ## Публикация
 
-GitHub Actions выполняет **только ручную** публикацию в Hostiman двумя независимыми workflow:
+GitHub Actions публикует изменения ветки `main` двумя независимыми workflow:
 
 - `.github/workflows/deploy-hostiman.yml` — основной сайт; также копирует `firmware/Version.txt` и оптимизирует схему.
 - `.github/workflows/deploy-firmware-hostiman.yml` — сайт прошивки.
