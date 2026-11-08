@@ -14,11 +14,11 @@
   "ready": true,
   "files": [
     {
-      "name": "FieryLedLamp.ino.bootloader.bin",
+      "name": "bootloader.bin",
       "address": "0x00000000"
     },
     {
-      "name": "FieryLedLamp.ino.partitions.bin",
+      "name": "partitions.bin",
       "address": "0x00008000"
     },
     {
@@ -26,11 +26,11 @@
       "address": "0x0000E000"
     },
     {
-      "name": "FieryLedLamp.ino.bin",
+      "name": "firmware.bin",
       "address": "0x00010000"
     },
     {
-      "name": "FieryLedLamp.littlefs.bin",
+      "name": "littlefs.bin",
       "address": "0x00C90000"
     }
   ],
