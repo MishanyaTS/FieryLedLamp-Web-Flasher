@@ -2,8 +2,6 @@
   const SOURCE = "/Version.txt";
 
   const history = document.querySelector("#versionHistory");
-  const currentVersion = document.querySelector("#currentVersion");
-  const latestNotes = document.querySelector("#versionLatestNotes");
   const search = document.querySelector("#versionSearch");
   const visibleCount = document.querySelector("#versionVisibleCount");
   const noResults = document.querySelector("#versionNoResults");
@@ -25,9 +23,6 @@
 
   function parseHistory(text) {
     const lines = text.replace(/\r/g, "").split("\n");
-    const currentLine = lines.find(line => /^Текущая версия\s*:/i.test(line.trim())) || "";
-    const current = currentLine.replace(/^Текущая версия\s*:\s*/i, "").trim();
-
     const marker = lines.findIndex(line => /ИСТОРИЯ ВЕРСИЙ/i.test(line));
     const source = marker >= 0 ? lines.slice(marker + 1) : lines;
     const versions = [];
@@ -45,7 +40,7 @@
       }
     }
 
-    return { current, versions };
+    return { versions };
   }
 
   function getVersionNumber(title) {
@@ -53,26 +48,7 @@
     return match ? "v" + match[1] : title;
   }
 
-  function renderLatest(data) {
-    const latest = data.versions[0];
-    if (currentVersion) {
-      currentVersion.textContent = displayText(data.current || latest?.title || "не определена");
-    }
-    if (!latestNotes || !latest) return;
-
-    const items = latest.changes
-      .filter(line => /^[-–—]\s*/.test(line))
-      .slice(0, 3)
-      .map(line => line.replace(/^[-–—]\s*/, ""));
-
-    latestNotes.innerHTML = (items.length ? items : ["Актуальная версия прошивки Fiery Led Lamp."])
-      .map(item => `<div><span>✓</span><p>${escapeHtml(displayText(item))}</p></div>`)
-      .join("");
-  }
-
   function render(data) {
-    renderLatest(data);
-
     history.innerHTML = data.versions.map((version, index) => {
       const number = getVersionNumber(version.title);
       const subtitle = version.title
@@ -100,12 +76,12 @@
             <div class="version-release-main">
               <div class="version-number">${escapeHtml(number)}</div>
               <div class="version-release-title">
-                <h3>${index === 0 ? "Текущая версия" : "Fiery Led Lamp"}</h3>
+                <h3>${index === 0 ? "Актуальная версия" : "Fiery Led Lamp"}</h3>
                 ${subtitle ? `<span>${escapeHtml(subtitle)}</span>` : ""}
               </div>
             </div>
             <div class="version-release-side">
-              ${index === 0 ? '<span class="version-current-badge">Текущая</span>' : ""}
+              ${index === 0 ? '<span class="version-current-badge">Актуальная</span>' : ""}
               <span class="version-toggle"></span>
             </div>
           </summary>
@@ -161,9 +137,7 @@
     })
     .catch(error => {
       history.innerHTML = `<div class="version-state error"><b>Не удалось загрузить историю версий</b><span>${escapeHtml(error.message)}</span></div>`;
-      if (currentVersion) currentVersion.textContent = "недоступна";
       if (visibleCount) visibleCount.textContent = "-";
-      if (latestNotes) latestNotes.innerHTML = '<div><span>!</span><p>Источник временно недоступен.</p></div>';
       if (noResults) noResults.hidden = true;
     });
 })();
