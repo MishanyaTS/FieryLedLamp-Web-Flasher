@@ -69,6 +69,8 @@ let selectedBoard = SITE_CONFIG.board || null;
 let selectedPort = null;
 let isBusy = false;
 let diagnosticReady = false;
+let lastFirmwareResetAt = 0;
+const FIRMWARE_BOOT_GRACE_MS = 6500;
 
 function stamp() { return new Date().toLocaleTimeString("ru-RU", { hour12: false }); }
 function log(message = "") {
@@ -465,91 +467,139 @@ async function backupSettingsBeforeFlash() {
 
   const baud = Number(manifest?.settingsBackupBaudRate || 115200);
   let reader = null;
+  let writer = null;
+  let readerTask = null;
   let opened = false;
-  let timeoutId = null;
-  let timedOut = false;
+  let reading = true;
+  let received = "";
+  let receiveError = null;
 
   log(`Сохранение настроек перед прошивкой через USB (${baud} бод)…`);
   setProgress(12, "Сохранение настроек…");
+
+  const bootWait = lastFirmwareResetAt
+    ? Math.max(0, FIRMWARE_BOOT_GRACE_MS - (Date.now() - lastFirmwareResetAt))
+    : 0;
+  if (bootWait > 0) {
+    log(`Ожидание запуска лампы после аппаратной диагностики: ${Math.ceil(bootWait / 1000)} с…`);
+    setProgress(12, "Ожидание запуска лампы…");
+    await delay(bootWait);
+  }
 
   try {
     await selectedPort.open({ baudRate: baud });
     opened = true;
 
     try {
+      // DTR/RTS must stay released while the running firmware handles commands.
       await selectedPort.setSignals({ dataTerminalReady: false, requestToSend: false });
     } catch (_) {}
 
-    await delay(350);
+    await delay(500);
 
-    const writer = selectedPort.writable.getWriter();
-    try {
-      await writer.write(new TextEncoder().encode("WEBFLASH_BACKUP\n"));
-    } finally {
-      writer.releaseLock();
-    }
-
+    // Start reading before sending the command so an immediate reply cannot be lost.
     reader = selectedPort.readable.getReader();
     const decoder = new TextDecoder();
-    let received = "";
-    let result = null;
+    readerTask = (async () => {
+      try {
+        while (reading) {
+          const { value, done } = await reader.read();
+          if (done) {
+            if (reading) receiveError = new Error("COM-порт закрылся во время сохранения настроек.");
+            break;
+          }
+          if (!value) continue;
+          received += decoder.decode(value, { stream: true });
+          if (received.length > 16384) received = received.slice(-8192);
+        }
+      } catch (error) {
+        if (reading && error?.name !== "AbortError") receiveError = error;
+      }
+    })();
 
-    timeoutId = setTimeout(() => {
-      timedOut = true;
-      reader?.cancel().catch(() => {});
-    }, 20000);
+    writer = selectedPort.writable.getWriter();
+    const command = new TextEncoder().encode("WEBFLASH_BACKUP\n");
+    let started = false;
+    let completed = false;
+    let lampError = null;
 
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      if (!value) continue;
-
-      received += decoder.decode(value, { stream: true });
-
-      if (received.includes("WEBFLASH_BACKUP_START")) {
+    const inspectResponse = () => {
+      if (!started && received.includes("WEBFLASH_BACKUP_START")) {
+        started = true;
+        log("Лампа подтвердила начало архивации настроек.");
         setProgress(13, "Архивация настроек…");
       }
+      if (received.includes("WEBFLASH_BACKUP_OK")) completed = true;
 
-      if (received.includes("WEBFLASH_BACKUP_OK")) {
-        result = { ok: true };
-        break;
+      if (!lampError) {
+        const errorPos = received.indexOf("WEBFLASH_BACKUP_ERROR:");
+        if (errorPos >= 0) {
+          const rest = received.slice(errorPos + "WEBFLASH_BACKUP_ERROR:".length);
+          const end = rest.search(/[\r\n]/);
+          lampError = (end >= 0 ? rest.slice(0, end) : rest).trim() || "unknown";
+        }
       }
+    };
 
-      const errorPos = received.indexOf("WEBFLASH_BACKUP_ERROR:");
-      if (errorPos >= 0) {
-        const rest = received.slice(errorPos + "WEBFLASH_BACKUP_ERROR:".length);
-        const end = rest.search(/[\r\n]/);
-        result = { ok: false, error: (end >= 0 ? rest.slice(0, end) : rest).trim() || "unknown" };
-        break;
+    // The firmware may still be finishing setup after the diagnostic reset.
+    // Retry only until START/OK is received; never resend during an active backup.
+    const responseDeadline = Date.now() + 20000;
+    let attempt = 0;
+    while (!started && !completed && !lampError && Date.now() < responseDeadline) {
+      attempt += 1;
+      log(attempt === 1
+        ? "Отправка WEBFLASH_BACKUP…"
+        : `Ответ не получен, повтор WEBFLASH_BACKUP (${attempt})…`);
+      await writer.write(command);
+
+      const attemptDeadline = Math.min(responseDeadline, Date.now() + 3000);
+      while (!started && !completed && !lampError && Date.now() < attemptDeadline) {
+        inspectResponse();
+        if (receiveError) throw receiveError;
+        if (!started && !completed && !lampError) await delay(100);
       }
-
-      if (received.length > 8192) received = received.slice(-4096);
+      inspectResponse();
     }
 
-    if (timeoutId) clearTimeout(timeoutId);
+    if (lampError) throw new Error(`Лампа не смогла сохранить настройки: ${lampError}`);
 
-    if (result?.ok) {
-      log("Настройки сохранены в резервный раздел лампы.");
-      setProgress(14, "Настройки сохранены");
-      return true;
-    }
-
-    if (result && !result.ok) {
-      throw new Error(`Лампа не смогла сохранить настройки: ${result.error}`);
-    }
-
-    if (timedOut) {
+    if (!started && !completed) {
       throw new Error(
-        "Текущая прошивка не поддерживает автоматическое сохранение настроек через USB или не ответила за 20 секунд. " +
-        "Для прошивки без сохранения снимите галочку «Сохранить настройки перед прошивкой»."
+        "Лампа не ответила на WEBFLASH_BACKUP после возврата из аппаратной диагностики. " +
+        "Команда повторялась в течение 20 секунд. Прошивка отменена."
       );
     }
 
-    throw new Error("Соединение закрылось до завершения сохранения настроек.");
+    if (!completed) {
+      const completionDeadline = Date.now() + 60000;
+      while (!completed && !lampError && Date.now() < completionDeadline) {
+        inspectResponse();
+        if (receiveError) throw receiveError;
+        if (!completed && !lampError) await delay(100);
+      }
+      inspectResponse();
+    }
+
+    if (lampError) throw new Error(`Лампа не смогла сохранить настройки: ${lampError}`);
+    if (!completed) {
+      throw new Error("Архивация началась, но лампа не подтвердила её завершение за 60 секунд. Прошивка отменена.");
+    }
+
+    log("Настройки сохранены в резервный раздел лампы.");
+    setProgress(14, "Настройки сохранены");
+    return true;
   } finally {
-    if (timeoutId) clearTimeout(timeoutId);
+    reading = false;
+    if (writer) {
+      try { writer.releaseLock(); } catch (_) {}
+    }
     if (reader) {
       try { await reader.cancel(); } catch (_) {}
+    }
+    if (readerTask) {
+      try { await readerTask; } catch (_) {}
+    }
+    if (reader) {
       try { reader.releaseLock(); } catch (_) {}
     }
     if (opened) {
@@ -561,21 +611,34 @@ async function backupSettingsBeforeFlash() {
 async function rebootEsp32S3(transport,loader){
   log("Аппаратный перезапуск…");
   try{
-    // В esptool-js: DTR=false => GPIO0 HIGH, RTS=true => EN LOW.
-    // Явно формируем импульс RESET, затем отпускаем EN при GPIO0=HIGH,
-    // чтобы плата загрузилась из Flash, а не осталась в bootloader.
+    // Set DTR and RTS together. This is more reliable on ESP32-S3 native
+    // USB Serial/JTAG and on Windows than changing the two lines separately.
+    const serialPort = transport?.device;
+    if (serialPort?.setSignals) {
+      await serialPort.setSignals({dataTerminalReady:false, requestToSend:true});
+      await delay(200);
+      await serialPort.setSignals({dataTerminalReady:false, requestToSend:false});
+    } else {
+      await transport.setDTR(false);
+      await transport.setRTS(true);
+      await delay(200);
+      await transport.setRTS(false);
+      await transport.setDTR(false);
+    }
+    // Give native USB time to recover before closing and reopening the port.
+    await delay(1800);
+    log("Импульс RESET выполнен. Ожидание запуска прошивки.");
+  }catch(error){
+    log(`Основной RESET не выполнен: ${error?.message||error}. Пробую резервную последовательность…`);
     await transport.setDTR(false);
     await transport.setRTS(true);
-    await delay(150);
+    await delay(200);
     await transport.setRTS(false);
     await transport.setDTR(false);
-    await delay(800);
-    log("Импульс RESET выполнен.");
-  }catch(e){
-    log(`RTS/DTR reset не выполнен: ${e?.message||e}. Пробую стандартный hard_reset…`);
-    await loader.after("hard_reset");
-    await delay(500);
+    await delay(1800);
+    log("Резервный импульс RESET выполнен. Ожидание запуска прошивки.");
   }
+  lastFirmwareResetAt = Date.now();
 }
 async function safeDisconnect(t){if(!t)return;try{await t.disconnect();}catch(_){}}
 async function flash(){
