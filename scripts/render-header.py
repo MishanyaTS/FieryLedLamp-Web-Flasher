@@ -32,7 +32,7 @@ def render(template, symbols, page, firmware, version):
     values = {
         'MAIN_BASE': 'https://fieryledlamp.ru/' if firmware else '/',
         'ASSET_BASE': './' if firmware else '/',
-        'AUTH_MODE': 'off' if firmware else 'local',
+        'AUTH_MODE': 'remote' if firmware else 'local',
         'VERSION': version, 'SYMBOLS': symbols,
     }
 
