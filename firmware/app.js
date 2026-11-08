@@ -191,8 +191,14 @@ async function diagnoseSelectedPort(port) {
       transport, baudrate: 115200, romBaudrate: 115200,
       terminal: createTerminal(), debugLogging: false
     });
-    const chipName = await loader.main();
+    // ROM-only diagnosis: main() uploads a temporary flasher stub which is
+    // difficult to leave cleanly over ESP32-S3 native USB-Serial/JTAG.
+    // detectChip() leaves ROM available for the non-destructive run-app command.
+    await loader.detectChip();
     enteredLoader = true;
+    if (!loader.chip) throw new Error("Не удалось определить ESP32-S3 через ROM.");
+    const chipName = await loader.chip.getChipDescription(loader);
+    if (typeof loader.chip.postConnect === "function") await loader.chip.postConnect(loader);
     found.chip = String(chipName || "—");
     log("Диагностика: чип " + found.chip);
 
@@ -256,13 +262,26 @@ async function diagnoseSelectedPort(port) {
   } catch (error) {
     failure = error;
   } finally {
-    // Diagnosis enters the ROM loader. Return to the running firmware so
-    // WEBFLASH_BACKUP still works when the user starts flashing later.
+    // After ROM-only inspection, run the installed application via the ROM
+    // flash-end command. No flash data is written (zero-length begin).
+    // Native USB-Serial/JTAG RTS reset alone can leave the chip in download mode.
     if (enteredLoader) {
       try {
-        await rebootEsp32S3(transport, loader);
+        log("Диагностика: выход из ROM-загрузчика и запуск установленной прошивки…");
+        await loader.flashBegin(0, 0);
+        await loader.flashFinish(true);
+        log("ROM: команда запуска прошивки выполнена.");
+        await delay(1200);
       } catch (resetError) {
-        if (!failure) failure = new Error("Диагностика завершена, но автоматический RESET не сработал: " + (resetError?.message || resetError));
+        log("ROM: запуск приложения не подтверждён (" + (resetError?.message || resetError) + "). Пробую аппаратный RESET…");
+        try {
+          await rebootEsp32S3(transport, loader);
+        } catch (fallbackError) {
+          if (!failure) failure = new Error(
+            "Не удалось вернуть ESP32-S3 в рабочий режим после диагностики: " +
+            (fallbackError?.message || fallbackError) + ". Нажмите EN/RESET на плате и выберите COM-порт снова."
+          );
+        }
       }
     }
     if (transport) await safeDisconnect(transport);
