@@ -66,7 +66,7 @@
 
       const searchText = (version.title + " " + version.changes.join(" ")).toLowerCase();
 
-      return `<article class="version-entry" data-search="${escapeHtml(searchText)}">
+      return `<article class="version-entry${index === 0 ? " is-current" : ""}" data-search="${escapeHtml(searchText)}">
         <div class="version-rail">
           <span class="version-dot ${index === 0 ? "current" : ""}"></span>
           <span class="version-line"></span>
