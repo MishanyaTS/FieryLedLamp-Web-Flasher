@@ -71,6 +71,13 @@ let isBusy = false;
 let diagnosticReady = false;
 let lastFirmwareResetAt = 0;
 const FIRMWARE_BOOT_GRACE_MS = 6500;
+const ESP32S3_RTC_CNTL_OPTION1_REG = 0x6000812c;
+const ESP32S3_FORCE_DOWNLOAD_BOOT_MASK = 0x1;
+const ESP32S3_RTCCNTL_BASE_REG = 0x60008000;
+const ESP32S3_RTC_CNTL_WDTCONFIG0_REG = ESP32S3_RTCCNTL_BASE_REG + 0x0098;
+const ESP32S3_RTC_CNTL_WDTCONFIG1_REG = ESP32S3_RTCCNTL_BASE_REG + 0x009c;
+const ESP32S3_RTC_CNTL_WDTWPROTECT_REG = ESP32S3_RTCCNTL_BASE_REG + 0x00b0;
+const ESP32S3_RTC_CNTL_WDT_WKEY = 0x50d83aa1;
 
 function stamp() { return new Date().toLocaleTimeString("ru-RU", { hour12: false }); }
 function log(message = "") {
@@ -640,6 +647,51 @@ async function rebootEsp32S3(transport,loader){
   }
   lastFirmwareResetAt = Date.now();
 }
+async function clearEsp32S3ForcedDownload(loader){
+  if (!loader?.writeReg) throw new Error("esptool.js не поддерживает запись регистров.");
+  await loader.writeReg(
+    ESP32S3_RTC_CNTL_OPTION1_REG,
+    0,
+    ESP32S3_FORCE_DOWNLOAD_BOOT_MASK
+  );
+  log("Флаг принудительного режима загрузчика ESP32-S3 снят.");
+}
+async function watchdogResetEsp32S3(loader){
+  if (!loader?.writeReg) throw new Error("esptool.js не поддерживает watchdog RESET.");
+  await loader.writeReg(ESP32S3_RTC_CNTL_WDTWPROTECT_REG, ESP32S3_RTC_CNTL_WDT_WKEY);
+  await loader.writeReg(ESP32S3_RTC_CNTL_WDTCONFIG1_REG, 2000);
+  try {
+    // ESP32-S3: enable RTC watchdog and request a full-chip reset.
+    await loader.writeReg(ESP32S3_RTC_CNTL_WDTCONFIG0_REG, 0xd0000102);
+  } catch (error) {
+    // A successful watchdog reset can disconnect native USB before the
+    // register-write reply reaches the browser.
+    log("USB-связь прервалась при запуске watchdog — перезапуск платы начался.");
+    await delay(3000);
+    return;
+  }
+  try {
+    await loader.writeReg(ESP32S3_RTC_CNTL_WDTWPROTECT_REG, 0);
+  } catch (_) {
+    // The watchdog may reset the chip before this optional lock write.
+  }
+  await delay(3000);
+}
+async function rebootEsp32S3AfterFlash(transport,loader){
+  log("Финальный перезапуск ESP32-S3 после прошивки…");
+  try {
+    // ESP32-S3 can remain in DOWNLOAD(USB/UART0) after flashing through
+    // native USB. Clear the forced-download flag before resetting.
+    await clearEsp32S3ForcedDownload(loader);
+    log("Запуск внутреннего watchdog RESET…");
+    await watchdogResetEsp32S3(loader);
+    log("Watchdog RESET выполнен. Ожидание запуска прошивки.");
+  } catch (error) {
+    log(`Watchdog RESET недоступен: ${error?.message||error}. Пробую аппаратный RESET…`);
+    await rebootEsp32S3(transport,loader);
+  }
+  lastFirmwareResetAt = Date.now();
+}
 async function safeDisconnect(t){if(!t)return;try{await t.disconnect();}catch(_){}}
 async function flash(){
   if(isBusy)return; clearResult(); setBusy(true); setProgress(0,"Подготовка прошивки…"); let transport=null;
@@ -667,7 +719,7 @@ async function flash(){
     const opts={fileArray:files.map(({data,address})=>({data,address})),flashMode:"keep",flashFreq:"keep",flashSize:"keep",eraseAll:ui.eraseAll.checked,compress:manifest.compress!==false,
       reportProgress:(i,written,total)=>{writtenByFile[i]=Math.min(written,total);const done=writtenByFile.reduce((s,n)=>s+n,0);const p=15+(totalBytes?(done/totalBytes)*83:0);setProgress(p,`Запись ${files[i]?.path||`файл ${i+1}`}… ${Math.round((written/total)*100)}%`);}};
     if(ui.eraseAll.checked)log("Включена полная очистка Flash.");
-    await loader.writeFlash(opts); setProgress(99,"Перезапуск…"); await rebootEsp32S3(transport,loader); await safeDisconnect(transport);transport=null;
+    await loader.writeFlash(opts); setProgress(99,"Перезапуск ESP32-S3…"); await rebootEsp32S3AfterFlash(transport,loader); await safeDisconnect(transport);transport=null;
     setProgress(100,"Прошивка успешно завершена");showResult("success","Готово. Плата прошита и перезапущена.");ui.steps.forEach(s=>{s.classList.remove("active");s.classList.add("done");});log("ГОТОВО: прошивка успешно завершена.");
   }catch(e){await safeDisconnect(transport);const msg=friendlyFlasherError(e);setProgress(0,"Ошибка прошивки");showResult("error",msg);log(`ОШИБКА: ${msg}`);}finally{setBusy(false);}
 }
