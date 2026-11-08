@@ -473,12 +473,12 @@ async function backupSettingsBeforeFlash() {
     opened = true;
     // Keep the CDC terminal open; do not assert RTS (reset).
     try {
-      await selectedPort.setSignals({dataTerminalReady: true, requestToSend: false});
-      log("USB: DTR включён, RTS отключён.");
+      await selectedPort.setSignals({dataTerminalReady: false, requestToSend: false});
+      log("USB: DTR и RTS отключены (совместимость со старым режимом сохранения).");
     } catch (e) {
       log("USB: сигналы CDC не установлены: " + (e?.message || e));
     }
-    await delay(650);
+    await delay(350);
 
     reader = selectedPort.readable.getReader();
     readerTask = (async () => {
@@ -515,23 +515,9 @@ async function backupSettingsBeforeFlash() {
     };
 
     try {
-      let ready = false;
-      for (let attempt = 1; attempt <= 3 && !ready; attempt++) {
-        log("USB: проверяю ответ прошивки (" + attempt + "/3)…");
-        await send("WEBFLASH_PSRAM");
-        ready = Boolean(await waitFor(text => text.includes("WEBFLASH_PSRAM:"), 3000));
-      }
-      if (!ready) {
-        throw new Error(
-          "Работающая лампа не ответила на WEBFLASH_PSRAM через USB. " +
-          "Аппаратная диагностика проверяет чип, но не связь с установленной прошивкой. " +
-          "Проверьте USB COM-порт, закройте монитор порта и убедитесь, что лампа запущена. " +
-          "Сохранение настроек не подтверждено; прошивка отменена."
-        );
-      }
-
-      log("USB: прошивка отвечает. Отправляю WEBFLASH_BACKUP…");
-      received = "";
+      // WEBFLASH_BACKUP is supported by older builds that have no
+      // WEBFLASH_PSRAM command. Never gate backup on that optional probe.
+      log("USB: отправляю WEBFLASH_BACKUP без дополнительной проверки PSRAM…");
       setProgress(13, "Сохранение настроек…");
       await send("WEBFLASH_BACKUP");
       let started = false;
@@ -558,7 +544,7 @@ async function backupSettingsBeforeFlash() {
       if (result && !result.ok) throw new Error("Ошибка сохранения настроек лампы: " + result.error);
       throw new Error(started
         ? "Архивация началась, но лампа не подтвердила её завершение за 60 секунд. Прошивка отменена."
-        : "Лампа отвечает по USB, но не подтвердила команду WEBFLASH_BACKUP. Прошивка отменена.");
+        : "Лампа не подтвердила команду WEBFLASH_BACKUP. Возможна проблема возврата из аппаратной диагностики или несовпадение USB COM-порта. Прошивка отменена.");
     } finally {
       writer.releaseLock();
     }
