@@ -30,7 +30,7 @@
       "address": "0x00010000"
     },
     {
-      "name": "littlefs.bin",
+      "name": "FieryLedLamp.littlefs.bin",
       "address": "0x00C90000"
     }
   ],
