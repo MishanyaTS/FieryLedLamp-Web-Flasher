@@ -31,9 +31,6 @@
 .fl-search-results small{display:block;color:#a59d9b;font-size:11px;line-height:1.5;white-space:normal;overflow-wrap:anywhere}
 .fl-search-message{margin:0;padding:13px;color:#aba2a0;font-size:12px;line-height:1.5}
 .fl-auth{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex:0 0 auto;min-width:255px}
-/* Do not flash the anonymous links before session/name hydration. */
-.fl-header[data-auth="local"]:not([data-auth-ready]) .fl-auth-link,
-.fl-header[data-auth="remote"]:not([data-auth-ready]) .fl-auth-link{visibility:hidden}
 .fl-locale{display:flex;align-items:center;gap:7px;margin-right:3px;padding-right:15px;border-right:1px solid #7f451f;color:#cfc8c4;font-size:11px;font-weight:700}
 .fl-locale-flag{display:block;width:16px;height:16px;border:1px solid #ffffff18;border-radius:50%;background:linear-gradient(#f4f4f4 0 33.33%,#2260ce 33.33% 66.66%,#df3a35 66.66%);box-shadow:0 0 9px #0005}
 .fl-auth-link{display:flex;align-items:center;justify-content:center;gap:5px;min-height:28px;padding:4px 11px;border:1px solid #9a491e;border-radius:999px;background:linear-gradient(180deg,#28150f,#100e0f);box-shadow:0 0 0 1px #ff8b2420 inset,0 0 12px #ff620315;color:#f0e1d3!important;font-size:11px;font-weight:650;white-space:nowrap;transition:border-color .15s,box-shadow .15s}
