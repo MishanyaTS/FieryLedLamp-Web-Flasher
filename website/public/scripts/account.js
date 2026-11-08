@@ -100,6 +100,8 @@
             remember: loginForm.remember?.checked === true
           })
         }));
+        // Do not display a previous account's cached name after a new login.
+        window.FieryHeader?.clear();
         location.href = nextPath;
       } catch (error) {
         setStatus(loginForm, error.message, "error");
@@ -253,6 +255,7 @@
         }));
 
         if (accountUser) accountUser.name = data.name;
+        window.FieryHeader?.setName(data.name);
         document.querySelector("#accountName").textContent = data.name;
         if (input) input.value = data.name;
         setAvatar(accountUser?.avatarUrl || null, data.name);
@@ -398,6 +401,8 @@
       try {
         await api("logout", { method: "POST", headers: { "x-csrf-token": csrf }, body: "{}" });
       } finally {
+        // Remove the cached label so it cannot linger after signing out.
+        window.FieryHeader?.clear();
         location.href = "/";
       }
     });
