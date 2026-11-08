@@ -6,6 +6,7 @@ The preview URL is a GitHub Pages project path (/<repository>/).
 """
 from __future__ import annotations
 
+import json
 import os
 import re
 import shutil
@@ -79,10 +80,6 @@ def process_js(path: Path) -> None:
     js = js.replace('const SOURCE = "/Version.txt";', f'const SOURCE = "{BASE}Version.txt";')
     if path.name == "header.js":
         # In the Pages project preview, HTML lives under BASE, not at domain /.
-        js = js.replace(
-            'const staticPages = new Set([',
-            'const staticPages = new Set([',
-        )
         js = re.sub(
             r'(const staticPages = new Set\(\[)(.*?)(\]\);)',
             lambda m: m.group(1) + re.sub(
@@ -113,6 +110,14 @@ def build() -> None:
         process_html(page)
     for script in OUTPUT.rglob("*.js"):
         process_js(script)
+    # Header search results must point at the preview, not live or root github.io.
+    for index in OUTPUT.rglob("header-search.json"):
+        data = json.loads(index.read_text(encoding="utf-8"))
+        for page in data.get("pages", []):
+            link = page.get("href", "")
+            if isinstance(link, str) and link.startswith("/") and not link.startswith("//"):
+                page["href"] = BASE + link.lstrip("/")
+        index.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
 
     main = OUTPUT / "index.html"
     flasher = OUTPUT / "firmware/index.html"
