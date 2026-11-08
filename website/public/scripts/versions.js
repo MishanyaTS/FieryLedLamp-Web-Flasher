@@ -71,7 +71,7 @@
           <span class="version-dot ${index === 0 ? "current" : ""}"></span>
           <span class="version-line"></span>
         </div>
-        <details class="version-release" ${index < 2 ? "open" : ""}>
+        <details class="version-release" ${index === 0 ? "open" : ""}>
           <summary>
             <div class="version-release-main">
               <div class="version-number">${escapeHtml(number)}</div>
