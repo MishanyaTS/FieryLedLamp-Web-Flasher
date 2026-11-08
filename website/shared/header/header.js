@@ -304,7 +304,7 @@
     let navigationIndex = 0;
 
     const stylesOf = doc => [...doc.querySelectorAll('link[rel="stylesheet"][href]')]
-      .map(link => new URL(link.getAttribute("href"), doc.baseURI).pathname)
+      .map(link => new URL(link.getAttribute("href"), location.origin).pathname)
       .sort().join("|");
 
     const supportsSoftNavigation = doc => {
@@ -313,7 +313,7 @@
       return [...doc.querySelectorAll("script")].every(script => {
         if (script.closest(".fl-header")) return true;
         if (!script.src && !script.getAttribute("src")) return false;
-        const scriptUrl = new URL(script.getAttribute("src"), doc.baseURI);
+        const scriptUrl = new URL(script.getAttribute("src"), location.origin);
         return scriptUrl.origin === location.origin
           && (scriptUrl.pathname === "/site.js" || scriptUrl.pathname === "/header.js");
       });
