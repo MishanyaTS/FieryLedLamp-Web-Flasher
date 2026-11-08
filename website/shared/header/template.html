@@ -12,6 +12,30 @@
         <a class="fl-auth-link" href="{{MAIN_BASE}}login.html" data-fl-login aria-label="Вход" title="Вход"><svg class="fl-icon " aria-hidden="true" focusable="false"><use href="#fl-header-user"></use></svg><span>Вход</span></a>
         <a class="fl-auth-link fl-auth-register" href="{{MAIN_BASE}}register.html" data-fl-register aria-label="Регистрация" title="Регистрация"><svg class="fl-icon " aria-hidden="true" focusable="false"><use href="#fl-header-user-plus"></use></svg><span>Регистрация</span></a>
       </div>
+      <!-- Apply the cached display name synchronously, before the first paint.
+           Anonymous users keep the already-correct "Вход" label at all times. -->
+      <script>
+        (function () {
+          try {
+            var name = sessionStorage.getItem("fiery_header_user_name");
+            if (!name) return;
+            var header = document.currentScript.closest(".fl-header");
+            var login = header && header.querySelector("[data-fl-login]");
+            if (!login) return;
+            var label = login.querySelector("span");
+            if (label) {
+              label.textContent = name;
+              label.classList.add("fl-profile-label");
+            }
+            var mainBase = header.dataset.mainBase || "/";
+            login.href = mainBase + "account.html";
+            login.title = "Мой аккаунт: " + name;
+            login.setAttribute("aria-label", login.title);
+            var register = header.querySelector("[data-fl-register]");
+            if (register) register.hidden = true;
+          } catch (_) {}
+        })();
+      </script>
       <button class="fl-menu-toggle" type="button" aria-expanded="false" aria-controls="fl-main-nav" aria-label="Открыть главное меню"><svg class="fl-icon " aria-hidden="true" focusable="false"><use href="#fl-header-menu"></use></svg><span>Меню</span></button>
     </div>
   </div>
