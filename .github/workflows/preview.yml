@@ -27,6 +27,17 @@ jobs:
       - name: Include current firmware history
         run: cp firmware/Version.txt website/public/Version.txt
 
+      - name: Validate shared scripts and PHP before preview
+        run: |
+          python3 -m py_compile scripts/render-header.py scripts/build-preview.py
+          node --check website/public/header.js
+          node --check website/public/site.js
+          node --check website/public/scripts/versions.js
+          node --check firmware/header.js
+          php -l website/public/api/index.php
+          php -l firmware/update/versions.php
+          php -l firmware/update/download.php
+
       - name: Assemble static preview (no PHP, credentials or ZIP firmware)
         run: python3 scripts/build-preview.py
 
