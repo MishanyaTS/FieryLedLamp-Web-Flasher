@@ -361,7 +361,7 @@ async function loadManifest(board = selectedBoard) {
 // Numbered folders are discovered on the server; the selected release controls
 // both the manifest (flash addresses) and the update.zip archive.
 async function loadSelectedRelease(release) {
-  const board = { ...SITE_CONFIG.board, ...release, releaseLabel: release.label };
+  const board = { ...SITE_CONFIG.board, ...release, label: SITE_CONFIG.board.label, releaseLabel: release.label };
   if (selectedPort && selectedBoard?.firmwareZipUrl !== board.firmwareZipUrl) {
     diagnosticReady = false;
     setPortConnected(false);
