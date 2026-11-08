@@ -220,25 +220,27 @@
       if (!login) return;
       const label = login.querySelector("span");
       if (name) {
-        login.href = new URL("account.html", mainBase).href;
+        const accountUrl = new URL("account.html", mainBase).href;
+        const title = "Мой аккаунт: " + name;
+        if (login.href !== accountUrl) login.href = accountUrl;
         if (label) {
-          label.textContent = name;
+          if (label.textContent !== name) label.textContent = name;
           label.classList.add("fl-profile-label");
         }
-        login.setAttribute("aria-label", "Мой аккаунт: " + name);
-        login.title = "Мой аккаунт: " + name;
-        if (register) register.hidden = true;
+        if (login.getAttribute("aria-label") !== title) login.setAttribute("aria-label", title);
+        if (login.title !== title) login.title = title;
+        if (register && !register.hidden) register.hidden = true;
       } else {
-        login.href = new URL("login.html", mainBase).href;
+        const loginUrl = new URL("login.html", mainBase).href;
+        if (login.href !== loginUrl) login.href = loginUrl;
         if (label) {
-          label.textContent = "Вход";
+          if (label.textContent !== "Вход") label.textContent = "Вход";
           label.classList.remove("fl-profile-label");
         }
-        login.setAttribute("aria-label", "Вход");
-        login.title = "Вход";
-        if (register) register.hidden = false;
+        if (login.getAttribute("aria-label") !== "Вход") login.setAttribute("aria-label", "Вход");
+        if (login.title !== "Вход") login.title = "Вход";
+        if (register && register.hidden) register.hidden = false;
       }
-      // The account links stay invisible until the correct text is present.
       header.dataset.authReady = "true";
     };
     window.FieryHeader = {
