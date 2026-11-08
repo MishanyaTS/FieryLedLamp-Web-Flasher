@@ -178,7 +178,7 @@
             <input type="checkbox" id="saveSettings" />
             <span>
               <b>Сохранить настройки перед прошивкой</b>
-              <small>Настройки, Wi-Fi и параметры эффектов будут сохранены в резервный раздел и восстановлены после прошивки.</small>
+              <small>Автоматическое сохранение доступно, если установленная прошивка отвечает на USB-команду WEBFLASH_BACKUP. Для сборок с USB CDC On Boot: Disabled используйте резервную ZIP-копию из веб-интерфейса лампы (/backup_restore).</small>
             </span>
           </label>
 
@@ -301,6 +301,6 @@
   <button id="scrollToTopButton" class="scroll-to-top-button" type="button" aria-label="Наверх" title="Наверх">
     <span aria-hidden="true">↑</span>
   </button>
-  <script type="module" src="./app.js?v=board-label-fix-20261108"></script>
+  <script type="module" src="./app.js?v=backup-usb-help-20261108"></script>
 </body>
 </html>
