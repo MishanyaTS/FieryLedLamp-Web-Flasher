@@ -1,15 +1,7 @@
 name: Deploy firmware site to HostiMan
 
+# Production updates require an explicit action in GitHub Actions.
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "firmware/**"
-      - "website/shared/**"
-      - "website/public/header-search.json"
-      - "scripts/render-header.py"
-      - ".github/workflows/deploy-firmware-hostiman.yml"
   workflow_dispatch:
 
 permissions:
