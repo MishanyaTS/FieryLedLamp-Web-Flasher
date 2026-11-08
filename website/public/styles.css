@@ -79,7 +79,7 @@ linear-gradient(180deg,#0d1016 0%,#090c11 100%)}
 .version-entry[hidden]{display:none}
 .version-rail{display:flex;flex-direction:column;align-items:center}
 .version-dot{position:relative;z-index:2;display:block;width:13px;height:13px;margin-top:29px;border-radius:50%;background:#303846;border:3px solid #11151c;box-shadow:0 0 0 1px #485263}
-.version-dot.current{background:#ff8250;box-shadow:0 0 0 1px #ff8250,0 0 0 6px #ff825012,0 0 18px #ff825044}
+.version-dot.current{background:#68d88e;box-shadow:0 0 0 1px #68d88e,0 0 0 6px #68d88e18,0 0 18px #68d88e44}
 .version-line{width:1px;flex:1;min-height:28px;background:linear-gradient(#35404f,#232a35)}
 .version-entry:last-child .version-line{background:linear-gradient(#35404f,transparent)}
 .version-release{margin-bottom:12px;border:1px solid #283141;border-radius:18px;background:linear-gradient(180deg,#131821,#0e1219);overflow:hidden;transition:.18s ease}
@@ -88,6 +88,7 @@ linear-gradient(180deg,#0d1016 0%,#090c11 100%)}
 .version-release summary{display:flex;align-items:center;justify-content:space-between;gap:18px;min-height:76px;padding:15px 18px;cursor:pointer;list-style:none}.version-release summary::-webkit-details-marker{display:none}
 .version-release-main{display:flex;align-items:center;gap:17px;min-width:0}
 .version-number{min-width:88px;color:#ff9e69;font:800 19px ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:-.04em}
+.version-entry.is-current .version-number{color:#70df99}
 .version-release-title h3{margin:0 0 4px;font-size:15px}.version-release-title span{display:block;color:#778293;font-size:12px}
 .version-release-side{display:flex;align-items:center;gap:10px}
 .version-current-badge{padding:5px 8px;border:1px solid #365b43;border-radius:99px;background:#132219;color:#70df99;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.06em}
