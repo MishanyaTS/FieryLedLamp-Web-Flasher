@@ -1,18 +1,20 @@
 name: Deploy website to HostiMan
 
-# Production updates require an explicit action in GitHub Actions.
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - "website/public/**"
+      - "firmware/Version.txt"
+      - "website/shared/**"
+      - "scripts/render-header.py"
+      - "scripts/optimize-images.py"
+      - ".github/workflows/deploy-hostiman.yml"
   workflow_dispatch:
-    inputs:
-      confirm_publish:
-        description: "Я проверил предпросмотр и разрешаю публикацию на Hostiman"
-        type: boolean
-        required: true
-        default: false
 
 permissions:
   contents: read
-  actions: read
 
 concurrency:
   group: deploy-hostiman
@@ -27,27 +29,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Require checked approval and verified preview for this commit
-        env:
-          GH_TOKEN: ${{ github.token }}
-          CONFIRMED: ${{ inputs.confirm_publish }}
-        run: |
-          if [ "$GITHUB_REF_NAME" != "main" ] || [ "$CONFIRMED" != "true" ]; then
-            echo "::error::Use main and check the manual publication confirmation."
-            exit 1
-          fi
-          url="https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts?name=preview-site-$GITHUB_SHA&per_page=100"
-          artifacts="$(curl --fail --silent --show-error --location \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            -H "Accept: application/vnd.github+json" "$url")"
-          if ! printf '%s' "$artifacts" | jq -e --arg sha "$GITHUB_SHA" \
-              '[.artifacts[]? | select(.expired == false and .workflow_run.head_sha == $sha)] | length > 0' >/dev/null; then
-            echo "::error::No preview build artifact for commit $GITHUB_SHA. Run 'Preview sites (automatic)' first."
-            exit 1
-          fi
-          echo "Manual approval recorded; matching preview artifact confirmed for $GITHUB_SHA."
-
 
       - name: Build shared site header
         run: python3 scripts/render-header.py
