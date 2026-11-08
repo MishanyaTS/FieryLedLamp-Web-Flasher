@@ -12,10 +12,10 @@ START = '<!-- SHARED_HEADER:START -->'
 END = '<!-- SHARED_HEADER:END -->'
 HEADER = re.compile(r'<!-- SHARED_HEADER:START -->.*?<!-- SHARED_HEADER:END -->|<header class="(?:fl-header|site-header)".*?</header>', re.S)
 # Footer brand is intentionally absent on both sites. Keep the description and links.
-FOOTER = re.compile(r'<footer\\b[^>]*>.*?</footer>', re.S | re.I)
+FOOTER = re.compile(r'<footer\b[^>]*>.*?</footer>', re.S | re.I)
 FOOTER_BRAND = re.compile(
-    r'<a class="brand" href="[^"]*">\\s*<span class="brand-mark">.*?</span>\\s*'
-    r'<span>Fiery Led Lamp</span>\\s*</a>', re.S
+    r'<a class="brand" href="[^"]*">\s*<span class="brand-mark">.*?</span>\s*'
+    r'<span>Fiery Led Lamp</span>\s*</a>', re.S
 )
 PAGE_KEYS = {
     '/': 'home', '/instruction.html': 'instruction', '/setup.html': 'setup',
