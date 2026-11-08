@@ -200,26 +200,92 @@
   }
 
   if (header.dataset.auth === "local" || header.dataset.auth === "remote") {
-    // On the public Web Flasher subdomain, check the existing main-site session.
-    // Credentials are sent only to fieryledlamp.ru; the API reveals a name only.
+    const login = header.querySelector("[data-fl-login]");
+    const register = header.querySelector("[data-fl-register]");
+    const cacheKey = "fiery_header_user_name";
+
+    // Only the public display name is cached for this tab; session validation
+    // still happens on every page. No passwords or session tokens are stored.
+    const readCachedName = () => {
+      try { return sessionStorage.getItem(cacheKey) || ""; }
+      catch (_) { return ""; }
+    };
+    const rememberName = name => {
+      try {
+        if (name) sessionStorage.setItem(cacheKey, name);
+        else sessionStorage.removeItem(cacheKey);
+      } catch (_) {}
+    };
+    const displayUser = name => {
+      if (!login) return;
+      const label = login.querySelector("span");
+      if (name) {
+        login.href = new URL("account.html", mainBase).href;
+        if (label) {
+          label.textContent = name;
+          label.classList.add("fl-profile-label");
+        }
+        login.setAttribute("aria-label", "Мой аккаунт: " + name);
+        login.title = "Мой аккаунт: " + name;
+        if (register) register.hidden = true;
+      } else {
+        login.href = new URL("login.html", mainBase).href;
+        if (label) {
+          label.textContent = "Вход";
+          label.classList.remove("fl-profile-label");
+        }
+        login.setAttribute("aria-label", "Вход");
+        login.title = "Вход";
+        if (register) register.hidden = false;
+      }
+      // The account links stay invisible until the correct text is present.
+      header.dataset.authReady = "true";
+    };
+    window.FieryHeader = {
+      setName(value) {
+        const name = String(value || "").trim();
+        rememberName(name);
+        displayUser(name);
+      },
+      clear() {
+        rememberName("");
+        displayUser("");
+      }
+    };
+
+    const cachedName = readCachedName();
+    if (cachedName) displayUser(cachedName);
+
+    // The main site uses its existing session request; Web Flasher asks
+    // only the minimal name endpoint on fieryledlamp.ru.
     const sessionRequest = header.dataset.auth === "local"
       ? window.FierySession.get()
       : fetch(new URL("api/index.php?action=header-user", mainBase), {
           method: "GET", credentials: "include", cache: "no-store"
         });
     sessionRequest
-      .then(response => response.ok ? response.json() : null)
+      .then(response => {
+        if (response.status === 401) {
+          window.FieryHeader.clear();
+          return null;
+        }
+        if (!response.ok) {
+          // A temporary server error should not flash "Вход" over a known name.
+          if (!cachedName) displayUser("");
+          return null;
+        }
+        return response.json();
+      })
       .then(data => {
-        if (!data?.ok || !data.user) return;
-        const login = header.querySelector("[data-fl-login]");
-        const register = header.querySelector("[data-fl-register]");
-        if (!login) return;
-        login.href = new URL("account.html", mainBase).href;
-        login.querySelector("span").textContent = data.user.name || "Мой аккаунт";
-        login.querySelector("span").classList.add("fl-profile-label");
-        login.setAttribute("aria-label", "Мой аккаунт: " + (data.user.name || ""));
-        login.title = "Мой аккаунт: " + (data.user.name || "");
-        if (register) register.hidden = true;
-      }).catch(() => {});
+        if (!data) return;
+        if (data.ok && data.user) {
+          window.FieryHeader.setName(data.user.name || "Мой аккаунт");
+        } else {
+          window.FieryHeader.clear();
+        }
+      })
+      .catch(() => {
+        if (!header.dataset.authReady) displayUser("");
+      });
   }
 })();
