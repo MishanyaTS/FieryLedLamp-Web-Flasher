@@ -68,7 +68,7 @@ let releases = [];
 let selectedBoard = SITE_CONFIG.board || null;
 let selectedPort = null;
 let isBusy = false;
-let portReady = false;
+let diagnosticReady = false;
 
 function stamp() { return new Date().toLocaleTimeString("ru-RU", { hour12: false }); }
 function log(message = "") {
@@ -114,7 +114,7 @@ function setBusy(busy) {
   if (ui.versionSelect) ui.versionSelect.disabled = busy || !releases.length;
   if (ui.saveSettings) ui.saveSettings.disabled = busy;
   syncEraseAllState();
-  ui.flashBtn.disabled = busy || !portReady || !manifest || manifest.ready === false || !selectedBoard || !("serial" in navigator);
+  ui.flashBtn.disabled = busy || !diagnosticReady || !manifest || manifest.ready === false || !selectedBoard || !("serial" in navigator);
   ui.flashBtnText.textContent = busy ? "Прошивка…" : "Загрузить прошивку";
 }
 function portDescription(port) {
@@ -170,83 +170,143 @@ async function readEmbeddedPsram(loader) {
   };
 }
 
-// Hardware probing must run AFTER WEBFLASH_BACKUP, not at COM selection.
-// Entering the ROM flasher first can leave ESP32-S3 native USB unavailable to
-// the running firmware. Rebooting after a successful backup would also consume
-// its restore-pending flag before new firmware is written.
-async function inspectConnectedHardware(loader, chipName) {
-  const found = {chip:String(chipName || "—"),board:null,flash:"—",flashId:"—",psram:"—",psramBytes:null};
-  showDeviceDiagnostic("checking", {...found, message:"Проверка чипа, Flash и PSRAM перед записью…"});
-  log("Аппаратная диагностика перед прошивкой (после сохранения настроек)…");
+async function diagnoseSelectedPort(port) {
+  let transport = null;
+  let loader = null;
+  let enteredLoader = false;
+  let failure = null;
+  const found = {chip: "—", board: null, flash: "—", flashId: "—", psram: "—", psramBytes: null, psramNote: "PSRAM: определение…"};
+
+  diagnosticReady = false;
+  setBusy(true);
+  setStep(1);
+  showDeviceDiagnostic("checking", {...found, message: "Диагностика ESP32-S3: определение чипа, Flash и PSRAM…"});
+  log("Аппаратная диагностика: определение чипа, Flash и PSRAM без участия прошивки…");
+
   try {
-    const expectedChip = String(manifest?.chip || "ESP32-S3").toUpperCase().replace(/[^A-Z0-9]/g,"");
-    const detectedChip = found.chip.toUpperCase().replace(/[^A-Z0-9]/g,"");
+    const {ESPLoader, Transport} = await loadFlashingTools();
+    if (selectedPort !== port) throw new Error("COM-порт изменился во время диагностики.");
+    transport = new Transport(port, true);
+    loader = new ESPLoader({
+      transport, baudrate: 115200, romBaudrate: 115200,
+      terminal: createTerminal(), debugLogging: false
+    });
+    const chipName = await loader.main();
+    enteredLoader = true;
+    found.chip = String(chipName || "—");
+    log("Диагностика: чип " + found.chip);
+
+    const expectedChip = String(manifest?.chip || "ESP32-S3").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const detectedChip = found.chip.toUpperCase().replace(/[^A-Z0-9]/g, "");
     if (!detectedChip.includes(expectedChip)) {
-      throw new Error("Подключён " + found.chip + ", пакет предназначен для " + (manifest?.chip || "ESP32-S3") + ".");
+      throw new Error("Подключён " + found.chip + ", а пакет предназначен для " + (manifest?.chip || "ESP32-S3") + ".");
     }
 
-    // PSRAM capacity is read from eFuse, independent of installed firmware.
+    // Direct ROM/eFuse inspection works even on blank boards and older firmware.
     try {
       const ram = await readEmbeddedPsram(loader);
       if (ram.bytes != null) {
-        found.psramBytes = ram.bytes;
         found.psram = (ram.bytes / (1024 * 1024)) + " МБ";
+        found.psramBytes = ram.bytes;
+        found.psramNote = ram.note;
         log("Диагностика: встроенная PSRAM " + found.psram + " (eFuse).");
-        const expected = Number.parseInt(manifest?.psramSize || "",10);
-        if (Number.isFinite(expected) && ram.bytes < expected * 1024 * 1024) {
-          log("Внимание: объём PSRAM меньше ожидаемых " + expected + " МБ.");
+        const expectedPsram = Number.parseInt(manifest?.psramSize || "", 10);
+        if (Number.isFinite(expectedPsram) && ram.bytes < expectedPsram * 1024 * 1024) {
+          log("Внимание: PSRAM меньше указанной в конфигурации (" + expectedPsram + " МБ).");
         }
       } else {
-        log("PSRAM: не удалось определить объём по eFuse.");
+        found.psram = "—";
+        found.psramNote = ram.note;
+        log("PSRAM: " + ram.note);
       }
-    } catch(e) {
-      log("PSRAM: ошибка определения: " + friendlyFlasherError(e));
+    } catch (psramError) {
+      found.psram = "—";
+      found.psramNote = "Не удалось считать eFuse PSRAM. " + friendlyFlasherError(psramError);
+      log("PSRAM: " + found.psramNote);
     }
-
-    // The loader's stub is already active. Flash ID cannot reliably be
-    // obtained using the ROM-only path that previously returned 0xFFFFFF.
+    showDeviceDiagnostic("checking", {...found, message: "Проверка Flash…"});
     const flashId = (await loader.readFlashId()) >>> 0;
-    found.flashId = "0x" + flashId.toString(16).toUpperCase().padStart(6,"0");
+    found.flashId = "0x" + flashId.toString(16).toUpperCase().padStart(6, "0");
     const flashBytes = flashSizeFromJedecId(flashId);
-    if (!flashBytes) throw new Error("Не удалось достоверно определить Flash по JEDEC ID " + found.flashId + ". Запись заблокирована.");
-    found.flash = (flashBytes/(1024*1024)) + " МБ";
+    if (!flashBytes) throw new Error("Не удалось достоверно определить Flash по JEDEC ID " + found.flashId + ". Прошивка заблокирована.");
+    found.flash = (flashBytes / (1024 * 1024)) + " МБ";
     log("Диагностика: Flash " + found.flash + ", JEDEC ID " + found.flashId);
 
-    const expectedFlashMB = Number.parseInt(manifest?.physicalFlashSize || "16MB",10);
-    if (Number.isFinite(expectedFlashMB) && flashBytes < expectedFlashMB * 1024 * 1024) {
-      throw new Error("Flash " + found.flash + " меньше необходимых " + expectedFlashMB + " МБ. Запись заблокирована.");
+    const expectedMegabytes = Number.parseInt(manifest?.physicalFlashSize || "16MB", 10);
+    if (Number.isFinite(expectedMegabytes) && flashBytes < expectedMegabytes * 1024 * 1024) {
+      throw new Error("Flash " + found.flash + " меньше необходимых " + expectedMegabytes + " МБ. Прошивка заблокирована.");
     }
-    const flashMatches = Number.isFinite(expectedFlashMB) && flashBytes === expectedFlashMB * 1024 * 1024;
-    const expectedPsramMB = Number.parseInt(manifest?.psramSize || "",10);
-    const psramMatches = Number.isFinite(expectedPsramMB) && found.psramBytes === expectedPsramMB * 1024 * 1024;
+    if (Number.isFinite(expectedMegabytes) && flashBytes !== expectedMegabytes * 1024 * 1024) {
+      log("Внимание: Flash " + found.flash + " отличается от конфигурации " + expectedMegabytes + " МБ.");
+    }
+
+    // Board model is inferred from measured chip, Flash and PSRAM capacity.
+    // If PSRAM is unavailable or capacities differ, do not claim N16R8.
+    const expectedPsramMB = Number.parseInt(manifest?.psramSize || "", 10);
+    const psramMatches = Number.isFinite(expectedPsramMB) &&
+      found.psramBytes === expectedPsramMB * 1024 * 1024;
+    const flashMatches = Number.isFinite(expectedMegabytes) &&
+      flashBytes === expectedMegabytes * 1024 * 1024;
     if (flashMatches && psramMatches) {
-      found.board = SITE_CONFIG.board?.label || manifest?.board || null;
-      log("Диагностика: плата соответствует " + found.board + ".");
+      found.board = selectedBoard?.label || manifest?.board || null;
+      log("Диагностика: плата соответствует профилю " + found.board + ".");
     } else {
       log("Диагностика: модель платы не подтверждена по Flash и PSRAM.");
     }
-    showDeviceDiagnostic("ok", {...found, message:found.board
-      ? "Плата определена. Чип, Flash и PSRAM проверены."
-      : "Чип и Flash проверены. Модель платы не подтверждена полностью."});
-    return found;
-  } catch(error) {
-    showDeviceDiagnostic("error", {...found, message:"Ошибка аппаратной диагностики: " + friendlyFlasherError(error)});
-    throw error;
+  } catch (error) {
+    failure = error;
+  } finally {
+    // Diagnosis enters the ROM loader. Return to the running firmware so
+    // WEBFLASH_BACKUP still works when the user starts flashing later.
+    if (enteredLoader) {
+      try {
+        await rebootEsp32S3(transport, loader);
+      } catch (resetError) {
+        if (!failure) failure = new Error("Диагностика завершена, но автоматический RESET не сработал: " + (resetError?.message || resetError));
+      }
+    }
+    if (transport) await safeDisconnect(transport);
   }
+
+  if (selectedPort !== port && !failure) {
+    failure = new Error("Устройство переподключилось при RESET. Выберите COM-порт повторно.");
+  }
+  if (failure) {
+    diagnosticReady = false;
+    const message = friendlyFlasherError(failure);
+    showDeviceDiagnostic("error", {...found, message: "Проверка не пройдена: " + message});
+    setPortConnected(false);
+    ui.portText.textContent = "Проверка не пройдена";
+    showResult("error", message);
+    log("ОШИБКА диагностики: " + message);
+    setStep(1);
+    setBusy(false);
+    throw failure;
+  }
+
+  diagnosticReady = true;
+  showDeviceDiagnostic("ok", {...found, message: found.board
+    ? "Плата определена. Чип, Flash и PSRAM проверены."
+    : (found.psram !== "—"
+      ? "Чип, Flash и PSRAM определены, но модель платы не подтверждена."
+      : "Чип и Flash проверены. PSRAM не определена. Плата готова к прошивке.")});
+  setPortConnected(true);
+  ui.portText.textContent = portDescription(port) + " • проверен";
+  log("Диагностика завершена. PSRAM: " + (found.psram !== "—" ? found.psram : "не определена") + ".");
+  setStep(2);
+  clearResult();
+  setBusy(false);
 }
 
 async function choosePort() {
   if (!("serial" in navigator)) throw new Error("Этот браузер не поддерживает Web Serial.");
   const port = await navigator.serial.requestPort();
   selectedPort = port;
-  portReady = true;
-  setPortConnected(true);
-  ui.portText.textContent = portDescription(port) + " • выбран";
-  showDeviceDiagnostic("idle", {message:"Чип, Flash и PSRAM будут проверены непосредственно перед записью, после сохранения настроек."});
-  log("COM-порт выбран. Диагностика будет выполнена при запуске прошивки — после резервного копирования.");
-  setStep(2);
-  setBusy(false);
-  clearResult();
+  diagnosticReady = false;
+  setPortConnected(false);
+  ui.portText.textContent = portDescription(port) + " • диагностика…";
+  log("COM-порт выбран пользователем.");
+  await diagnoseSelectedPort(port);
   return port;
 }
 function validateManifest(m) {
@@ -303,11 +363,11 @@ async function loadManifest(board = selectedBoard) {
 async function loadSelectedRelease(release) {
   const board = { ...SITE_CONFIG.board, ...release, label: SITE_CONFIG.board.label, releaseLabel: release.label };
   if (selectedPort && selectedBoard?.firmwareZipUrl !== board.firmwareZipUrl) {
-    portReady = false;
+    diagnosticReady = false;
     setPortConnected(false);
     ui.portText.textContent = "Повторите выбор COM-порта";
     showDeviceDiagnostic("idle", {
-      message: "Версия изменена. Выберите COM-порт повторно. Диагностика выполняется перед записью."
+      message: "Версия изменена. Выберите COM-порт повторно для аппаратной диагностики."
     });
     setStep(0);
   }
@@ -402,98 +462,99 @@ function createTerminal(){return{clean(){},writeLine(d){if(d!=null)log(d);},writ
 function delay(ms){return new Promise(resolve=>setTimeout(resolve,ms));}
 async function backupSettingsBeforeFlash() {
   if (!selectedPort) throw new Error("COM-порт не выбран.");
-  const baud = Number(manifest?.settingsBackupBaudRate || 115200);
-  let reader = null, readerTask = null, opened = false;
-  let reading = true, receiveError = null, received = "";
 
-  log("USB: проверка связи с работающей прошивкой (" + baud + " бод)…");
-  setProgress(12, "Проверка USB-связи…");
+  const baud = Number(manifest?.settingsBackupBaudRate || 115200);
+  let reader = null;
+  let opened = false;
+  let timeoutId = null;
+  let timedOut = false;
+
+  log(`Сохранение настроек перед прошивкой через USB (${baud} бод)…`);
+  setProgress(12, "Сохранение настроек…");
+
   try {
-    await selectedPort.open({baudRate: baud});
+    await selectedPort.open({ baudRate: baud });
     opened = true;
-    // Keep the CDC terminal open; do not assert RTS (reset).
+
     try {
-      await selectedPort.setSignals({dataTerminalReady: false, requestToSend: false});
-      log("USB: DTR и RTS отключены (совместимость со старым режимом сохранения).");
-    } catch (e) {
-      log("USB: сигналы CDC не установлены: " + (e?.message || e));
-    }
+      await selectedPort.setSignals({ dataTerminalReady: false, requestToSend: false });
+    } catch (_) {}
+
     await delay(350);
 
-    reader = selectedPort.readable.getReader();
-    readerTask = (async () => {
-      const decoder = new TextDecoder();
-      try {
-        while (reading) {
-          const {value, done} = await reader.read();
-          if (done) {
-            if (reading) receiveError = new Error("COM-порт закрылся во время обмена.");
-            break;
-          }
-          if (value?.length) {
-            received += decoder.decode(value, {stream:true});
-            if (received.length > 16384) received = received.slice(-8192);
-          }
-        }
-      } catch (e) {
-        if (reading) receiveError = e;
-      }
-    })();
-
     const writer = selectedPort.writable.getWriter();
-    const encoder = new TextEncoder();
-    const send = command => writer.write(encoder.encode(command + "\n"));
-    const waitFor = async (predicate, ms) => {
-      const until = Date.now() + ms;
-      while (Date.now() < until) {
-        const result = predicate(received);
-        if (result) return result;
-        if (receiveError) throw receiveError;
-        await delay(80);
-      }
-      return null;
-    };
-
     try {
-      // WEBFLASH_BACKUP is supported by older builds that have no
-      // WEBFLASH_PSRAM command. Never gate backup on that optional probe.
-      log("USB: отправляю WEBFLASH_BACKUP без дополнительной проверки PSRAM…");
-      setProgress(13, "Сохранение настроек…");
-      await send("WEBFLASH_BACKUP");
-      let started = false;
-      const result = await waitFor(text => {
-        if (!started && text.includes("WEBFLASH_BACKUP_START")) {
-          started = true;
-          log("USB: лампа начала архивацию настроек.");
-          setProgress(14, "Архивация настроек…");
-        }
-        const errorPos = text.indexOf("WEBFLASH_BACKUP_ERROR:");
-        if (errorPos >= 0) {
-          const rest = text.slice(errorPos + "WEBFLASH_BACKUP_ERROR:".length);
-          const eol = rest.search(/[\r\n]/);
-          return {ok:false, error:(eol >= 0 ? rest.slice(0,eol) : rest).trim() || "unknown"};
-        }
-        return text.includes("WEBFLASH_BACKUP_OK") ? {ok:true} : null;
-      }, 60000);
-
-      if (result?.ok) {
-        log("USB: настройки сохранены в резервный раздел лампы.");
-        setProgress(14, "Настройки сохранены");
-        return true;
-      }
-      if (result && !result.ok) throw new Error("Ошибка сохранения настроек лампы: " + result.error);
-      throw new Error(started
-        ? "Архивация началась, но лампа не подтвердила её завершение за 60 секунд. Прошивка отменена."
-        : "Лампа не подтвердила команду WEBFLASH_BACKUP. Возможна проблема возврата из аппаратной диагностики или несовпадение USB COM-порта. Прошивка отменена.");
+      await writer.write(new TextEncoder().encode("WEBFLASH_BACKUP\n"));
     } finally {
       writer.releaseLock();
     }
+
+    reader = selectedPort.readable.getReader();
+    const decoder = new TextDecoder();
+    let received = "";
+    let result = null;
+
+    timeoutId = setTimeout(() => {
+      timedOut = true;
+      reader?.cancel().catch(() => {});
+    }, 20000);
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      if (!value) continue;
+
+      received += decoder.decode(value, { stream: true });
+
+      if (received.includes("WEBFLASH_BACKUP_START")) {
+        setProgress(13, "Архивация настроек…");
+      }
+
+      if (received.includes("WEBFLASH_BACKUP_OK")) {
+        result = { ok: true };
+        break;
+      }
+
+      const errorPos = received.indexOf("WEBFLASH_BACKUP_ERROR:");
+      if (errorPos >= 0) {
+        const rest = received.slice(errorPos + "WEBFLASH_BACKUP_ERROR:".length);
+        const end = rest.search(/[\r\n]/);
+        result = { ok: false, error: (end >= 0 ? rest.slice(0, end) : rest).trim() || "unknown" };
+        break;
+      }
+
+      if (received.length > 8192) received = received.slice(-4096);
+    }
+
+    if (timeoutId) clearTimeout(timeoutId);
+
+    if (result?.ok) {
+      log("Настройки сохранены в резервный раздел лампы.");
+      setProgress(14, "Настройки сохранены");
+      return true;
+    }
+
+    if (result && !result.ok) {
+      throw new Error(`Лампа не смогла сохранить настройки: ${result.error}`);
+    }
+
+    if (timedOut) {
+      throw new Error(
+        "Текущая прошивка не поддерживает автоматическое сохранение настроек через USB или не ответила за 20 секунд. " +
+        "Для прошивки без сохранения снимите галочку «Сохранить настройки перед прошивкой»."
+      );
+    }
+
+    throw new Error("Соединение закрылось до завершения сохранения настроек.");
   } finally {
-    reading = false;
-    if (reader) {try {await reader.cancel();} catch (_) {}}
-    if (readerTask) {try {await readerTask;} catch (_) {}}
-    if (reader) {try {reader.releaseLock();} catch (_) {}}
-    if (opened) {try {await selectedPort.close();} catch (_) {}}
+    if (timeoutId) clearTimeout(timeoutId);
+    if (reader) {
+      try { await reader.cancel(); } catch (_) {}
+      try { reader.releaseLock(); } catch (_) {}
+    }
+    if (opened) {
+      try { await selectedPort.close(); } catch (_) {}
+    }
     await delay(350);
   }
 }
@@ -520,7 +581,7 @@ async function safeDisconnect(t){if(!t)return;try{await t.disconnect();}catch(_)
 async function flash(){
   if(isBusy)return; clearResult(); setBusy(true); setProgress(0,"Подготовка прошивки…"); let transport=null;
   try{
-    if(!selectedPort || !portReady) throw new Error("Сначала выберите COM-порт платы.");
+    if(!selectedPort || !diagnosticReady) throw new Error("Сначала подключите плату и дождитесь успешной аппаратной диагностики.");
     setStep(2);
     setProgress(1, "Подготовка инструментов прошивки…");
     const { ESPLoader, Transport } = await loadFlashingTools();
@@ -537,7 +598,8 @@ async function flash(){
     transport=new Transport(selectedPort,true);
     const loader=new ESPLoader({transport,baudrate:Number(manifest.baudRate||SITE_CONFIG.baudRate||921600),terminal:createTerminal(),debugLogging:false});
     const chipName=await loader.main(); log(`Обнаружен чип: ${chipName}`);
-    await inspectConnectedHardware(loader, chipName);
+    const expected=String(manifest.chip||"ESP32-S3").toUpperCase().replace(/[^A-Z0-9]/g,""); const detected=String(chipName||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
+    if(expected&&!detected.includes(expected))throw new Error(`Подключён ${chipName}, пакет предназначен для ${manifest.chip}.`);
     log("Режим записи: KEEP / KEEP / KEEP (аналог DoNotChgBin=ON).");
     const opts={fileArray:files.map(({data,address})=>({data,address})),flashMode:"keep",flashFreq:"keep",flashSize:"keep",eraseAll:ui.eraseAll.checked,compress:manifest.compress!==false,
       reportProgress:(i,written,total)=>{writtenByFile[i]=Math.min(written,total);const done=writtenByFile.reduce((s,n)=>s+n,0);const p=15+(totalBytes?(done/totalBytes)*83:0);setProgress(p,`Запись ${files[i]?.path||`файл ${i+1}`}… ${Math.round((written/total)*100)}%`);}};
@@ -569,7 +631,7 @@ if ("serial" in navigator) navigator.serial.addEventListener("disconnect", event
   const port = event.port || event.target;
   if (!selectedPort || port !== selectedPort) return;
   selectedPort = null;
-  portReady = false;
+  diagnosticReady = false;
   showDeviceDiagnostic("idle", {message: "Устройство отключено. Выберите COM-порт для диагностики."});
   setPortConnected(false);
   ui.portText.textContent = "Порт отключён";
