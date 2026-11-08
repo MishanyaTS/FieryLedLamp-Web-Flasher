@@ -75,3 +75,21 @@ GitHub Actions публикует изменения ветки `main` двум�
 Изменения в `website/shared/` запускают публикацию обоих сайтов. FTP-параметры берутся из GitHub Secrets. Обе публикации не прерывают текущую FTP-передачу новым запуском, чтобы избежать частично загруженных файлов. На обоих сайтах служебные файлы `.well-known` и `.htaccess` сохраняются для работы SSL и веб-сервера. Остальные файлы синхронизируются строго через `lftp mirror --reverse --delete`; прежний служебный `.fiery-firmware-deployed-sha` тоже будет удалён, поскольку он больше не нужен. Workflow `Build HostiMan packages` запускается вручную, когда нужны ZIP-пакеты для скачивания.
 
 Настройка аккаунтов и почты описана в `server/REGISTRATION_SETUP.md`. Рабочий `config.php`, базы, сессии, аватары и вложения пользователей не хранятся в репозитории.
+
+## Предпросмотр перед публикацией на HostiMan
+
+Изменения в ветке `main` автоматически собираются **только для GitHub Pages**. Публикация на HostiMan при `push` отключена и запускается отдельно вручную.
+
+**Однократное включение предпросмотра:** откройте [Settings → Pages](https://github.com/MishanyaTS/FieryLedLamp-Web-Flasher/settings/pages), в разделе **Build and deployment → Source** выберите **GitHub Actions**. Это действие выполняется владельцем репозитория; обычный `GITHUB_TOKEN` не может впервые включить Pages. После включения перейдите в [Actions → Preview sites on GitHub Pages](https://github.com/MishanyaTS/FieryLedLamp-Web-Flasher/actions/workflows/preview-github-pages.yml) и нажмите **Run workflow** один раз.
+
+Предварительный просмотр после успешной сборки:
+
+- Основной сайт: https://mishanyats.github.io/FieryLedLamp-Web-Flasher/
+- Web Flasher: https://mishanyats.github.io/FieryLedLamp-Web-Flasher/firmware/
+
+GitHub Pages не поддерживает PHP. В предварительном просмотре можно проверять внешний вид, переходы между статическими страницами, поиск и список версий; аккаунты, форум, серверная статистика, подключение COM-порта и прошивка отключены. Баннер сообщает, что открыта тестовая версия. В тестовую сборку не копируются архивы прошивки, скачиваемые приложения и серверные PHP-скрипты. `scripts/build-preview.py` изменяет только временную папку `.preview-pages`, не затрагивая рабочие файлы сайта.
+
+После проверки запустите только нужный ручной Action:
+
+- [Deploy website to HostiMan](https://github.com/MishanyaTS/FieryLedLamp-Web-Flasher/actions/workflows/deploy-hostiman.yml)
+- [Deploy firmware site to HostiMan](https://github.com/MishanyaTS/FieryLedLamp-Web-Flasher/actions/workflows/deploy-firmware-hostiman.yml)

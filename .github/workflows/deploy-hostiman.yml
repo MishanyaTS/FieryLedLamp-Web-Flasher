@@ -1,16 +1,6 @@
 name: Deploy website to HostiMan
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "website/public/**"
-      - "firmware/Version.txt"
-      - "website/shared/**"
-      - "scripts/render-header.py"
-      - "scripts/optimize-images.py"
-      - ".github/workflows/deploy-hostiman.yml"
   workflow_dispatch:
 
 permissions:
