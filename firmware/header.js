@@ -199,8 +199,15 @@
     results.addEventListener("focusout", closeOnFocusOut);
   }
 
-  if (header.dataset.auth === "local") {
-    window.FierySession.get()
+  if (header.dataset.auth === "local" || header.dataset.auth === "remote") {
+    // On the public Web Flasher subdomain, check the existing main-site session.
+    // Credentials are sent only to fieryledlamp.ru; the API reveals a name only.
+    const sessionRequest = header.dataset.auth === "local"
+      ? window.FierySession.get()
+      : fetch(new URL("api/index.php?action=header-user", mainBase), {
+          method: "GET", credentials: "include", cache: "no-store"
+        });
+    sessionRequest
       .then(response => response.ok ? response.json() : null)
       .then(data => {
         if (!data?.ok || !data.user) return;
