@@ -1,0 +1,88 @@
+name: Preview sites (automatic)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fiery-preview
+  cancel-in-progress: true
+
+jobs:
+  build-preview:
+    name: Build website and Web Flasher preview
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate shared header and asset fingerprints
+        run: python3 scripts/render-header.py
+
+      - name: Include current firmware history
+        run: cp firmware/Version.txt website/public/Version.txt
+
+      - name: Assemble static preview (no PHP, credentials or ZIP firmware)
+        run: python3 scripts/build-preview.py
+
+      - name: Verify private backend files are excluded
+        run: |
+          test -s .preview-output/index.html
+          test -s .preview-output/firmware/index.html
+          if find .preview-output -type f \( -name '*.php' -o -name '*.key' -o -name '*.pem' -o -name '*.zip' -o -name '*.bin' \) | grep -q .; then
+            echo "::error::Backend/private/download file found in preview"
+            exit 1
+          fi
+
+      # Always available, even for a private repo without paid Pages access.
+      # Production deploy workflows require this artifact for the exact commit.
+      - name: Upload downloadable preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: preview-site-${{ github.sha }}
+          path: .preview-output/
+          include-hidden-files: true
+          retention-days: 30
+          if-no-files-found: error
+
+      # Optional browser preview for GitHub Pages-eligible repositories.
+      - name: Prepare GitHub Pages preview
+        if: vars.FIERY_PAGES_PREVIEW_ENABLED == 'true'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: .preview-output/
+
+  deploy-pages:
+    name: Publish static preview to GitHub Pages (not HostiMan)
+    if: vars.FIERY_PAGES_PREVIEW_ENABLED == 'true'
+    needs: build-preview
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.pages.outputs.page_url }}
+
+    steps:
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Publish preview
+        id: pages
+        uses: actions/deploy-pages@v4
+
+      - name: Show preview links
+        run: |
+          echo "### Предпросмотр Fiery Led Lamp" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- [Основной сайт](${{ steps.pages.outputs.page_url }})" >> "$GITHUB_STEP_SUMMARY"
+          echo "- [Web Flasher](${{ steps.pages.outputs.page_url }}firmware/)" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Это статический предпросмотр: PHP, личные кабинеты и прошивка устройств отключены." >> "$GITHUB_STEP_SUMMARY"
