@@ -1,0 +1,77 @@
+name: Preview sites on GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "website/public/**"
+      - "website/shared/**"
+      - "firmware/**"
+      - "scripts/render-header.py"
+      - "scripts/build-preview.py"
+      - ".github/workflows/preview-github-pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages-preview
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    name: Build and publish GitHub preview (never HostiMan)
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Render shared site header
+        run: python3 scripts/render-header.py
+
+      - name: Build static preview (no PHP, firmware ZIPs or live analytics)
+        run: python3 scripts/build-preview.py
+
+      - name: Validate previews and rewritten paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          root = Path(".preview-pages")
+          for path in ("index.html", "instruction.html", "versions.html",
+                       "firmware/index.html", "firmware/app.js",
+                       "firmware/update/versions-preview.json", "preview.js"):
+              if not (root / path).is_file():
+                  raise SystemExit(f"Preview file is missing: {path}")
+          main = (root / "index.html").read_text(encoding="utf-8")
+          flash = (root / "firmware/index.html").read_text(encoding="utf-8")
+          assert 'href="/FieryLedLamp-Web-Flasher/styles.css' in main
+          assert 'data-auth="preview"' in main
+          assert 'data-main-base="/FieryLedLamp-Web-Flasher/"' in flash
+          assert '/FieryLedLamp-Web-Flasher/firmware/' in main
+          data = json.loads((root / "firmware/update/versions-preview.json").read_text())
+          assert data["versions"], "No firmware versions in preview"
+          print("Preview HTML, links and release list: OK")
+          PY
+
+      - name: Set up GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload preview artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: .preview-pages
+
+      - name: Publish preview to GitHub Pages (not HostiMan)
+        id: deployment
+        uses: actions/deploy-pages@v4
