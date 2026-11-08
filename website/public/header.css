@@ -66,3 +66,14 @@
 @media(max-width:760px){.fl-shell{width:calc(100% - 24px)}.fl-topbar{column-gap:7px}.fl-brand-name{font-size:22px}.fl-brand-tagline{display:none}.fl-brand-flame{width:20px;height:28px}.fl-auth{gap:4px;min-width:0}.fl-auth-link{width:32px;min-height:32px;padding:5px;gap:0}.fl-auth-link>span,.fl-locale{display:none}.fl-auth-link .fl-icon{width:19px;height:19px}.fl-menu-toggle{width:32px;min-height:32px;padding:5px}.fl-menu-toggle span{display:none}.fl-search-control{height:32px}.fl-search input{font-size:16px}.fl-search-submit{height:30px}.fl-main-nav{grid-template-columns:repeat(2,minmax(0,1fr))}.fl-nav-link{border-radius:7px}.fl-nav-label{font-size:10.5px;line-height:1.2}.fl-nav-link.is-active::after{right:auto;top:18%;bottom:18%;left:0;width:2px;height:auto}}
 @media(max-width:360px){.fl-brand-name{font-size:20px}.fl-brand{gap:4px}.fl-brand-flame{width:18px;height:26px}.fl-shell{width:calc(100% - 20px)}.fl-topbar{column-gap:6px}.fl-nav-label{font-size:10px}}
 @media(prefers-reduced-motion:reduce){.fl-header *{scroll-behavior:auto!important;transition:none!important}}
+
+/* Smooth same-origin full-page navigation for sections with independent scripts.
+   Static guide pages swap only <main> and <footer>, retaining the live header. */
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition { navigation: auto; }
+  .fl-header { view-transition-name: fiery-site-header; }
+  ::view-transition-old(fiery-site-header),
+  ::view-transition-new(fiery-site-header) { animation: none; }
+  ::view-transition-old(root),
+  ::view-transition-new(root) { animation-duration: .14s; }
+}
