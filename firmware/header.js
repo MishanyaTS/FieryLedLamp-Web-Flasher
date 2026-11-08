@@ -290,4 +290,130 @@
         if (!header.dataset.authReady) displayUser("");
       });
   }
+  // Preserve the actual header DOM when navigating between static guide pages.
+  // Dynamic pages (forum/account/history) retain normal navigation so their
+  // own scripts and form handlers are initialized on a fresh document.
+  if (header.dataset.auth === "local") {
+    const staticPages = new Set([
+      "/", "/index.html", "/setup.html", "/hardware.html",
+      "/mqtt-broker.html", "/mqtt-commands.html", "/mqtt-wqtt.html",
+      "/mqtt-smart-home.html", "/fiery-lamp-control.html"
+    ]);
+    let displayedPath = location.pathname;
+    let request = null;
+    let navigationIndex = 0;
+
+    const stylesOf = doc => [...doc.querySelectorAll('link[rel="stylesheet"][href]')]
+      .map(link => new URL(link.getAttribute("href"), location.origin).pathname)
+      .sort().join("|");
+
+    const supportsSoftNavigation = doc => {
+      if (!doc.querySelector("main") || !doc.querySelector("footer")) return false;
+      if (stylesOf(doc) !== stylesOf(document)) return false;
+      return [...doc.querySelectorAll("script")].every(script => {
+        if (script.closest(".fl-header")) return true;
+        if (!script.src && !script.getAttribute("src")) return false;
+        const scriptUrl = new URL(script.getAttribute("src"), location.origin);
+        return scriptUrl.origin === location.origin
+          && (scriptUrl.pathname === "/site.js" || scriptUrl.pathname === "/header.js");
+      });
+    };
+
+    const updateActiveNavigation = doc => {
+      const live = [...header.querySelectorAll(".fl-main-nav a")];
+      const incoming = [...doc.querySelectorAll(".fl-header .fl-main-nav a")];
+      if (incoming.length !== live.length) return;
+      live.forEach((link, index) => {
+        link.classList.toggle("is-active", incoming[index].classList.contains("is-active"));
+        const current = incoming[index].getAttribute("aria-current");
+        if (current) link.setAttribute("aria-current", current);
+        else link.removeAttribute("aria-current");
+      });
+    };
+
+    const loadStaticPage = async (target, push) => {
+      request?.abort();
+      const controller = new AbortController();
+      request = controller;
+      const id = ++navigationIndex;
+
+      try {
+        const response = await fetch(target.href, {
+          credentials: "same-origin",
+          signal: controller.signal,
+          cache: "default",
+          headers: { "Accept": "text/html" }
+        });
+        if (!response.ok || !response.headers.get("content-type")?.includes("text/html")) {
+          throw new Error("Page not available");
+        }
+        const finalUrl = new URL(response.url);
+        if (finalUrl.origin !== location.origin || finalUrl.pathname !== target.pathname) {
+          throw new Error("Unexpected redirect");
+        }
+        const source = new DOMParser().parseFromString(await response.text(), "text/html");
+        if (!supportsSoftNavigation(source)) throw new Error("Page requires full navigation");
+        if (controller.signal.aborted || id !== navigationIndex) return;
+
+        const nextMain = document.importNode(source.querySelector("main"), true);
+        const nextFooter = document.importNode(source.querySelector("footer"), true);
+        document.querySelector("main").replaceWith(nextMain);
+        document.querySelector("footer").replaceWith(nextFooter);
+        document.title = source.title;
+        const description = source.querySelector('meta[name="description"]');
+        const currentDescription = document.querySelector('meta[name="description"]');
+        if (description && currentDescription) {
+          currentDescription.content = description.content;
+        }
+        updateActiveNavigation(source);
+
+        if (push) history.pushState({ fieryPage: true }, "", target.href);
+        displayedPath = target.pathname;
+        closeMenu();
+        closeSearch();
+        if (target.hash) {
+          const anchor = document.getElementById(decodeURIComponent(target.hash.slice(1)));
+          if (anchor) anchor.scrollIntoView();
+          else scrollTo(0, 0);
+        } else {
+          scrollTo(0, 0);
+        }
+        window.FieryAnalytics?.track?.("page_view", "", target.pathname);
+      } catch (error) {
+        if (controller.signal.aborted || id !== navigationIndex) return;
+        // If a page gets its own script or stylesheet later, use the browser's
+        // normal navigation instead of leaving the new page half-initialized.
+        if (push) location.assign(target.href);
+        else location.reload();
+      } finally {
+        if (request === controller) request = null;
+      }
+    };
+
+    document.addEventListener("click", event => {
+      if (event.defaultPrevented || event.button !== 0 ||
+          event.metaKey || event.ctrlKey || event.shiftKey || event.altKey ||
+          !staticPages.has(displayedPath)) return;
+      const link = event.target.closest("a[href]");
+      if (!link || link.hasAttribute("download") ||
+          (link.target && link.target !== "_self")) return;
+      const target = new URL(link.href, location.href);
+      if (target.origin !== location.origin || !staticPages.has(target.pathname) ||
+          target.search || (target.pathname === displayedPath && target.hash)) return;
+      if (target.href === location.href) return;
+      event.preventDefault();
+      loadStaticPage(target, true);
+    });
+
+    window.addEventListener("popstate", () => {
+      if (!staticPages.has(displayedPath) || !staticPages.has(location.pathname)) {
+        location.reload();
+        return;
+      }
+      if (displayedPath !== location.pathname) {
+        loadStaticPage(new URL(location.href), false);
+      }
+    });
+  }
+
 })();
