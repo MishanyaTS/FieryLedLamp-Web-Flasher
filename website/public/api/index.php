@@ -27,6 +27,15 @@ if (!is_array($config)) {
 $action = (string)($_GET['action'] ?? '');
 $publicRequest = in_array($action, ['track', 'track-pixel', 'download', 'avatar', 'discussion-file'], true);
 
+// Read-only cross-subdomain header session check. Expose only the display name,
+// never the session CSRF token or private profile from the full "me" endpoint.
+if ($action === 'header-user'
+    && ($_SERVER['HTTP_ORIGIN'] ?? '') === 'https://firmware.fieryledlamp.ru') {
+    header('Access-Control-Allow-Origin: https://firmware.fieryledlamp.ru');
+    header('Access-Control-Allow-Credentials: true');
+    header('Vary: Origin');
+}
+
 if ($action === 'track') {
     $origin = (string)($_SERVER['HTTP_ORIGIN'] ?? '');
     if ($origin === 'https://firmware.fieryledlamp.ru') {
@@ -58,7 +67,7 @@ if (!$publicRequest) {
 }
 
 // Anonymous page headers do not need a database connection or migrations.
-if ($action === 'me' && empty($_SESSION['user_id'])) {
+if (in_array($action, ['me', 'header-user'], true) && empty($_SESSION['user_id'])) {
     require_method('GET');
     session_write_close();
     json_response(['ok' => false, 'message' => 'Требуется вход в аккаунт.'], 401);
@@ -105,6 +114,11 @@ switch ($action) {
     case 'me':
         require_method('GET');
         current_user_response($pdo);
+        break;
+    case 'header-user':
+        require_method('GET');
+        $headerUser = require_user($pdo);
+        json_response(['ok' => true, 'user' => ['name' => (string)$headerUser['name']]]);
         break;
     case 'preferences':
         require_method('POST');
