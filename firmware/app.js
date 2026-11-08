@@ -462,103 +462,112 @@ function createTerminal(){return{clean(){},writeLine(d){if(d!=null)log(d);},writ
 function delay(ms){return new Promise(resolve=>setTimeout(resolve,ms));}
 async function backupSettingsBeforeFlash() {
   if (!selectedPort) throw new Error("COM-порт не выбран.");
-
   const baud = Number(manifest?.settingsBackupBaudRate || 115200);
-  let reader = null;
-  let opened = false;
-  let timeoutId = null;
-  let timedOut = false;
+  let reader = null, readerTask = null, opened = false;
+  let reading = true, receiveError = null, received = "";
 
-  log(`Сохранение настроек перед прошивкой через USB (${baud} бод)…`);
-  setProgress(12, "Сохранение настроек…");
-
+  log("USB: проверка связи с работающей прошивкой (" + baud + " бод)…");
+  setProgress(12, "Проверка USB-связи…");
   try {
-    await selectedPort.open({ baudRate: baud });
+    await selectedPort.open({baudRate: baud});
     opened = true;
-
+    // Keep the CDC terminal open; do not assert RTS (reset).
     try {
-      await selectedPort.setSignals({ dataTerminalReady: false, requestToSend: false });
-    } catch (_) {}
+      await selectedPort.setSignals({dataTerminalReady: true, requestToSend: false});
+      log("USB: DTR включён, RTS отключён.");
+    } catch (e) {
+      log("USB: сигналы CDC не установлены: " + (e?.message || e));
+    }
+    await delay(650);
 
-    await delay(350);
+    reader = selectedPort.readable.getReader();
+    readerTask = (async () => {
+      const decoder = new TextDecoder();
+      try {
+        while (reading) {
+          const {value, done} = await reader.read();
+          if (done) {
+            if (reading) receiveError = new Error("COM-порт закрылся во время обмена.");
+            break;
+          }
+          if (value?.length) {
+            received += decoder.decode(value, {stream:true});
+            if (received.length > 16384) received = received.slice(-8192);
+          }
+        }
+      } catch (e) {
+        if (reading) receiveError = e;
+      }
+    })();
 
     const writer = selectedPort.writable.getWriter();
+    const encoder = new TextEncoder();
+    const send = command => writer.write(encoder.encode(command + "\n"));
+    const waitFor = async (predicate, ms) => {
+      const until = Date.now() + ms;
+      while (Date.now() < until) {
+        const result = predicate(received);
+        if (result) return result;
+        if (receiveError) throw receiveError;
+        await delay(80);
+      }
+      return null;
+    };
+
     try {
-      await writer.write(new TextEncoder().encode("WEBFLASH_BACKUP\n"));
+      let ready = false;
+      for (let attempt = 1; attempt <= 3 && !ready; attempt++) {
+        log("USB: проверяю ответ прошивки (" + attempt + "/3)…");
+        await send("WEBFLASH_PSRAM");
+        ready = Boolean(await waitFor(text => text.includes("WEBFLASH_PSRAM:"), 3000));
+      }
+      if (!ready) {
+        throw new Error(
+          "Работающая лампа не ответила на WEBFLASH_PSRAM через USB. " +
+          "Аппаратная диагностика проверяет чип, но не связь с установленной прошивкой. " +
+          "Проверьте USB COM-порт, закройте монитор порта и убедитесь, что лампа запущена. " +
+          "Сохранение настроек не подтверждено; прошивка отменена."
+        );
+      }
+
+      log("USB: прошивка отвечает. Отправляю WEBFLASH_BACKUP…");
+      received = "";
+      setProgress(13, "Сохранение настроек…");
+      await send("WEBFLASH_BACKUP");
+      let started = false;
+      const result = await waitFor(text => {
+        if (!started && text.includes("WEBFLASH_BACKUP_START")) {
+          started = true;
+          log("USB: лампа начала архивацию настроек.");
+          setProgress(14, "Архивация настроек…");
+        }
+        const errorPos = text.indexOf("WEBFLASH_BACKUP_ERROR:");
+        if (errorPos >= 0) {
+          const rest = text.slice(errorPos + "WEBFLASH_BACKUP_ERROR:".length);
+          const eol = rest.search(/[\r\n]/);
+          return {ok:false, error:(eol >= 0 ? rest.slice(0,eol) : rest).trim() || "unknown"};
+        }
+        return text.includes("WEBFLASH_BACKUP_OK") ? {ok:true} : null;
+      }, 60000);
+
+      if (result?.ok) {
+        log("USB: настройки сохранены в резервный раздел лампы.");
+        setProgress(14, "Настройки сохранены");
+        return true;
+      }
+      if (result && !result.ok) throw new Error("Ошибка сохранения настроек лампы: " + result.error);
+      throw new Error(started
+        ? "Архивация началась, но лампа не подтвердила её завершение за 60 секунд. Прошивка отменена."
+        : "Лампа отвечает по USB, но не подтвердила команду WEBFLASH_BACKUP. Прошивка отменена.");
     } finally {
       writer.releaseLock();
     }
-
-    reader = selectedPort.readable.getReader();
-    const decoder = new TextDecoder();
-    let received = "";
-    let result = null;
-
-    timeoutId = setTimeout(() => {
-      timedOut = true;
-      reader?.cancel().catch(() => {});
-    }, 20000);
-
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      if (!value) continue;
-
-      received += decoder.decode(value, { stream: true });
-
-      if (received.includes("WEBFLASH_BACKUP_START")) {
-        setProgress(13, "Архивация настроек…");
-      }
-
-      if (received.includes("WEBFLASH_BACKUP_OK")) {
-        result = { ok: true };
-        break;
-      }
-
-      const errorPos = received.indexOf("WEBFLASH_BACKUP_ERROR:");
-      if (errorPos >= 0) {
-        const rest = received.slice(errorPos + "WEBFLASH_BACKUP_ERROR:".length);
-        const end = rest.search(/[\r\n]/);
-        result = { ok: false, error: (end >= 0 ? rest.slice(0, end) : rest).trim() || "unknown" };
-        break;
-      }
-
-      if (received.length > 8192) received = received.slice(-4096);
-    }
-
-    if (timeoutId) clearTimeout(timeoutId);
-
-    if (result?.ok) {
-      log("Настройки сохранены в резервный раздел лампы.");
-      setProgress(14, "Настройки сохранены");
-      return true;
-    }
-
-    if (result && !result.ok) {
-      throw new Error(`Лампа не смогла сохранить настройки: ${result.error}`);
-    }
-
-    if (timedOut) {
-      log("Не получен ответ WEBFLASH_BACKUP: резервная копия НЕ создана, прошивка отменена.");
-      throw new Error(
-        "Лампа не ответила на команду WEBFLASH_BACKUP по выбранному COM-порту за 20 секунд. " +
-        "Возможная причина: текущая прошивка собрана с USB CDC On Boot: Disabled, поэтому Serial работает через UART0, а не встроенный USB. " +
-        "Настройки не сохранены, прошивка не началась. " +
-        "Для безопасного обновления сначала скачайте ZIP-копию на странице /backup_restore веб-интерфейса лампы. " +
-        "Только после этого можно отключить автоматическое сохранение, не включая «Полностью очистить Flash», прошить новую версию и восстановить ZIP через веб-интерфейс лампы."
-      );
-    }
-
-    throw new Error("Соединение закрылось до завершения сохранения настроек.");
   } finally {
-    if (timeoutId) clearTimeout(timeoutId);
-    if (reader) {
-      try { await reader.cancel(); } catch (_) {}
-      try { reader.releaseLock(); } catch (_) {}
-    }
-    if (opened) {
-      try { await selectedPort.close(); } catch (_) {}
-    }
+    reading = false;
+    if (reader) {try {await reader.cancel();} catch (_) {}}
+    if (readerTask) {try {await readerTask;} catch (_) {}}
+    if (reader) {try {reader.releaseLock();} catch (_) {}}
+    if (opened) {try {await selectedPort.close();} catch (_) {}}
     await delay(350);
   }
 }
