@@ -38,7 +38,7 @@ PREVIEW_STYLE = """
 def ignored(_folder: str, names: list[str]) -> set[str]:
     result = set()
     for name in names:
-        if name in SKIP_DIRS or Path(name).suffix.lower() in SKIP_EXT:
+        if name.startswith(".") or name in SKIP_DIRS or Path(name).suffix.lower() in SKIP_EXT:
             result.add(name)
     return result
 
