@@ -43,9 +43,11 @@
     "/forgot-password.html",
     "/reset-password.html"
   ];
-  if (!excluded.includes(location.pathname)) {
+  const firstPagePath = location.pathname;
+  if (!excluded.includes(firstPagePath)) {
     let sent = false;
-    const send = () => { if (!sent) { sent = true; track("page_view"); } };
+    // Do not attribute an initial deferred page-view to the next SPA route.
+    const send = () => { if (!sent) { sent = true; track("page_view", "", firstPagePath); } };
     const schedule = () => {
       if ("requestIdleCallback" in window) requestIdleCallback(send, { timeout: 1500 });
       else setTimeout(send, 300);
