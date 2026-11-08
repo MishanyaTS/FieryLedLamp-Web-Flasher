@@ -11,6 +11,12 @@ SOURCE = ROOT / 'website/shared/header'
 START = '<!-- SHARED_HEADER:START -->'
 END = '<!-- SHARED_HEADER:END -->'
 HEADER = re.compile(r'<!-- SHARED_HEADER:START -->.*?<!-- SHARED_HEADER:END -->|<header class="(?:fl-header|site-header)".*?</header>', re.S)
+# Footer brand is intentionally absent on both sites. Keep the description and links.
+FOOTER = re.compile(r'<footer\\b[^>]*>.*?</footer>', re.S | re.I)
+FOOTER_BRAND = re.compile(
+    r'<a class="brand" href="[^"]*">\\s*<span class="brand-mark">.*?</span>\\s*'
+    r'<span>Fiery Led Lamp</span>\\s*</a>', re.S
+)
 PAGE_KEYS = {
     '/': 'home', '/instruction.html': 'instruction', '/setup.html': 'setup',
     '/hardware.html': 'setup', '/mqtt-broker.html': 'mqtt', '/mqtt-commands.html': 'mqtt',
@@ -72,6 +78,9 @@ def build(check=False):
                 content, count = re.subn(r'(<body\b[^>]*>)', lambda m: m.group() + '\n' + block, original, count=1)
                 if not count:
                     raise ValueError(f'Missing body: {path}')
+            # Remove only the icon and project-name link in the footer.
+            # Do not touch the shared top header or text in the page body.
+            content = FOOTER.sub(lambda match: FOOTER_BRAND.sub('', match.group()), content)
             asset_base = './' if firmware else '/'
             for name, pattern, include in (
                 ('page-ui.css', r'href="(?:\./|/)page-ui\.css(?:\?[^\"]*)?"', f'<link rel="stylesheet" href="{asset_base}page-ui.css">'),
