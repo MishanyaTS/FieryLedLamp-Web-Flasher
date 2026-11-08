@@ -799,8 +799,9 @@ background:linear-gradient(180deg,#131821,#0e1219);border-color:#283141;box-shad
 .forum-tool-separator{width:1px;height:24px;margin:0 2px;background:#303744}
 .forum-editor textarea{display:block;width:100%;min-height:180px;margin:0;border:0;border-radius:0 0 14px 14px;background:#090d13;color:#fff;padding:16px;font:inherit;line-height:1.6;outline:none;resize:vertical}
 .forum-emoji-panel{
-  position:absolute;z-index:15;top:47px;left:8px;display:grid;grid-template-columns:repeat(8,36px);gap:4px;padding:8px;border:1px solid #37404e;border-radius:12px;background:#111720;box-shadow:0 18px 50px #000a
+  position:absolute;z-index:15;top:47px;left:8px;display:grid;grid-template-columns:repeat(8,36px);gap:4px;padding:8px;border:1px solid #37404e;border-radius:12px;background:#111720;box-shadow:0 18px 50px #000a;max-height:min(360px,55vh);overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:thin
 }
+.forum-emoji-heading{grid-column:1/-1;margin:4px 2px 0;padding:4px 3px 6px;color:#ffba80;border-bottom:1px solid #333e4d;font-size:12px;font-weight:700;letter-spacing:.02em}
 .forum-emoji-panel[hidden]{display:none}.forum-emoji-panel button{width:36px;height:36px;border:0;border-radius:8px;background:transparent;font-size:20px;cursor:pointer}.forum-emoji-panel button:hover{background:#222a35}
 .forum-reply-context{
   display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:10px;padding:10px 12px;border:1px solid #51392e;border-radius:11px;background:#17130f
