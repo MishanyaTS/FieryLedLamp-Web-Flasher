@@ -61,6 +61,14 @@ jobs:
           retention-days: 30
           if-no-files-found: error
 
+      - name: Preview build summary
+        run: |
+          echo "### Fiery Led Lamp — предпросмотр" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Коммит: \`$GITHUB_SHA\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Архив: \`preview-site-$GITHUB_SHA\` (см. Artifacts внизу запуска)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Рабочие сайты на Hostiman не изменены." >> "$GITHUB_STEP_SUMMARY"
+
       # Optional browser preview for GitHub Pages-eligible repositories.
       - name: Prepare GitHub Pages preview
         if: vars.FIERY_PAGES_PREVIEW_ENABLED == 'true'
