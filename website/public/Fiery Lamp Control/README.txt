@@ -1,8 +1,10 @@
 Fiery Lamp Control
 
-Файлы хранятся непосредственно в этой папке репозитория:
-- FieryLampControl.exe
-- FieryLampControl.ipa
+Файлы хранятся непосредственно в этой папке репозитория и публикуются на HostiMan:
+- FieryLampControl.exe — актуальная Windows-версия и файл автоматического обновления;
+- FieryLampUpdater.exe — безопасная замена EXE после завершения программы;
+- FieryLampControl.update.json — версия, URL и SHA-256 для Windows-автообновления;
+- FieryLampControl.ipa — iOS-версия.
 
-При деплое сайта эти файлы загружаются на HostiMan без скачивания из GitHub Releases.
+Windows проверяет обновления с https://fieryledlamp.ru/, а не из GitHub Releases.
 Android распространяется через RuStore.

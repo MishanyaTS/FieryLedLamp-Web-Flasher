@@ -1,0 +1,11 @@
+{
+    "version":  "1.6.1",
+    "windows":  {
+                    "url":  "https://fieryledlamp.ru/Fiery%20Lamp%20Control/FieryLampControl.exe?sha=de1677b4203be565",
+                    "sha256":  "de1677b4203be56511388c5fab94d7dd2b5c2083227347ddd9419a7cf3c5666f",
+                    "updater":  {
+                                    "url":  "https://fieryledlamp.ru/Fiery%20Lamp%20Control/FieryLampUpdater.exe?sha=ed26df15ce86c3f0",
+                                    "sha256":  "ed26df15ce86c3f0eddd32622e09fe6876327b1f3f5255f4c2023f328d3ecb7c"
+                                }
+                }
+}
