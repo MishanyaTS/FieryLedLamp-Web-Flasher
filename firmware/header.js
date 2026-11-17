@@ -406,13 +406,13 @@
     });
 
     window.addEventListener("popstate", () => {
+      // Native fragment navigation stays in the current document.
+      if (displayedPath === location.pathname) return;
       if (!staticPages.has(displayedPath) || !staticPages.has(location.pathname)) {
         location.reload();
         return;
       }
-      if (displayedPath !== location.pathname) {
-        loadStaticPage(new URL(location.href), false);
-      }
+      loadStaticPage(new URL(location.href), false);
     });
   }
 
