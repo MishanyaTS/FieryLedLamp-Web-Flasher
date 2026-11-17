@@ -517,6 +517,7 @@ function track_download_and_redirect(PDO $pdo, array $config): never {
         'windows' => ['app_windows_download', app_url($config) . '/Fiery%20Lamp%20Control/FieryLampControl.exe'],
         'ios' => ['app_ios_download', app_url($config) . '/Fiery%20Lamp%20Control/FieryLampControl.ipa'],
         'android' => ['app_android_click', 'https://www.rustore.ru/catalog/app/com.mishanyats.fierylampcontrol'],
+        'android-apk' => ['app_android_click', app_url($config) . '/Fiery%20Lamp%20Control/FieryLampControl.apk'],
     ];
     if (!isset($map[$file])) {
         http_response_code(404);
