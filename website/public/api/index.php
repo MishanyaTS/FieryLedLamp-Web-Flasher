@@ -66,13 +66,6 @@ if (!$publicRequest) {
     }
 }
 
-// Anonymous page headers do not need a database connection or migrations.
-if (in_array($action, ['me', 'header-user'], true) && empty($_SESSION['user_id'])) {
-    require_method('GET');
-    session_write_close();
-    json_response(['ok' => false, 'message' => 'Требуется вход в аккаунт.'], 401);
-}
-
 try {
     $pdo = new PDO(
         (string)$config['db_dsn'],
@@ -89,6 +82,21 @@ try {
 }
 
 if (!$publicRequest || $action === 'avatar') ensure_account_settings_schema($pdo);
+
+// A persistent remember-token is independent of PHP's session storage.
+// If HostiMan has already garbage-collected the PHP session, restore it from
+// the 30-day cookie before protected endpoints check authentication.
+if (!$publicRequest && !in_array($action, ['login', 'register'], true)) {
+    restore_remember_login($pdo);
+}
+
+// After remember-token restoration, anonymous header/profile checks can safely
+// return 401 only when the user really has no valid persistent login.
+if (in_array($action, ['me', 'header-user'], true) && empty($_SESSION['user_id'])) {
+    require_method('GET');
+    session_write_close();
+    json_response(['ok' => false, 'message' => 'Требуется вход в аккаунт.'], 401);
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'verify-email') {
     verify_email($pdo, $config);
@@ -109,7 +117,7 @@ switch ($action) {
     case 'logout':
         require_method('POST');
         require_csrf();
-        logout_user();
+        logout_user($pdo);
         break;
     case 'me':
         require_method('GET');
@@ -960,6 +968,104 @@ function register_user(PDO $pdo, array $config): never {
     json_response(['ok' => true, 'emailSent' => $sent]);
 }
 
+function remember_cookie_name(): string {
+    return 'fieryledlamp_remember';
+}
+
+function clear_remember_cookie(): void {
+    setcookie(remember_cookie_name(), '', [
+        'expires' => time() - 42000,
+        'path' => '/',
+        'secure' => true,
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
+}
+
+function revoke_remember_login(PDO $pdo): void {
+    $raw = (string)($_COOKIE[remember_cookie_name()] ?? '');
+    if (preg_match('/^[a-f0-9]{64}$/i', $raw)) {
+        $hash = hash('sha256', $raw);
+        $pdo->prepare(
+            "UPDATE auth_tokens
+             SET used_at=NOW()
+             WHERE token_hash=?
+               AND token_type='remember'
+               AND used_at IS NULL"
+        )->execute([$hash]);
+    }
+    clear_remember_cookie();
+}
+
+function create_remember_login(PDO $pdo, int $userId): void {
+    $raw = bin2hex(random_bytes(32));
+    $hash = hash('sha256', $raw);
+    $expiresAt = time() + 60 * 60 * 24 * 30;
+
+    // Remove only expired/revoked remember tokens for this user. Active tokens
+    // on other browsers/devices stay valid until their own logout or expiry.
+    $pdo->prepare(
+        "DELETE FROM auth_tokens
+         WHERE user_id=?
+           AND token_type='remember'
+           AND (used_at IS NOT NULL OR expires_at<=NOW())"
+    )->execute([$userId]);
+
+    $pdo->prepare(
+        'INSERT INTO auth_tokens(user_id,token_type,token_hash,expires_at)
+         VALUES(?,?,?,?)'
+    )->execute([
+        $userId,
+        'remember',
+        $hash,
+        date('Y-m-d H:i:s', $expiresAt),
+    ]);
+
+    setcookie(remember_cookie_name(), $raw, [
+        'expires' => $expiresAt,
+        'path' => '/',
+        'secure' => true,
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
+}
+
+function restore_remember_login(PDO $pdo): void {
+    if (!empty($_SESSION['user_id'])) {
+        return;
+    }
+
+    $raw = (string)($_COOKIE[remember_cookie_name()] ?? '');
+    if (!preg_match('/^[a-f0-9]{64}$/i', $raw)) {
+        if ($raw !== '') clear_remember_cookie();
+        return;
+    }
+
+    $hash = hash('sha256', $raw);
+    $stmt = $pdo->prepare(
+        "SELECT user_id
+         FROM auth_tokens
+         WHERE token_hash=?
+           AND token_type='remember'
+           AND used_at IS NULL
+           AND expires_at>NOW()
+         LIMIT 1"
+    );
+    $stmt->execute([$hash]);
+    $userId = (int)($stmt->fetchColumn() ?: 0);
+
+    if ($userId <= 0) {
+        clear_remember_cookie();
+        return;
+    }
+
+    $_SESSION['user_id'] = $userId;
+    session_regenerate_id(true);
+    if (empty($_SESSION['csrf'])) {
+        $_SESSION['csrf'] = bin2hex(random_bytes(24));
+    }
+}
+
 function login_user(PDO $pdo): never {
     rate_limit($pdo, 'login', 10, 900);
     $d = input_json();
@@ -978,20 +1084,19 @@ function login_user(PDO $pdo): never {
     $_SESSION['user_id'] = (int)$row['id'];
     session_regenerate_id(true);
 
+    // The normal PHP session remains a browser-session cookie. The separate
+    // remember token is what keeps this device signed in for up to 30 days.
+    revoke_remember_login($pdo);
     if ($remember) {
-        setcookie(session_name(), session_id(), [
-            'expires' => time() + 60 * 60 * 24 * 30,
-            'path' => '/',
-            'secure' => true,
-            'httponly' => true,
-            'samesite' => 'Lax',
-        ]);
+        create_remember_login($pdo, (int)$row['id']);
     }
 
     json_response(['ok' => true, 'csrf' => $_SESSION['csrf']]);
 }
 
-function logout_user(): never {
+function logout_user(PDO $pdo): never {
+    revoke_remember_login($pdo);
+
     $_SESSION = [];
     if (ini_get('session.use_cookies')) {
         setcookie(session_name(), '', [
